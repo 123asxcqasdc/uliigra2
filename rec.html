@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Таблица рекордов</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a237e 0%, #311b92 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        body.fullscreen-mode {
+            padding: 10px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        body.fullscreen-mode header {
+            margin-bottom: 20px;
+            padding: 10px;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, #ffd700, #ffeb3b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transition: all 0.3s ease;
+        }
+        
+        body.fullscreen-mode h1 {
+            font-size: 2.2rem;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        body.fullscreen-mode .subtitle {
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+        
+        .dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+        
+        body.fullscreen-mode .dashboard {
+            display: none;
+        }
+        
+        .settings-panel {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stats-panel {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .panel-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: #ffeb3b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .panel-title i {
+            font-size: 1.6rem;
+        }
+        
+        .setting-group {
+            margin-bottom: 25px;
+        }
+        
+        .setting-label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            color: #e0e0e0;
+        }
+        
+        .timer-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .timer-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #4caf50;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .btn-timer {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(45deg, #2196f3, #21cbf3);
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-timer:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(33, 150, 243, 0.4);
+        }
+        
+        .timer-description {
+            margin-top: 8px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            color: #b0b0b0;
+        }
+        
+        .timer-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4caf50;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.paused {
+            background: #ff9800;
+            animation: none;
+        }
+        
+        .auto-refresh-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background: linear-gradient(45deg, #4caf50, #8bc34a);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .stat-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4caf50;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .leaderboard {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        body.fullscreen-mode .leaderboard {
+            padding: 15px;
+            border-radius: 15px;
+        }
+        
+        .leaderboard-header {
+            display: grid;
+            grid-template-columns: 80px 1fr 150px;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+        
+        body.fullscreen-mode .leaderboard-header {
+            padding: 12px 15px;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+        
+        .records-list {
+            list-style: none;
+        }
+        
+        .record-item {
+            display: grid;
+            grid-template-columns: 80px 1fr 150px;
+            align-items: center;
+            padding: 18px 20px;
+            margin-bottom: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .record-item.updated {
+            animation: highlightUpdate 1.5s ease-out;
+        }
+        
+        body.fullscreen-mode .record-item {
+            padding: 14px 16px;
+            margin-bottom: 8px;
+        }
+        
+        .record-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .record-rank {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        body.fullscreen-mode .record-rank {
+            font-size: 1.3rem;
+        }
+        
+        .top-1 .record-rank {
+            color: #ffd700;
+        }
+        
+        .top-2 .record-rank {
+            color: #c0c0c0;
+        }
+        
+        .top-3 .record-rank {
+            color: #cd7f32;
+        }
+        
+        .player-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            padding-left: 20px;
+        }
+        
+        body.fullscreen-mode .player-name {
+            font-size: 1.1rem;
+            padding-left: 15px;
+        }
+        
+        .top-1 .player-name {
+            color: #ffd700;
+        }
+        
+        .top-2 .player-name {
+            color: #c0c0c0;
+        }
+        
+        .top-3 .player-name {
+            color: #cd7f32;
+        }
+        
+        .record-score {
+            text-align: right;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #4caf50;
+        }
+        
+        .record-score.changed {
+            animation: scoreChange 1.5s ease-out;
+        }
+        
+        body.fullscreen-mode .record-score {
+            font-size: 1.5rem;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.3rem;
+            grid-column: 1 / -1;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #ff5252;
+            font-size: 1.3rem;
+            grid-column: 1 / -1;
+        }
+        
+        .empty {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.3rem;
+            opacity: 0.7;
+            grid-column: 1 / -1;
+        }
+        
+        .update-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #4caf50, #8bc34a);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+        }
+        
+        .update-notification.show {
+            transform: translateX(0);
+        }
+        
+        .update-notification.fade-out {
+            opacity: 0;
+            transform: translateX(150%);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        
+        .update-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff5722;
+            color: white;
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 10px;
+            animation: badgePulse 1s infinite;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+            transition: all 0.3s ease;
+        }
+        
+        body.fullscreen-mode .controls {
+            margin-top: 20px;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, #2196f3, #21cbf3);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        body.fullscreen-mode .btn {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
+        }
+        
+        .btn-refresh {
+            background: linear-gradient(45deg, #4caf50, #8bc34a);
+        }
+        
+        .btn-fullscreen {
+            background: linear-gradient(45deg, #ff9800, #ff5722);
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            opacity: 0.7;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        body.fullscreen-mode .footer {
+            margin-top: 20px;
+            font-size: 0.8rem;
+        }
+        
+        .fullscreen-controls {
+            display: none;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        body.fullscreen-mode .fullscreen-controls {
+            display: flex;
+        }
+        
+        .fullscreen-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .fullscreen-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+        
+        .fullscreen-btn i {
+            font-size: 1.1rem;
+        }
+        
+        .fullscreen-info {
+            text-align: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            width: 100%;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes highlightUpdate {
+            0% {
+                background: rgba(76, 175, 80, 0.3);
+                transform: scale(1.02);
+            }
+            70% {
+                background: rgba(76, 175, 80, 0.1);
+                transform: scale(1.01);
+            }
+            100% {
+                background: rgba(255, 255, 255, 0.05);
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes scoreChange {
+            0% {
+                color: #4caf50;
+                transform: scale(1.2);
+            }
+            50% {
+                color: #ffeb3b;
+                transform: scale(1.3);
+            }
+            100% {
+                color: #4caf50;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes badgePulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 87, 34, 0.7);
+            }
+            70% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 10px rgba(255, 87, 34, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 87, 34, 0);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard {
+                flex-direction: column;
+            }
+            
+            .settings-panel, .stats-panel {
+                min-width: 100%;
+            }
+            
+            .leaderboard-header, .record-item {
+                grid-template-columns: 60px 1fr 120px;
+                padding: 12px 15px;
+            }
+            
+            .record-rank {
+                font-size: 1.3rem;
+            }
+            
+            .player-name {
+                font-size: 1.1rem;
+                padding-left: 10px;
+            }
+            
+            .record-score {
+                font-size: 1.4rem;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            body.fullscreen-mode h1 {
+                font-size: 1.8rem;
+            }
+            
+            body.fullscreen-mode .record-item {
+                grid-template-columns: 50px 1fr 100px;
+                padding: 10px 12px;
+            }
+            
+            .update-notification {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                transform: translateY(-100%);
+            }
+            
+            .update-notification.show {
+                transform: translateY(0);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .leaderboard-header, .record-item {
+                grid-template-columns: 50px 1fr 100px;
+                padding: 10px 12px;
+            }
+            
+            .record-rank {
+                font-size: 1.2rem;
+            }
+            
+            .player-name {
+                font-size: 1rem;
+            }
+            
+            .record-score {
+                font-size: 1.2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            body.fullscreen-mode .record-item {
+                grid-template-columns: 40px 1fr 80px;
+                padding: 8px 10px;
+            }
+            
+            body.fullscreen-mode .record-rank {
+                font-size: 1.1rem;
+            }
+            
+            body.fullscreen-mode .player-name {
+                font-size: 0.9rem;
+            }
+            
+            body.fullscreen-mode .record-score {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏆 Таблица рекордов</h1>
+            <p class="subtitle">Лучшие игроки и их достижения | Автообновление каждые <span id="currentTimerValue">10</span> сек</p>
+        </header>
+        
+        <div class="dashboard">
+            <div class="settings-panel">
+                <h2 class="panel-title">⚙️ Настройки обновления</h2>
+                
+                <div class="setting-group">
+                    <label class="setting-label">Интервал автообновления (секунды):</label>
+                    <div class="timer-controls">
+                        <button class="btn-timer" onclick="changeTimer(-5)">-5</button>
+                        <button class="btn-timer" onclick="changeTimer(-1)">-1</button>
+                        <div class="timer-value" id="timerValue">10</div>
+                        <button class="btn-timer" onclick="changeTimer(1)">+1</button>
+                        <button class="btn-timer" onclick="changeTimer(5)">+5</button>
+                    </div>
+                    <div class="timer-description">
+                        Минимально: 5 сек, Максимально: 60 сек
+                    </div>
+                </div>
+                
+                <div class="setting-group">
+                    <div class="auto-refresh-toggle">
+                        <span class="setting-label">Автоматическое обновление:</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoRefreshToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="timer-status">
+                        <div class="status-indicator" id="statusIndicator"></div>
+                        <span id="statusText">Автообновление активно</span>
+                    </div>
+                </div>
+                
+                <div class="setting-group">
+                    <label class="setting-label">Последнее обновление:</label>
+                    <div id="lastUpdateTime">—</div>
+                </div>
+                
+                <div class="setting-group">
+                    <label class="setting-label">Статистика изменений:</label>
+                    <div id="changeStats">Нет изменений</div>
+                </div>
+            </div>
+            
+            <div class="stats-panel">
+                <h2 class="panel-title">📊 Статистика</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalPlayers">0</div>
+                        <div class="stat-label">Всего игроков</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalRecords">0</div>
+                        <div class="stat-label">Всего записей</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="topScore">0</div>
+                        <div class="stat-label">Лучший счет</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="avgScore">0</div>
+                        <div class="stat-label">Средний счет</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="leaderboard">
+            <div class="leaderboard-header">
+                <div class="rank-header">Место</div>
+                <div class="player-header">Игрок</div>
+                <div class="score-header">Счёт</div>
+            </div>
+            
+            <div id="recordsContainer">
+                <div class="loading">Загрузка рекордов...</div>
+            </div>
+            
+            <div class="fullscreen-controls">
+                <button class="fullscreen-btn" onclick="toggleFullscreen()">
+                    <span id="fullscreenIcon">⬜</span>
+                    <span id="fullscreenText">Обычный режим</span>
+                </button>
+                <button class="fullscreen-btn" onclick="manualRefresh()">
+                    <span>🔄</span>
+                    <span>Обновить</span>
+                </button>
+                <button class="fullscreen-btn" onclick="toggleAutoRefresh()">
+                    <span id="autoRefreshIcon">✅</span>
+                    <span id="autoRefreshText">Авто: Вкл</span>
+                </button>
+                <div class="fullscreen-info">
+                    Интервал: <span id="fullscreenTimerValue">10</span> сек | 
+                    Игроков: <span id="fullscreenTotalPlayers">0</span> |
+                    Обновлено: <span id="fullscreenLastUpdate">—</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn btn-refresh" onclick="manualRefresh()">
+                <span>🔄</span>
+                <span id="refreshBtnText">Обновить сейчас</span>
+                <span id="refreshBadge" class="update-badge" style="display: none;">0</span>
+            </button>
+            <button class="btn" onclick="resetSettings()">
+                <span>🔄</span>
+                <span>Сбросить настройки</span>
+            </button>
+            <button class="btn btn-fullscreen" onclick="toggleFullscreen()">
+                <span id="fullscreenToggleIcon">⛶</span>
+                <span id="fullscreenToggleText">Полный экран</span>
+            </button>
+        </div>
+        
+        <div class="footer">
+            Таблица обновляется автоматически. Данные в реальном времени из Firebase
+        </div>
+        
+        <div class="update-notification" id="updateNotification">
+            <span>🔄</span>
+            <span id="notificationText">Данные обновлены</span>
+            <span class="update-badge" id="notificationBadge">0</span>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <script>
+        // Firebase конфигурация
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
+            authDomain: "kcalls.firebaseapp.com",
+            databaseURL: "https://kcalls-default-rtdb.firebaseio.com",
+            projectId: "kcalls",
+            storageBucket: "kcalls.firebasestorage.app",
+            messagingSenderId: "990117089104",
+            appId: "1:990117089104:web:278a42c037e975ebb76655",
+            measurementId: "G-TK6GVEX9G5"
+        };
+
+        // Инициализация Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Глобальные переменные
+        let autoRefreshInterval = null;
+        let refreshInterval = 10000; // 10 секунд по умолчанию
+        let isAutoRefreshEnabled = true;
+        let lastUpdateTime = null;
+        let currentRecords = [];
+        let isFullscreenMode = false;
+        let previousDataHash = '';
+        let updateCounter = 0;
+
+        // Хэширование данных для сравнения
+        function getDataHash(data) {
+            if (!data) return 'empty';
+            return btoa(encodeURIComponent(JSON.stringify(data)));
+        }
+
+        // Показать уведомление об обновлении
+        function showUpdateNotification(changeCount) {
+            const notification = document.getElementById('updateNotification');
+            const notificationText = document.getElementById('notificationText');
+            const notificationBadge = document.getElementById('notificationBadge');
+            const refreshBadge = document.getElementById('refreshBadge');
+            
+            if (changeCount > 0) {
+                notificationText.textContent = `Обновлено ${changeCount} записей`;
+                notificationBadge.textContent = changeCount;
+                refreshBadge.textContent = changeCount;
+                refreshBadge.style.display = 'inline-block';
+                
+                // Показываем уведомление
+                notification.classList.add('show');
+                notification.classList.remove('fade-out');
+                
+                // Автоматическое скрытие через 3 секунды
+                setTimeout(() => {
+                    notification.classList.add('fade-out');
+                    setTimeout(() => {
+                        notification.classList.remove('show');
+                        notification.classList.remove('fade-out');
+                    }, 500);
+                }, 3000);
+            } else {
+                refreshBadge.style.display = 'none';
+            }
+        }
+
+        // Скрыть значок обновления на кнопке
+        function hideRefreshBadge() {
+            const refreshBadge = document.getElementById('refreshBadge');
+            refreshBadge.style.display = 'none';
+        }
+
+        // Инициализация настроек из localStorage
+        function initializeSettings() {
+            const savedInterval = localStorage.getItem('refreshInterval');
+            const savedAutoRefresh = localStorage.getItem('autoRefreshEnabled');
+            const savedFullscreen = localStorage.getItem('fullscreenMode');
+            
+            if (savedInterval) {
+                refreshInterval = parseInt(savedInterval);
+            }
+            
+            if (savedAutoRefresh !== null) {
+                isAutoRefreshEnabled = savedAutoRefresh === 'true';
+            }
+            
+            if (savedFullscreen !== null) {
+                isFullscreenMode = savedFullscreen === 'true';
+                if (isFullscreenMode) {
+                    document.body.classList.add('fullscreen-mode');
+                    updateFullscreenControls();
+                }
+            }
+            
+            updateTimerDisplay();
+            updateAutoRefreshToggle();
+            setupAutoRefresh();
+        }
+
+        // Обновление отображения таймера
+        function updateTimerDisplay() {
+            const seconds = refreshInterval / 1000;
+            document.getElementById('timerValue').textContent = seconds;
+            document.getElementById('currentTimerValue').textContent = seconds;
+            document.getElementById('fullscreenTimerValue').textContent = seconds;
+        }
+
+        // Обновление переключателя автообновления
+        function updateAutoRefreshToggle() {
+            const toggle = document.getElementById('autoRefreshToggle');
+            toggle.checked = isAutoRefreshEnabled;
+            updateStatusIndicator();
+            updateFullscreenControls();
+        }
+
+        // Обновление индикатора статуса
+        function updateStatusIndicator() {
+            const indicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            
+            if (isAutoRefreshEnabled) {
+                indicator.classList.remove('paused');
+                statusText.textContent = `Автообновление активно (каждые ${refreshInterval/1000} сек)`;
+            } else {
+                indicator.classList.add('paused');
+                statusText.textContent = 'Автообновление приостановлено';
+            }
+        }
+
+        // Обновление элементов управления в полноэкранном режиме
+        function updateFullscreenControls() {
+            const fullscreenIcon = document.getElementById('fullscreenIcon');
+            const fullscreenText = document.getElementById('fullscreenText');
+            const autoRefreshIcon = document.getElementById('autoRefreshIcon');
+            const autoRefreshText = document.getElementById('autoRefreshText');
+            const fullscreenToggleIcon = document.getElementById('fullscreenToggleIcon');
+            const fullscreenToggleText = document.getElementById('fullscreenToggleText');
+            
+            if (isFullscreenMode) {
+                fullscreenIcon.textContent = '⛶';
+                fullscreenText.textContent = 'Обычный режим';
+                fullscreenToggleIcon.textContent = '⛶';
+                fullscreenToggleText.textContent = 'Обычный режим';
+            } else {
+                fullscreenIcon.textContent = '⬜';
+                fullscreenText.textContent = 'Полный экран';
+                fullscreenToggleIcon.textContent = '⛶';
+                fullscreenToggleText.textContent = 'Полный экран';
+            }
+            
+            autoRefreshIcon.textContent = isAutoRefreshEnabled ? '✅' : '❌';
+            autoRefreshText.textContent = isAutoRefreshEnabled ? 'Авто: Вкл' : 'Авто: Выкл';
+        }
+
+        // Переключение полноэкранного режима
+        function toggleFullscreen() {
+            isFullscreenMode = !isFullscreenMode;
+            
+            if (isFullscreenMode) {
+                document.body.classList.add('fullscreen-mode');
+                document.body.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                document.body.classList.remove('fullscreen-mode');
+            }
+            
+            localStorage.setItem('fullscreenMode', isFullscreenMode.toString());
+            updateFullscreenControls();
+        }
+
+        // Изменение интервала таймера
+        function changeTimer(seconds) {
+            const newInterval = refreshInterval + (seconds * 1000);
+            
+            // Ограничиваем минимальное и максимальное значение
+            if (newInterval < 5000) {
+                refreshInterval = 5000; // 5 секунд минимум
+            } else if (newInterval > 60000) {
+                refreshInterval = 60000; // 60 секунд максимум
+            } else {
+                refreshInterval = newInterval;
+            }
+            
+            localStorage.setItem('refreshInterval', refreshInterval.toString());
+            updateTimerDisplay();
+            updateStatusIndicator();
+            updateFullscreenControls();
+            
+            if (isAutoRefreshEnabled) {
+                restartAutoRefresh();
+            }
+        }
+
+        // Настройка автообновления
+        function setupAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            if (isAutoRefreshEnabled) {
+                autoRefreshInterval = setInterval(() => {
+                    loadRecords();
+                }, refreshInterval);
+            }
+            
+            updateStatusIndicator();
+            updateFullscreenControls();
+        }
+
+        // Перезапуск автообновления
+        function restartAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            if (isAutoRefreshEnabled) {
+                autoRefreshInterval = setInterval(() => {
+                    loadRecords();
+                }, refreshInterval);
+            }
+        }
+
+        // Переключение автообновления
+        function toggleAutoRefresh() {
+            isAutoRefreshEnabled = !isAutoRefreshEnabled;
+            localStorage.setItem('autoRefreshEnabled', isAutoRefreshEnabled.toString());
+            setupAutoRefresh();
+        }
+
+        // Ручное обновление
+        function manualRefresh() {
+            loadRecords();
+            // Визуальная обратная связь
+            const refreshBtn = document.querySelector('.btn-refresh');
+            const originalText = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '<span>🔄</span><span>Обновление...</span>';
+            
+            setTimeout(() => {
+                refreshBtn.innerHTML = originalText;
+            }, 1000);
+        }
+
+        // Сброс настроек
+        function resetSettings() {
+            if (confirm('Сбросить все настройки к значениям по умолчанию?')) {
+                refreshInterval = 10000;
+                isAutoRefreshEnabled = true;
+                isFullscreenMode = false;
+                
+                localStorage.removeItem('refreshInterval');
+                localStorage.removeItem('autoRefreshEnabled');
+                localStorage.removeItem('fullscreenMode');
+                
+                document.body.classList.remove('fullscreen-mode');
+                updateTimerDisplay();
+                updateAutoRefreshToggle();
+                updateFullscreenControls();
+                setupAutoRefresh();
+            }
+        }
+
+        // Обновление времени последнего обновления
+        function updateLastUpdateTime() {
+            const now = new Date();
+            lastUpdateTime = now;
+            
+            const timeString = now.toLocaleTimeString('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            document.getElementById('lastUpdateTime').textContent = timeString;
+            document.getElementById('fullscreenLastUpdate').textContent = timeString;
+        }
+
+        // Обновление статистики в полноэкранном режиме
+        function updateFullscreenStats(records) {
+            if (!records || records.length === 0) {
+                document.getElementById('fullscreenTotalPlayers').textContent = '0';
+                return;
+            }
+            
+            const uniquePlayers = new Set(records.map(record => record.player || "Аноним"));
+            document.getElementById('fullscreenTotalPlayers').textContent = uniquePlayers.size;
+        }
+
+        // Загрузка рекордов
+        function loadRecords() {
+            const recordsContainer = document.getElementById('recordsContainer');
+            
+            database.ref('records').once('value')
+                .then((snapshot) => {
+                    const data = snapshot.val();
+                    const currentHash = getDataHash(data);
+                    
+                    // Проверяем, изменились ли данные
+                    if (currentHash !== previousDataHash) {
+                        updateCounter++;
+                        const changeCount = calculateChanges(data);
+                        displayRecords(data, changeCount);
+                        showUpdateNotification(changeCount);
+                        previousDataHash = currentHash;
+                    } else {
+                        // Данные не изменились, просто обновляем время
+                        updateLastUpdateTime();
+                    }
+                })
+                .catch((error) => {
+                    console.error("Ошибка загрузки данных:", error);
+                    recordsContainer.innerHTML = '<div class="error">Ошибка загрузки данных. Попробуйте позже.</div>';
+                });
+        }
+
+        // Расчет количества изменений
+        function calculateChanges(newData) {
+            if (!newData || !currentRecords.length) return 0;
+            
+            try {
+                const recordsString = newData.trim();
+                const recordParts = recordsString.split('!').filter(part => part.trim() !== '');
+                
+                if (recordParts.length === 0) return 0;
+                
+                const newRecords = recordParts.map(part => {
+                    try {
+                        const cleanedPart = part.trim();
+                        return JSON.parse(cleanedPart);
+                    } catch (e) {
+                        return null;
+                    }
+                }).filter(record => record !== null);
+                
+                // Создаем хэш-карту текущих записей для быстрого сравнения
+                const currentMap = new Map();
+                currentRecords.forEach(record => {
+                    const key = `${record.player}_${record.value}`;
+                    currentMap.set(key, record);
+                });
+                
+                // Подсчитываем новые или измененные записи
+                let changes = 0;
+                newRecords.forEach(record => {
+                    const key = `${record.player}_${record.value}`;
+                    if (!currentMap.has(key)) {
+                        changes++;
+                    }
+                });
+                
+                // Обновляем статистику изменений
+                document.getElementById('changeStats').textContent = 
+                    changes > 0 ? `Изменений: ${changes}` : 'Нет изменений';
+                
+                return changes;
+            } catch (error) {
+                console.error("Ошибка расчета изменений:", error);
+                return 0;
+            }
+        }
+
+        // Обновление статистики
+        function updateStatistics(records) {
+            if (!records || records.length === 0) {
+                document.getElementById('totalPlayers').textContent = '0';
+                document.getElementById('totalRecords').textContent = '0';
+                document.getElementById('topScore').textContent = '0';
+                document.getElementById('avgScore').textContent = '0';
+                return;
+            }
+
+            // Подсчет уникальных игроков
+            const uniquePlayers = new Set(records.map(record => record.player || "Аноним"));
+            document.getElementById('totalPlayers').textContent = uniquePlayers.size;
+            
+            // Общее количество записей
+            document.getElementById('totalRecords').textContent = records.length;
+            
+            // Лучший счет
+            const topScore = Math.max(...records.map(record => parseInt(record.value || "0", 10)));
+            document.getElementById('topScore').textContent = topScore.toLocaleString('ru-RU');
+            
+            // Средний счет
+            const totalScore = records.reduce((sum, record) => sum + parseInt(record.value || "0", 10), 0);
+            const avgScore = Math.round(totalScore / records.length);
+            document.getElementById('avgScore').textContent = avgScore.toLocaleString('ru-RU');
+            
+            // Обновление статистики для полноэкранного режима
+            updateFullscreenStats(records);
+        }
+
+        // Отображение рекордов с анимацией изменений
+        function displayRecords(data, changeCount = 0) {
+            const recordsContainer = document.getElementById('recordsContainer');
+            
+            if (!data) {
+                recordsContainer.innerHTML = '<div class="empty">Пока нет рекордов. Будьте первым!</div>';
+                updateStatistics([]);
+                updateLastUpdateTime();
+                return;
+            }
+
+            try {
+                // Разделяем данные по разделителю "!"
+                const recordsString = data.trim();
+                const recordParts = recordsString.split('!').filter(part => part.trim() !== '');
+                
+                if (recordParts.length === 0) {
+                    recordsContainer.innerHTML = '<div class="empty">Пока нет рекордов. Будьте первым!</div>';
+                    updateStatistics([]);
+                    updateLastUpdateTime();
+                    return;
+                }
+
+                // Парсим каждый JSON объект
+                const records = recordParts.map(part => {
+                    try {
+                        const cleanedPart = part.trim();
+                        return JSON.parse(cleanedPart);
+                    } catch (e) {
+                        console.error("Ошибка парсинга записи:", part, e);
+                        return null;
+                    }
+                }).filter(record => record !== null);
+
+                // Сохраняем предыдущие записи для сравнения
+                const previousRecords = [...currentRecords];
+                currentRecords = records;
+
+                // Сортируем по значению счета (по убыванию)
+                records.sort((a, b) => {
+                    const scoreA = parseInt(a.value || "0", 10);
+                    const scoreB = parseInt(b.value || "0", 10);
+                    return scoreB - scoreA;
+                });
+
+                // Отображаем записи
+                if (records.length === 0) {
+                    recordsContainer.innerHTML = '<div class="empty">Пока нет рекордов. Будьте первым!</div>';
+                    updateStatistics([]);
+                    updateLastUpdateTime();
+                    return;
+                }
+
+                let recordsHTML = '<ul class="records-list">';
+                
+                records.forEach((record, index) => {
+                    const rank = index + 1;
+                    const playerName = record.player || "Аноним";
+                    const score = record.value || "0";
+                    
+                    // Форматируем счет
+                    const formattedScore = parseInt(score, 10).toLocaleString('ru-RU');
+                    
+                    // Определяем класс для топ-3
+                    let rankClass = "";
+                    if (rank === 1) rankClass = "top-1";
+                    else if (rank === 2) rankClass = "top-2";
+                    else if (rank === 3) rankClass = "top-3";
+                    
+                    // Проверяем, изменилась ли эта запись
+                    const isUpdated = checkIfRecordChanged(record, previousRecords, rank);
+                    
+                    recordsHTML += `
+                        <li class="record-item ${rankClass} ${isUpdated ? 'updated' : ''}">
+                            <div class="record-rank">${rank}</div>
+                            <div class="player-name">${playerName}</div>
+                            <div class="record-score ${isUpdated ? 'changed' : ''}">${formattedScore}</div>
+                        </li>
+                    `;
+                });
+                
+                recordsHTML += '</ul>';
+                recordsContainer.innerHTML = recordsHTML;
+                
+                // Обновляем статистику
+                updateStatistics(records);
+                updateLastUpdateTime();
+                
+            } catch (error) {
+                console.error("Ошибка обработки данных:", error);
+                recordsContainer.innerHTML = '<div class="error">Ошибка обработки данных. Проверьте формат данных.</div>';
+                updateStatistics([]);
+                updateLastUpdateTime();
+            }
+        }
+
+        // Проверка, изменилась ли конкретная запись
+        function checkIfRecordChanged(newRecord, previousRecords, newRank) {
+            if (!previousRecords || previousRecords.length === 0) return false;
+            
+            // Ищем запись с таким же игроком в предыдущих данных
+            const previousRecord = previousRecords.find(record => 
+                record.player === newRecord.player
+            );
+            
+            if (!previousRecord) {
+                // Это новая запись
+                return true;
+            }
+            
+            // Проверяем, изменился ли счет
+            if (parseInt(newRecord.value || "0", 10) !== parseInt(previousRecord.value || "0", 10)) {
+                return true;
+            }
+            
+            // Проверяем, изменилось ли место в рейтинге
+            const previousRank = previousRecords.findIndex(record => 
+                record.player === newRecord.player
+            ) + 1;
+            
+            if (previousRank !== newRank) {
+                return true;
+            }
+            
+            return false;
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Инициализация настроек
+            initializeSettings();
+            
+            // Загрузка данных при старте
+            loadRecords();
+            
+            // Подписка на изменения в Firebase (только реальные изменения)
+            database.ref('records').on('value', (snapshot) => {
+                const data = snapshot.val();
+                const currentHash = getDataHash(data);
+                
+                if (currentHash !== previousDataHash) {
+                    updateCounter++;
+                    const changeCount = calculateChanges(data);
+                    displayRecords(data, changeCount);
+                    showUpdateNotification(changeCount);
+                    previousDataHash = currentHash;
+                }
+            });
+            
+            // Назначение обработчиков событий
+            document.getElementById('autoRefreshToggle').addEventListener('change', toggleAutoRefresh);
+            
+            // Обработка клавиши Escape для выхода из полноэкранного режима
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && isFullscreenMode) {
+                    toggleFullscreen();
+                }
+            });
+            
+            // Скрываем значок обновления при клике на кнопку обновления
+            document.querySelector('.btn-refresh').addEventListener('click', hideRefreshBadge);
+        });
+    </script>
+</body>
+</html>
