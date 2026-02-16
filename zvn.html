@@ -315,12 +315,6 @@
             width: 0%;
             transition: width 0.1s;
         }
-
-        .signal-queue-indicator {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-        }
     </style>
 </head>
 <body>
@@ -384,14 +378,15 @@
                     00:00
                 </div>
 
-                <div class="signal-queue-indicator" id="signalQueueIndicator"></div>
-
                 <div>
                     <button onclick="toggleMicrophone()" class="control-btn" id="micBtn">
                         🎤
                     </button>
                     <button onclick="endCall()" class="control-btn end-call">
                         📞
+                    </button>
+                    <button onclick="forceReconnect()" class="control-btn" style="background: #ffc107;" title="Принудительное переподключение">
+                        🔄
                     </button>
                 </div>
             </div>
@@ -435,18 +430,14 @@
         let timerInterval = null;
         let callStartTime = null;
         let remoteUser = null;
-        let signalQueue = []; // Очередь сигналов
-        let isProcessingSignal = false;
-        let peerState = 'idle'; // idle, creating, ready, destroyed
         let connectionAttempts = 0;
-        let peerCreationTimeout = null;
+        let isPeerInitialized = false;
 
         // Элементы DOM
         const userNameInput = document.getElementById('userNameInput');
         const joinBtn = document.getElementById('joinBtn');
         const debugInfo = document.getElementById('debugInfo');
         const debugContent = document.getElementById('debugContent');
-        const signalQueueIndicator = document.getElementById('signalQueueIndicator');
 
         userNameInput.addEventListener('input', (e) => {
             currentUser.name = e.target.value || 'Гость';
@@ -461,14 +452,6 @@
             const timestamp = new Date().toLocaleTimeString();
             debugContent.innerHTML = `[${timestamp}] ${message}<br>` + debugContent.innerHTML;
             console.log(`[DEBUG] ${message}`);
-        }
-
-        function updateQueueIndicator() {
-            if (signalQueue.length > 0) {
-                signalQueueIndicator.textContent = `⏳ Ожидание сигналов: ${signalQueue.length}`;
-            } else {
-                signalQueueIndicator.textContent = '';
-            }
         }
 
         function generateUserId() {
@@ -542,19 +525,16 @@
 
                 roomRef.child('users/' + currentUser.id).onDisconnect().remove();
 
-                // Слушаем изменения
+                // Слушаем изменения пользователей
                 roomRef.child('users').on('value', handleUsersChange);
 
-                // Очищаем старые сигналы
-                await database.ref('calls/' + currentRoom).remove();
-                
-                // Слушаем новые сигналы
+                // Слушаем сигналы
                 callRef = database.ref('calls/' + currentRoom);
                 callRef.on('child_added', (snapshot) => {
                     const signal = snapshot.val();
                     if (signal && signal.from !== currentUser.id) {
                         addDebug(`Получен сигнал от ${signal.from}`);
-                        addToSignalQueue(signal, snapshot.key);
+                        handleIncomingSignal(signal, snapshot.key);
                     }
                 });
 
@@ -565,74 +545,6 @@
                 addDebug(`Ошибка подключения: ${error.message}`);
                 resetToSetup();
             }
-        }
-
-        function addToSignalQueue(signal, signalId) {
-            signalQueue.push({ signal, signalId });
-            updateQueueIndicator();
-            processSignalQueue();
-        }
-
-        async function processSignalQueue() {
-            if (isProcessingSignal || signalQueue.length === 0) return;
-            
-            isProcessingSignal = true;
-            
-            while (signalQueue.length > 0) {
-                const { signal, signalId } = signalQueue.shift();
-                updateQueueIndicator();
-                
-                addDebug(`Обработка сигнала из очереди. Состояние peer: ${peerState}`);
-                
-                // Если peer уничтожен, игнорируем сигнал
-                if (peerState === 'destroyed') {
-                    addDebug('Peer уничтожен, пропускаем сигнал');
-                    continue;
-                }
-                
-                // Если peer еще не создан, ждем его создания
-                if (peerState === 'idle' && remoteUser) {
-                    addDebug('Peer не создан, создаем...');
-                    await createPeerConnection();
-                }
-                
-                // Ждем готовности peer
-                let attempts = 0;
-                while (peerState !== 'ready' && attempts < 50) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    attempts++;
-                }
-                
-                if (peerState === 'ready' && peer) {
-                    try {
-                        peer.signal(signal.data);
-                        addDebug('Сигнал успешно обработан');
-                        
-                        // Удаляем обработанный сигнал
-                        if (callRef) {
-                            await callRef.child(signalId).remove();
-                        }
-                    } catch (e) {
-                        addDebug(`Ошибка обработки сигнала: ${e.message}`);
-                        
-                        // Если ошибка из-за состояния peer, пробуем пересоздать
-                        if (e.message.includes('destroyed') || e.message.includes('closed')) {
-                            peerState = 'idle';
-                            peer = null;
-                            // Возвращаем сигнал в очередь
-                            signalQueue.unshift({ signal, signalId });
-                            updateQueueIndicator();
-                        }
-                    }
-                } else {
-                    addDebug(`Peer не готов (состояние: ${peerState}), возвращаем сигнал в очередь`);
-                    signalQueue.unshift({ signal, signalId });
-                    updateQueueIndicator();
-                    break;
-                }
-            }
-            
-            isProcessingSignal = false;
         }
 
         function setupAudioVisualization() {
@@ -688,8 +600,8 @@
                 
                 startTimer();
                 
-                // Если peer еще не создан, создаем его
-                if (peerState === 'idle') {
+                // Создаем peer соединение
+                if (!isPeerInitialized) {
                     createPeerConnection();
                 }
             } else {
@@ -702,81 +614,68 @@
                 stopTimer();
                 
                 if (peer) {
-                    peerState = 'destroyed';
+                    isPeerInitialized = false;
                     peer.destroy();
                     peer = null;
                 }
             }
         }
 
-        async function createPeerConnection() {
-            if (peerState !== 'idle' || !remoteUser) return;
+        function createPeerConnection() {
+            if (!remoteUser) return;
             
-            peerState = 'creating';
-            addDebug(`Создание peer соединения`);
+            isPeerInitialized = true;
             
-            // Определяем инициатора на основе ID
+            // Определяем инициатора
             const isInitiator = currentUser.id < remoteUser.id;
-            addDebug(`Инициатор: ${isInitiator}`);
+            addDebug(`Создание peer (инициатор: ${isInitiator})`);
             
-            return new Promise((resolve) => {
-                try {
-                    peer = new SimplePeer({
-                        initiator: isInitiator,
-                        stream: localStream,
-                        trickle: true,
-                        config: {
-                            iceServers: [
-                                { urls: 'stun:stun.l.google.com:19302' },
-                                { urls: 'stun:stun1.l.google.com:19302' },
-                                { urls: 'stun:stun2.l.google.com:19302' },
-                                { urls: 'stun:stun3.l.google.com:19302' },
-                                { urls: 'stun:stun4.l.google.com:19302' }
-                            ]
-                        }
-                    });
+            try {
+                peer = new SimplePeer({
+                    initiator: isInitiator,
+                    stream: localStream,
+                    trickle: true,
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' },
+                            { urls: 'stun:stun2.l.google.com:19302' },
+                            { urls: 'stun:stun3.l.google.com:19302' },
+                            { urls: 'stun:stun4.l.google.com:19302' }
+                        ]
+                    }
+                });
 
-                    setupPeerEvents(peer, resolve);
-                    
-                } catch (error) {
-                    addDebug(`Ошибка создания peer: ${error.message}`);
-                    peerState = 'idle';
-                    resolve();
-                }
-            });
+                setupPeerEvents();
+                
+            } catch (error) {
+                addDebug(`Ошибка создания peer: ${error.message}`);
+                isPeerInitialized = false;
+            }
         }
 
-        function setupPeerEvents(peer, resolve) {
-            let signalSent = false;
+        function setupPeerEvents() {
+            if (!peer) return;
 
             peer.on('signal', (data) => {
-                if (!signalSent) {
-                    signalSent = true;
-                    addDebug('Отправка сигнала');
+                addDebug('Отправка сигнала');
+                
+                if (callRef && remoteUser) {
+                    const signalData = {
+                        from: currentUser.id,
+                        to: remoteUser.id,
+                        data: data,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    };
                     
-                    if (callRef && remoteUser) {
-                        const signalId = `${currentUser.id}-${Date.now()}`;
-                        callRef.child(signalId).set({
-                            from: currentUser.id,
-                            to: remoteUser.id,
-                            data: data,
-                            timestamp: firebase.database.ServerValue.TIMESTAMP
-                        }).then(() => {
-                            addDebug('Сигнал отправлен');
-                            // Удаляем сигнал через 10 секунд
-                            setTimeout(() => {
-                                callRef.child(signalId).remove();
-                            }, 10000);
-                        }).catch(e => {
-                            addDebug(`Ошибка отправки: ${e.message}`);
-                        });
-                    }
+                    callRef.push(signalData)
+                        .then(() => addDebug('Сигнал отправлен'))
+                        .catch(e => addDebug(`Ошибка отправки: ${e.message}`));
                 }
             });
 
             peer.on('connect', () => {
                 addDebug('✅ Peer соединение установлено!');
-                peerState = 'ready';
                 connectionAttempts = 0;
                 
                 document.getElementById('connectionStatus').className = 'connection-status status-connected';
@@ -785,8 +684,6 @@
                 document.getElementById('remoteAvatar').textContent = '🎤';
                 
                 showToast('Соединение установлено!');
-                
-                if (resolve) resolve();
             });
 
             peer.on('stream', (remoteStream) => {
@@ -796,35 +693,104 @@
 
             peer.on('error', (err) => {
                 addDebug(`Ошибка peer: ${err.message}`);
-                peerState = 'idle';
                 
                 if (err.message.includes('ICE') && connectionAttempts < 3) {
                     connectionAttempts++;
                     addDebug(`Попытка переподключения ${connectionAttempts}/3`);
                     
                     setTimeout(() => {
-                        if (remoteUser && peerState === 'idle') {
+                        if (remoteUser) {
+                            isPeerInitialized = false;
                             createPeerConnection();
                         }
                     }, 2000);
                 }
-                
-                if (resolve) resolve();
             });
 
             peer.on('close', () => {
                 addDebug('Peer соединение закрыто');
-                peerState = 'idle';
+                isPeerInitialized = false;
                 
                 if (remoteUser) {
                     addDebug('Попытка переподключения...');
                     setTimeout(() => {
-                        if (remoteUser && peerState === 'idle') {
+                        if (remoteUser && !isPeerInitialized) {
                             createPeerConnection();
                         }
                     }, 1000);
                 }
             });
+        }
+
+        function handleIncomingSignal(signal, signalId) {
+            addDebug(`Обработка сигнала. Peer существует: ${!!peer}`);
+            
+            if (peer) {
+                try {
+                    peer.signal(signal.data);
+                    addDebug('Сигнал обработан');
+                    
+                    // Удаляем обработанный сигнал
+                    if (callRef) {
+                        callRef.child(signalId).remove();
+                    }
+                } catch (e) {
+                    addDebug(`Ошибка обработки сигнала: ${e.message}`);
+                    
+                    // Если peer в неправильном состоянии, пересоздаем его
+                    if (e.message.includes('destroyed') || e.message.includes('closed')) {
+                        isPeerInitialized = false;
+                        if (remoteUser) {
+                            createPeerConnection();
+                            // Пробуем снова через небольшую задержку
+                            setTimeout(() => {
+                                if (peer) {
+                                    try {
+                                        peer.signal(signal.data);
+                                    } catch (err) {
+                                        addDebug(`Повторная ошибка: ${err.message}`);
+                                    }
+                                }
+                            }, 500);
+                        }
+                    }
+                }
+            } else {
+                addDebug('Peer не существует, создаем...');
+                if (remoteUser && !isPeerInitialized) {
+                    createPeerConnection();
+                    
+                    // Пробуем применить сигнал после создания peer
+                    setTimeout(() => {
+                        if (peer) {
+                            try {
+                                peer.signal(signal.data);
+                                addDebug('Сигнал применен после создания peer');
+                            } catch (e) {
+                                addDebug(`Ошибка применения сигнала: ${e.message}`);
+                            }
+                        }
+                    }, 500);
+                }
+            }
+        }
+
+        function forceReconnect() {
+            addDebug('Принудительное переподключение');
+            
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+            
+            isPeerInitialized = false;
+            connectionAttempts = 0;
+            
+            if (remoteUser) {
+                createPeerConnection();
+            }
+            
+            showToast('Переподключение...');
         }
 
         function toggleMicrophone() {
@@ -882,7 +848,6 @@
             }
             
             if (peer) {
-                peerState = 'destroyed';
                 peer.destroy();
                 peer = null;
             }
@@ -898,10 +863,8 @@
             }
             
             stopTimer();
-            signalQueue = [];
-            updateQueueIndicator();
+            isPeerInitialized = false;
             connectionAttempts = 0;
-            peerState = 'idle';
             
             resetToSetup();
         }
