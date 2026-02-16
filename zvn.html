@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kcalls - Аудиозвонки</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <!-- SimplePeer для WebRTC -->
+    <script src="https://cdn.jsdelivr.net/npm/simple-peer@9.11.1/simplepeer.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-align: center;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .setup-section {
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .room-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .room-actions .btn {
+            width: auto;
+            flex: 1;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .room-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .room-id {
+            font-size: 18px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        .copy-btn:hover {
+            background: #5a6fd8;
+        }
+
+        .connection-status {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .status-waiting {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s;
+            z-index: 1000;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .audio-call-container {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: white;
+        }
+
+        .call-timer {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin: 20px 0;
+        }
+
+        .participant-name {
+            font-size: 20px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .mic-permission-request {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .mic-permission-request button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            cursor: pointer;
+            font-size: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            margin: 0 10px;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .control-btn.muted {
+            background: #ff4b4b;
+            color: white;
+        }
+
+        .control-btn.end-call {
+            background: #dc3545;
+            color: white;
+        }
+
+        .mic-visualization {
+            width: 200px;
+            height: 40px;
+            background: #f0f0f0;
+            border-radius: 20px;
+            margin: 20px auto;
+            overflow: hidden;
+        }
+
+        .mic-level {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #2196f3);
+            width: 0%;
+            transition: width 0.1s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎙️ Kcalls Audio</h1>
+        
+        <!-- Настройка звонка -->
+        <div id="setupSection" class="setup-section">
+            <div class="form-group">
+                <label>Ваше имя</label>
+                <input type="text" id="userNameInput" placeholder="Введите ваше имя" value="Гость">
+            </div>
+            
+            <h2>Присоединиться к звонку</h2>
+            <div class="form-group">
+                <label>ID комнаты</label>
+                <input type="text" id="roomIdInput" placeholder="Введите ID комнаты">
+            </div>
+            
+            <div class="room-actions">
+                <button onclick="joinRoom()" class="btn" id="joinBtn">Присоединиться</button>
+                <button onclick="createRoom()" class="btn btn-secondary">Создать комнату</button>
+            </div>
+
+            <div id="permissionRequest" class="mic-permission-request hidden">
+                <p>🔊 Для звонка нужен доступ к микрофону</p>
+                <button onclick="requestMicrophonePermission()">Разрешить микрофон</button>
+            </div>
+        </div>
+
+        <!-- Звонок -->
+        <div id="callSection" class="hidden">
+            <div class="room-info">
+                <div>
+                    <span class="room-id" id="currentRoomId"></span>
+                    <button onclick="copyRoomId()" class="copy-btn">📋 Копировать</button>
+                </div>
+                <div>
+                    <span id="userNameDisplay"></span>
+                </div>
+            </div>
+
+            <div class="connection-status status-waiting" id="connectionStatus">
+                <span class="loading"></span>
+                Ожидание подключения собеседника...
+            </div>
+
+            <div class="audio-call-container">
+                <div class="avatar" id="remoteAvatar">
+                    👤
+                </div>
+                
+                <div class="participant-name" id="remoteParticipantName">
+                    Ожидание собеседника...
+                </div>
+
+                <div class="mic-visualization">
+                    <div class="mic-level" id="micLevel"></div>
+                </div>
+
+                <div class="call-timer" id="callTimer">
+                    00:00
+                </div>
+
+                <div>
+                    <button onclick="toggleMicrophone()" class="control-btn" id="micBtn">
+                        🎤
+                    </button>
+                    <button onclick="endCall()" class="control-btn end-call">
+                        📞
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
+            authDomain: "kcalls.firebaseapp.com",
+            databaseURL: "https://kcalls-default-rtdb.firebaseio.com",
+            projectId: "kcalls",
+            storageBucket: "kcalls.firebasestorage.app",
+            messagingSenderId: "990117089104",
+            appId: "1:990117089104:web:278a42c037e975ebb76655",
+            measurementId: "G-TK6GVEX9G5"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Глобальные переменные
+        let localStream = null;
+        let peer = null;
+        let currentRoom = null;
+        let currentUser = {
+            id: generateUserId(),
+            name: 'Гость'
+        };
+        let isMicEnabled = true;
+        let roomRef = null;
+        let callRef = null;
+        let audioContext = null;
+        let analyser = null;
+        let microphone = null;
+        let timerInterval = null;
+        let callStartTime = null;
+
+        // Элементы DOM
+        const userNameInput = document.getElementById('userNameInput');
+        const joinBtn = document.getElementById('joinBtn');
+        const permissionRequest = document.getElementById('permissionRequest');
+
+        // Устанавливаем имя пользователя
+        userNameInput.addEventListener('input', (e) => {
+            currentUser.name = e.target.value || 'Гость';
+        });
+
+        // Проверяем поддержку браузера
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showToast('Ваш браузер не поддерживает аудиозвонки');
+            joinBtn.disabled = true;
+        }
+
+        // Функции управления звонками
+        function generateUserId() {
+            return 'user_' + Math.random().toString(36).substring(2, 15);
+        }
+
+        function generateRoomId() {
+            return Math.random().toString(36).substring(2, 8) + 
+                   Math.random().toString(36).substring(2, 8);
+        }
+
+        async function createRoom() {
+            const roomId = generateRoomId();
+            document.getElementById('roomIdInput').value = roomId;
+            await joinRoom();
+        }
+
+        async function requestMicrophonePermission() {
+            try {
+                showToast('Запрашиваем доступ к микрофону...');
+                
+                // Явно запрашиваем только аудио
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: true,
+                    video: false  // Видео отключено
+                });
+
+                // Скрываем запрос разрешения
+                permissionRequest.classList.add('hidden');
+                
+                // Настраиваем визуализацию звука
+                setupAudioVisualization();
+                
+                showToast('Доступ к микрофону получен');
+                
+                // Продолжаем подключение к комнате
+                await connectToRoom();
+                
+            } catch (error) {
+                console.error('Microphone error:', error);
+                
+                if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                    showToast('Доступ к микрофону запрещен. Пожалуйста, разрешите доступ в настройках браузера');
+                    permissionRequest.classList.remove('hidden');
+                } else if (error.name === 'NotFoundError') {
+                    showToast('Микрофон не найден. Подключите микрофон и попробуйте снова');
+                } else {
+                    showToast('Ошибка доступа к микрофону: ' + error.message);
+                }
+                
+                joinBtn.disabled = false;
+            }
+        }
+
+        async function joinRoom() {
+            const roomId = document.getElementById('roomIdInput').value.trim();
+            
+            if (!roomId) {
+                showToast('Введите ID комнаты');
+                return;
+            }
+
+            currentRoom = roomId;
+            joinBtn.disabled = true;
+            
+            // Запрашиваем разрешение на микрофон
+            await requestMicrophonePermission();
+        }
+
+        async function connectToRoom() {
+            try {
+                document.getElementById('currentRoomId').textContent = currentRoom;
+                document.getElementById('userNameDisplay').textContent = currentUser.name;
+                
+                // Переключаем интерфейс
+                document.getElementById('setupSection').classList.add('hidden');
+                document.getElementById('callSection').classList.remove('hidden');
+
+                // Создаем запись в базе данных
+                roomRef = database.ref('rooms/' + currentRoom);
+                
+                // Проверяем, есть ли уже пользователи в комнате
+                const snapshot = await roomRef.child('users').once('value');
+                const users = snapshot.val() || {};
+                
+                // Добавляем себя в комнату
+                await roomRef.child('users/' + currentUser.id).set({
+                    name: currentUser.name,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                // Устанавливаем обработчик отключения
+                roomRef.child('users/' + currentUser.id).onDisconnect().remove();
+
+                // Слушаем изменения в комнате
+                roomRef.child('users').on('usersChanged', handleUsersChange);
+
+                // Слушаем сигналы WebRTC
+                callRef = database.ref('calls/' + currentRoom);
+                callRef.on('child_added', handleSignal);
+
+                showToast('Подключение к комнате...');
+
+            } catch (error) {
+                console.error('Connection error:', error);
+                showToast('Ошибка подключения: ' + error.message);
+                resetToSetup();
+            }
+        }
+
+        function setupAudioVisualization() {
+            if (localStream && !audioContext) {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    microphone = audioContext.createMediaStreamSource(localStream);
+                    microphone.connect(analyser);
+                    
+                    analyser.fftSize = 256;
+                    const bufferLength = analyser.frequencyBinCount;
+                    const dataArray = new Uint8Array(bufferLength);
+                    
+                    // Обновляем визуализацию каждые 100ms
+                    setInterval(() => {
+                        if (analyser) {
+                            analyser.getByteFrequencyData(dataArray);
+                            let average = dataArray.reduce((a, b) => a + b) / bufferLength;
+                            let level = (average / 128) * 100; // Нормализуем до процентов
+                            
+                            document.getElementById('micLevel').style.width = Math.min(level, 100) + '%';
+                        }
+                    }, 100);
+                } catch (e) {
+                    console.error('Audio visualization error:', e);
+                }
+            }
+        }
+
+        function handleUsersChange(snapshot) {
+            const users = snapshot.val();
+            
+            if (!users) return;
+            
+            const userIds = Object.keys(users);
+            const otherUser = userIds.find(uid => uid !== currentUser.id);
+            
+            // Обновляем статус подключения
+            const statusDiv = document.getElementById('connectionStatus');
+            const remoteName = document.getElementById('remoteParticipantName');
+            const remoteAvatar = document.getElementById('remoteAvatar');
+            
+            if (otherUser) {
+                statusDiv.className = 'connection-status status-connected';
+                statusDiv.innerHTML = '✅ Собеседник подключен';
+                remoteName.textContent = users[otherUser].name || 'Собеседник';
+                remoteAvatar.textContent = '👤';
+                
+                // Запускаем таймер
+                startTimer();
+                
+                // Если есть другой пользователь и нет peer соединения, инициируем звонок
+                if (otherUser && !peer) {
+                    initiateCall(otherUser);
+                }
+            } else {
+                statusDiv.className = 'connection-status status-waiting';
+                statusDiv.innerHTML = '<span class="loading"></span> Ожидание подключения собеседника...';
+                remoteName.textContent = 'Ожидание собеседника...';
+                remoteAvatar.textContent = '👤';
+                
+                // Сбрасываем таймер
+                stopTimer();
+                
+                // Закрываем peer соединение, если нет собеседника
+                if (peer) {
+                    peer.destroy();
+                    peer = null;
+                }
+            }
+        }
+
+        function initiateCall(targetUserId) {
+            peer = new SimplePeer({
+                initiator: true,
+                stream: localStream,
+                trickle: false,
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' }
+                    ]
+                }
+            });
+
+            setupPeerEvents(peer, targetUserId);
+        }
+
+        function handleSignal(snapshot) {
+            const signal = snapshot.val();
+            
+            if (signal.from === currentUser.id) return; // Игнорируем свои сигналы
+            
+            if (!peer) {
+                peer = new SimplePeer({
+                    initiator: false,
+                    stream: localStream,
+                    trickle: false,
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' },
+                            { urls: 'stun:stun2.l.google.com:19302' }
+                        ]
+                    }
+                });
+
+                setupPeerEvents(peer, signal.from);
+            }
+            
+            if (signal.data) {
+                try {
+                    peer.signal(signal.data);
+                } catch (e) {
+                    console.error('Signal error:', e);
+                }
+            }
+        }
+
+        function setupPeerEvents(peer, targetUserId) {
+            peer.on('signal', (data) => {
+                // Отправляем сигнал через Firebase
+                if (callRef) {
+                    callRef.push({
+                        from: currentUser.id,
+                        to: targetUserId,
+                        data: data,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    }).catch(e => console.error('Signal send error:', e));
+                }
+            });
+
+            peer.on('stream', (remoteStream) => {
+                console.log('Remote stream received');
+                showToast('Собеседник подключился!');
+                
+                // Визуальный индикатор получения аудио
+                const remoteAvatar = document.getElementById('remoteAvatar');
+                remoteAvatar.textContent = '🎤';
+                setTimeout(() => {
+                    remoteAvatar.textContent = '👤';
+                }, 1000);
+            });
+
+            peer.on('error', (err) => {
+                console.error('Peer error:', err);
+                showToast('Ошибка соединения');
+            });
+
+            peer.on('close', () => {
+                console.log('Peer connection closed');
+                peer = null;
+            });
+        }
+
+        function toggleMicrophone() {
+            if (localStream) {
+                const audioTrack = localStream.getAudioTracks()[0];
+                if (audioTrack) {
+                    isMicEnabled = !isMicEnabled;
+                    audioTrack.enabled = isMicEnabled;
+                    
+                    const micBtn = document.getElementById('micBtn');
+                    if (isMicEnabled) {
+                        micBtn.classList.remove('muted');
+                        micBtn.innerHTML = '🎤';
+                    } else {
+                        micBtn.classList.add('muted');
+                        micBtn.innerHTML = '🔇';
+                    }
+                    
+                    showToast(isMicEnabled ? 'Микрофон включен' : 'Микрофон выключен');
+                }
+            }
+        }
+
+        function startTimer() {
+            callStartTime = Date.now();
+            timerInterval = setInterval(() => {
+                if (callStartTime) {
+                    const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+                    const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                    const seconds = (elapsed % 60).toString().padStart(2, '0');
+                    document.getElementById('callTimer').textContent = `${minutes}:${seconds}`;
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            document.getElementById('callTimer').textContent = '00:00';
+        }
+
+        function endCall() {
+            // Удаляем себя из комнаты
+            if (roomRef && currentUser.id) {
+                roomRef.child('users/' + currentUser.id).remove();
+            }
+            
+            // Удаляем слушатели
+            if (roomRef) {
+                roomRef.child('users').off();
+            }
+            
+            if (callRef) {
+                callRef.off();
+            }
+
+            // Закрываем peer соединение
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+
+            // Останавливаем локальный стрим
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    track.stop();
+                });
+                localStream = null;
+            }
+
+            // Останавливаем аудио контекст
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+
+            // Останавливаем таймер
+            stopTimer();
+
+            resetToSetup();
+        }
+
+        function resetToSetup() {
+            // Показываем настройки
+            document.getElementById('setupSection').classList.remove('hidden');
+            document.getElementById('callSection').classList.add('hidden');
+            document.getElementById('permissionRequest').classList.add('hidden');
+
+            // Сбрасываем переменные
+            currentRoom = null;
+            roomRef = null;
+            callRef = null;
+            joinBtn.disabled = false;
+
+            // Сбрасываем кнопку микрофона
+            const micBtn = document.getElementById('micBtn');
+            micBtn.classList.remove('muted');
+            micBtn.innerHTML = '🎤';
+            isMicEnabled = true;
+            
+            // Сбрасываем визуализацию
+            document.getElementById('micLevel').style.width = '0%';
+        }
+
+        function copyRoomId() {
+            const roomId = document.getElementById('currentRoomId').textContent;
+            navigator.clipboard.writeText(roomId).then(() => {
+                showToast('ID комнаты скопирован!');
+            }).catch(() => {
+                showToast('Ошибка копирования');
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Обработка закрытия страницы
+        window.addEventListener('beforeunload', () => {
+            if (roomRef && currentUser.id) {
+                roomRef.child('users/' + currentUser.id).remove();
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+        });
+
+        // Обработка ошибок
+        window.addEventListener('error', (e) => {
+            console.error('Global error:', e.error);
+        });
+    </script>
+</body>
+</html>
