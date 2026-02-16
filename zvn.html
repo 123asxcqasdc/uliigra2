@@ -88,7 +88,10 @@
         .avatar {
             font-size: 80px;
             margin: 20px;
-            animation: pulse 2s infinite;
+            transition: all 0.3s;
+        }
+        .avatar.speaking {
+            animation: pulse 1s infinite;
         }
         @keyframes pulse {
             0% { transform: scale(1); }
@@ -102,7 +105,22 @@
             justify-content: center;
         }
         audio {
-            display: none;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .volume-indicator {
+            width: 200px;
+            height: 20px;
+            background: #ddd;
+            border-radius: 10px;
+            margin: 10px auto;
+            overflow: hidden;
+        }
+        .volume-level {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4caf50, #2196f3);
+            transition: width 0.1s;
         }
     </style>
 </head>
@@ -136,10 +154,15 @@
             </div>
 
             <div class="avatar" id="remoteAvatar">👤</div>
-            <div style="font-size: 18px; margin-bottom: 20px;" id="remoteName">Ожидание...</div>
-            <div style="font-size: 24px; margin-bottom: 20px;" id="timer">00:00</div>
+            <div style="font-size: 18px; margin-bottom: 10px;" id="remoteName">Ожидание...</div>
+            
+            <div class="volume-indicator">
+                <div class="volume-level" id="remoteVolume"></div>
+            </div>
 
-            <audio id="remoteAudio" autoplay></audio>
+            <div style="font-size: 24px; margin: 20px 0;" id="timer">00:00</div>
+
+            <audio id="remoteAudio" autoplay controls style="width: 100%;"></audio>
 
             <div class="controls">
                 <button onclick="toggleMic()" id="micBtn">🎤 Выключить микрофон</button>
@@ -180,6 +203,8 @@
         let callStartTime = null;
         let roomRef = null;
         let callsRef = null;
+        let audioContext = null;
+        let analyser = null;
 
         // DOM элементы
         const setupDiv = document.getElementById('setup');
@@ -193,6 +218,7 @@
         const roomIdInput = document.getElementById('roomId');
         const micBtn = document.getElementById('micBtn');
         const remoteAudio = document.getElementById('remoteAudio');
+        const remoteVolume = document.getElementById('remoteVolume');
 
         userNameInput.addEventListener('input', (e) => {
             currentUser.name = e.target.value || 'Гость';
@@ -229,6 +255,9 @@
                     video: false 
                 });
                 log('✅ Микрофон получен');
+
+                // Настраиваем визуализацию звука
+                setupAudioVisualization();
 
                 currentRoom = roomId;
                 document.getElementById('currentRoom').textContent = roomId;
@@ -278,6 +307,31 @@
             }
         }
 
+        function setupAudioVisualization() {
+            if (!localStream) return;
+            
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                const source = audioContext.createMediaStreamSource(localStream);
+                source.connect(analyser);
+                
+                analyser.fftSize = 256;
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                
+                setInterval(() => {
+                    if (analyser) {
+                        analyser.getByteFrequencyData(dataArray);
+                        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                        const level = (average / 128) * 100;
+                        document.getElementById('micLevel').style.width = Math.min(level, 100) + '%';
+                    }
+                }, 100);
+            } catch (e) {
+                log(`Ошибка визуализации: ${e.message}`);
+            }
+        }
+
         function handleUsersChange(snapshot) {
             const users = snapshot.val();
             if (!users) return;
@@ -322,11 +376,9 @@
             log(`🔧 Создаем peer (инициатор: ${isInitiator})`);
 
             try {
-                // Принудительное использование TURN серверов
                 const iceServers = [
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:stun1.l.google.com:19302' },
-                    // TURN серверы (принудительно)
                     {
                         urls: 'turn:openrelay.metered.ca:80',
                         username: 'openrelayproject',
@@ -336,11 +388,6 @@
                         urls: 'turn:openrelay.metered.ca:443',
                         username: 'openrelayproject',
                         credential: 'openrelayproject'
-                    },
-                    {
-                        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                        username: 'openrelayproject',
-                        credential: 'openrelayproject'
                     }
                 ];
 
@@ -348,11 +395,10 @@
                     initiator: isInitiator,
                     stream: localStream,
                     trickle: true,
-                    config: { 
-                        iceServers,
-                        iceTransportPolicy: 'relay' // ПРИНУДИТЕЛЬНО ИСПОЛЬЗОВАТЬ TURN
-                    }
+                    config: { iceServers }
                 });
+
+                let streamReceived = false;
 
                 peer.on('signal', (data) => {
                     log('📤 Отправляем сигнал');
@@ -366,29 +412,54 @@
                     }
                 });
 
-                peer.on('connect', () => {
-                    log('✅ СОЕДИНЕНИЕ УСТАНОВЛЕНО!');
+                peer.on('stream', (remoteStream) => {
+                    log('🎵 Получен аудиопоток');
+                    streamReceived = true;
+                    
+                    // Подключаем аудиопоток
+                    remoteAudio.srcObject = remoteStream;
+                    remoteAudio.play().catch(e => log(`❌ Ошибка воспроизведения: ${e.message}`, true));
+                    
+                    // Визуализация громкости собеседника
+                    const remoteContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const remoteAnalyser = remoteContext.createAnalyser();
+                    const remoteSource = remoteContext.createMediaStreamSource(remoteStream);
+                    remoteSource.connect(remoteAnalyser);
+                    
+                    const dataArray = new Uint8Array(remoteAnalyser.frequencyBinCount);
+                    
+                    setInterval(() => {
+                        remoteAnalyser.getByteFrequencyData(dataArray);
+                        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                        const level = (average / 128) * 100;
+                        remoteVolume.style.width = Math.min(level, 100) + '%';
+                        
+                        if (level > 10) {
+                            remoteAvatar.classList.add('speaking');
+                        } else {
+                            remoteAvatar.classList.remove('speaking');
+                        }
+                    }, 100);
+                    
+                    // Если поток получен, значит соединение работает!
                     statusDiv.className = 'status connected';
                     statusDiv.textContent = '✅ Соединение установлено';
                     remoteAvatar.textContent = '🎤🎤';
                 });
 
-                peer.on('stream', (remoteStream) => {
-                    log('🎵 Получен аудиопоток');
-                    // Подключаем аудиопоток к элементу audio
-                    remoteAudio.srcObject = remoteStream;
-                    remoteAudio.play().catch(e => log(`❌ Ошибка воспроизведения: ${e.message}`, true));
+                peer.on('connect', () => {
+                    log('✅ Peer соединение установлено!');
+                    // Если поток еще не получен, но соединение есть
+                    if (!streamReceived) {
+                        statusDiv.className = 'status connected';
+                        statusDiv.textContent = '✅ Соединение установлено';
+                    }
                 });
 
                 peer.on('error', (err) => {
                     log(`❌ Ошибка peer: ${err.message}`, true);
                     statusDiv.className = 'status error';
                     statusDiv.textContent = '❌ Ошибка соединения';
-                    
-                    // Показываем детали ошибки
-                    if (err.message.includes('ICE')) {
-                        log('⚠️ Проблема с ICE. Проверьте сетевое подключение', true);
-                    }
                 });
 
                 peer.on('close', () => {
@@ -396,7 +467,6 @@
                     peer = null;
                 });
 
-                // Логируем ICE кандидаты для отладки
                 peer.on('iceStateChange', (state) => {
                     log(`🔌 ICE состояние: ${state}`);
                 });
@@ -455,7 +525,13 @@
                 timerInterval = null;
             }
             
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            
             remoteAudio.srcObject = null;
+            remoteVolume.style.width = '0%';
             
             setupDiv.classList.remove('hidden');
             callDiv.classList.add('hidden');
