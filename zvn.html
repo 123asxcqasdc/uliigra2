@@ -439,9 +439,13 @@
         let callStartTime = null;
         let remoteUser = null;
         let connectionAttempts = 0;
-        let pendingSignals = []; // Очередь ожидающих сигналов
-        let isPeerReady = false;
-        let isPeerCreating = false;
+        
+        // Очередь сигналов и состояние peer
+        let signalQueue = [];
+        let peerState = 'idle'; // idle, creating, ready, error
+        
+        // Для отладки
+        let processedSignals = new Set();
 
         // Элементы DOM
         const userNameInput = document.getElementById('userNameInput');
@@ -466,8 +470,8 @@
         }
 
         function updateSignalBadge() {
-            if (pendingSignals.length > 0) {
-                signalBadge.textContent = pendingSignals.length;
+            if (signalQueue.length > 0) {
+                signalBadge.textContent = signalQueue.length;
                 signalBadge.classList.remove('hidden');
             } else {
                 signalBadge.classList.add('hidden');
@@ -553,8 +557,11 @@
                 callRef.on('child_added', (snapshot) => {
                     const signal = snapshot.val();
                     if (signal && signal.from !== currentUser.id) {
-                        addDebug(`Получен сигнал от ${signal.from}`);
-                        queueSignal(signal, snapshot.key);
+                        // Проверяем, не обрабатывали ли мы уже этот сигнал
+                        if (!processedSignals.has(snapshot.key)) {
+                            addDebug(`Получен сигнал от ${signal.from}`);
+                            addToQueue(signal, snapshot.key);
+                        }
                     }
                 });
 
@@ -605,7 +612,7 @@
             const userIds = Object.keys(users);
             const otherUser = userIds.find(uid => uid !== currentUser.id);
             
-            addDebug(`Изменение пользователей: ${userIds.length} в комнате`);
+            addDebug(`Изменение пользователей: ${userIds.length} в комнате, состояние peer: ${peerState}`);
             
             if (otherUser) {
                 remoteUser = {
@@ -620,8 +627,8 @@
                 
                 startTimer();
                 
-                // Создаем peer соединение, если его еще нет
-                if (!peer && !isPeerCreating) {
+                // Создаем peer, если его еще нет
+                if (peerState === 'idle') {
                     createPeerConnection();
                 }
             } else {
@@ -633,31 +640,26 @@
                 
                 stopTimer();
                 
+                // Очищаем peer
                 if (peer) {
                     peer.destroy();
                     peer = null;
-                    isPeerReady = false;
-                    isPeerCreating = false;
                 }
-                
-                // Очищаем очередь сигналов
-                pendingSignals = [];
+                peerState = 'idle';
+                signalQueue = [];
                 updateSignalBadge();
             }
         }
 
         function createPeerConnection() {
-            if (!remoteUser || isPeerCreating) return;
+            if (!remoteUser || peerState !== 'idle') return;
             
-            isPeerCreating = true;
-            
-            // Определяем инициатора
-            const isInitiator = currentUser.id < remoteUser.id;
-            addDebug(`Создание peer (инициатор: ${isInitiator})`);
+            peerState = 'creating';
+            addDebug(`Создание peer (инициатор: ${currentUser.id < remoteUser.id})`);
             
             try {
                 peer = new SimplePeer({
-                    initiator: isInitiator,
+                    initiator: currentUser.id < remoteUser.id,
                     stream: localStream,
                     trickle: true,
                     config: {
@@ -675,7 +677,7 @@
                 
             } catch (error) {
                 addDebug(`Ошибка создания peer: ${error.message}`);
-                isPeerCreating = false;
+                peerState = 'idle';
             }
         }
 
@@ -701,8 +703,7 @@
 
             peer.on('connect', () => {
                 addDebug('✅ Peer соединение установлено!');
-                isPeerReady = true;
-                isPeerCreating = false;
+                peerState = 'ready';
                 connectionAttempts = 0;
                 
                 document.getElementById('connectionStatus').className = 'connection-status status-connected';
@@ -713,7 +714,7 @@
                 showToast('Соединение установлено!');
                 
                 // Обрабатываем накопившиеся сигналы
-                processPendingSignals();
+                processQueue();
             });
 
             peer.on('stream', (remoteStream) => {
@@ -723,8 +724,7 @@
 
             peer.on('error', (err) => {
                 addDebug(`Ошибка peer: ${err.message}`);
-                isPeerReady = false;
-                isPeerCreating = false;
+                peerState = 'error';
                 
                 if (err.message.includes('ICE') && connectionAttempts < 3) {
                     connectionAttempts++;
@@ -732,6 +732,7 @@
                     
                     setTimeout(() => {
                         if (remoteUser) {
+                            peerState = 'idle';
                             createPeerConnection();
                         }
                     }, 2000);
@@ -740,13 +741,12 @@
 
             peer.on('close', () => {
                 addDebug('Peer соединение закрыто');
-                isPeerReady = false;
-                isPeerCreating = false;
+                peerState = 'idle';
                 
                 if (remoteUser) {
                     addDebug('Попытка переподключения...');
                     setTimeout(() => {
-                        if (remoteUser && !peer) {
+                        if (remoteUser && peerState === 'idle') {
                             createPeerConnection();
                         }
                     }, 1000);
@@ -754,47 +754,63 @@
             });
         }
 
-        function queueSignal(signal, signalId) {
-            // Добавляем сигнал в очередь
-            pendingSignals.push({ signal, signalId });
+        function addToQueue(signal, signalId) {
+            signalQueue.push({ signal, signalId });
             updateSignalBadge();
-            addDebug(`Сигнал добавлен в очередь. Всего в очереди: ${pendingSignals.length}`);
+            addDebug(`Сигнал добавлен в очередь. Всего в очереди: ${signalQueue.length}, состояние peer: ${peerState}`);
             
             // Если peer готов, пробуем обработать сразу
-            if (isPeerReady) {
-                processPendingSignals();
+            if (peerState === 'ready') {
+                processQueue();
+            } 
+            // Если peer создается, ничего не делаем, сигнал останется в очереди
+            // Если peer в ошибке, пробуем пересоздать
+            else if (peerState === 'error') {
+                peerState = 'idle';
+                createPeerConnection();
             }
         }
 
-        function processPendingSignals() {
-            if (!isPeerReady || pendingSignals.length === 0) return;
+        function processQueue() {
+            if (peerState !== 'ready' || signalQueue.length === 0) return;
             
-            addDebug(`Обработка очереди из ${pendingSignals.length} сигналов`);
+            addDebug(`Обработка очереди из ${signalQueue.length} сигналов`);
             
-            while (pendingSignals.length > 0) {
-                const { signal, signalId } = pendingSignals.shift();
+            while (signalQueue.length > 0) {
+                const { signal, signalId } = signalQueue[0];
                 
                 try {
                     peer.signal(signal.data);
                     addDebug('Сигнал из очереди обработан');
                     
-                    // Удаляем обработанный сигнал из Firebase
+                    // Помечаем как обработанный и удаляем из очереди
+                    processedSignals.add(signalId);
+                    signalQueue.shift();
+                    
+                    // Удаляем из Firebase
                     if (callRef) {
                         callRef.child(signalId).remove();
                     }
                 } catch (e) {
                     addDebug(`Ошибка обработки сигнала из очереди: ${e.message}`);
-                    // Возвращаем сигнал в очередь, если ошибка
-                    pendingSignals.unshift({ signal, signalId });
-                    break;
+                    
+                    // Если ошибка из-за состояния peer, прерываем обработку
+                    if (e.message.includes('destroyed') || e.message.includes('closed')) {
+                        peerState = 'idle';
+                        break;
+                    }
+                    // Иначе пропускаем problematic сигнал
+                    else {
+                        signalQueue.shift();
+                    }
                 }
             }
             
             updateSignalBadge();
             
             // Если остались сигналы, пробуем снова через секунду
-            if (pendingSignals.length > 0) {
-                setTimeout(processPendingSignals, 1000);
+            if (signalQueue.length > 0 && peerState === 'ready') {
+                setTimeout(processQueue, 1000);
             }
         }
 
@@ -868,9 +884,9 @@
             }
             
             stopTimer();
-            isPeerReady = false;
-            isPeerCreating = false;
-            pendingSignals = [];
+            peerState = 'idle';
+            signalQueue = [];
+            processedSignals.clear();
             connectionAttempts = 0;
             updateSignalBadge();
             
