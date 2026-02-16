@@ -108,8 +108,9 @@
             color: #333;
         }
 
-        .btn-danger {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        .btn-success {
+            background: #4caf50;
+            color: white;
         }
 
         .room-actions {
@@ -181,6 +182,11 @@
             color: #721c24;
         }
 
+        .status-info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
         .loading {
             display: inline-block;
             width: 20px;
@@ -236,6 +242,23 @@
             justify-content: center;
             font-size: 48px;
             color: white;
+            transition: all 0.3s;
+        }
+
+        .avatar.speaking {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 15px rgba(102, 126, 234, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(102, 126, 234, 0);
+            }
         }
 
         .call-timer {
@@ -251,23 +274,20 @@
             margin-bottom: 30px;
         }
 
-        .mic-permission-request {
-            background: #e3f2fd;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            text-align: center;
+        .debug-info {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            text-align: left;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
         }
 
-        .mic-permission-request button {
-            background: #2196f3;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-top: 10px;
+        .debug-info.visible {
+            display: block;
         }
 
         .control-btn {
@@ -339,10 +359,9 @@
                 <button onclick="createRoom()" class="btn btn-secondary">Создать комнату</button>
             </div>
 
-            <div id="permissionRequest" class="mic-permission-request hidden">
-                <p>🔊 Для звонка нужен доступ к микрофону</p>
-                <button onclick="requestMicrophonePermission()">Разрешить микрофон</button>
-            </div>
+            <button onclick="toggleDebug()" class="btn btn-secondary" style="margin-top: 20px; background: #e0e0e0;">
+                🐛 Показать отладку
+            </button>
         </div>
 
         <!-- Звонок -->
@@ -386,7 +405,15 @@
                     <button onclick="endCall()" class="control-btn end-call">
                         📞
                     </button>
+                    <button onclick="reconnectCall()" class="control-btn" style="background: #ffc107;" id="reconnectBtn" title="Переподключиться">
+                        🔄
+                    </button>
                 </div>
+            </div>
+
+            <div id="debugInfo" class="debug-info">
+                <strong>Отладочная информация:</strong><br>
+                <div id="debugContent"></div>
             </div>
         </div>
     </div>
@@ -424,11 +451,14 @@
         let microphone = null;
         let timerInterval = null;
         let callStartTime = null;
+        let isInitiator = false;
+        let remoteUser = null;
 
         // Элементы DOM
         const userNameInput = document.getElementById('userNameInput');
         const joinBtn = document.getElementById('joinBtn');
-        const permissionRequest = document.getElementById('permissionRequest');
+        const debugInfo = document.getElementById('debugInfo');
+        const debugContent = document.getElementById('debugContent');
 
         // Устанавливаем имя пользователя
         userNameInput.addEventListener('input', (e) => {
@@ -439,6 +469,17 @@
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             showToast('Ваш браузер не поддерживает аудиозвонки');
             joinBtn.disabled = true;
+        }
+
+        // Функция отладки
+        function addDebug(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            debugContent.innerHTML = `[${timestamp}] ${message}<br>` + debugContent.innerHTML;
+            console.log(`[DEBUG] ${message}`);
+        }
+
+        function toggleDebug() {
+            debugInfo.classList.toggle('visible');
         }
 
         // Функции управления звонками
@@ -460,37 +501,35 @@
         async function requestMicrophonePermission() {
             try {
                 showToast('Запрашиваем доступ к микрофону...');
+                addDebug('Запрос доступа к микрофону');
                 
-                // Явно запрашиваем только аудио
                 localStream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: true,
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    },
                     video: false
                 });
 
-                // Скрываем запрос разрешения
-                permissionRequest.classList.add('hidden');
+                addDebug('Доступ к микрофону получен');
+                addDebug(`Аудио треки: ${localStream.getAudioTracks().length}`);
                 
-                // Настраиваем визуализацию звука
-                setupAudioVisualization();
-                
-                showToast('Доступ к микрофону получен');
-                
-                // Продолжаем подключение к комнате
-                await connectToRoom();
+                return true;
                 
             } catch (error) {
                 console.error('Microphone error:', error);
+                addDebug(`Ошибка микрофона: ${error.message}`);
                 
                 if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-                    showToast('Доступ к микрофону запрещен. Пожалуйста, разрешите доступ в настройках браузера');
-                    permissionRequest.classList.remove('hidden');
+                    showToast('Доступ к микрофону запрещен');
                 } else if (error.name === 'NotFoundError') {
-                    showToast('Микрофон не найден. Подключите микрофон и попробуйте снова');
+                    showToast('Микрофон не найден');
                 } else {
-                    showToast('Ошибка доступа к микрофону: ' + error.message);
+                    showToast('Ошибка доступа к микрофону');
                 }
                 
-                joinBtn.disabled = false;
+                return false;
             }
         }
 
@@ -506,7 +545,14 @@
             joinBtn.disabled = true;
             
             // Запрашиваем разрешение на микрофон
-            await requestMicrophonePermission();
+            const hasPermission = await requestMicrophonePermission();
+            
+            if (!hasPermission) {
+                joinBtn.disabled = false;
+                return;
+            }
+
+            await connectToRoom();
         }
 
         async function connectToRoom() {
@@ -525,6 +571,12 @@
                 const snapshot = await roomRef.child('users').once('value');
                 const users = snapshot.val() || {};
                 
+                addDebug(`Пользователей в комнате: ${Object.keys(users).length}`);
+                
+                // Определяем, инициатор ли мы
+                isInitiator = Object.keys(users).length === 0;
+                addDebug(`Я ${isInitiator ? 'инициатор' : 'не инициатор'}`);
+                
                 // Добавляем себя в комнату
                 await roomRef.child('users/' + currentUser.id).set({
                     name: currentUser.name,
@@ -534,18 +586,23 @@
                 // Устанавливаем обработчик отключения
                 roomRef.child('users/' + currentUser.id).onDisconnect().remove();
 
-                // Слушаем изменения в комнате - ИСПРАВЛЕНО: используем 'value' вместо 'usersChanged'
+                // Слушаем изменения в комнате
                 roomRef.child('users').on('value', handleUsersChange);
 
                 // Слушаем сигналы WebRTC
                 callRef = database.ref('calls/' + currentRoom);
                 callRef.on('child_added', handleSignal);
 
+                // Настраиваем визуализацию звука
+                setupAudioVisualization();
+
                 showToast('Подключение к комнате...');
+                addDebug(`Подключен к комнате: ${currentRoom}`);
 
             } catch (error) {
                 console.error('Connection error:', error);
-                showToast('Ошибка подключения: ' + error.message);
+                addDebug(`Ошибка подключения: ${error.message}`);
+                showToast('Ошибка подключения');
                 resetToSetup();
             }
         }
@@ -570,10 +627,20 @@
                             let level = (average / 128) * 100;
                             
                             document.getElementById('micLevel').style.width = Math.min(level, 100) + '%';
+                            
+                            // Анимация аватара при разговоре
+                            if (level > 10) {
+                                document.getElementById('remoteAvatar').classList.add('speaking');
+                            } else {
+                                document.getElementById('remoteAvatar').classList.remove('speaking');
+                            }
                         }
                     }, 100);
+                    
+                    addDebug('Визуализация звука настроена');
                 } catch (e) {
                     console.error('Audio visualization error:', e);
+                    addDebug(`Ошибка визуализации: ${e.message}`);
                 }
             }
         }
@@ -586,91 +653,75 @@
             const userIds = Object.keys(users);
             const otherUser = userIds.find(uid => uid !== currentUser.id);
             
+            addDebug(`Изменение пользователей: ${userIds.length} в комнате`);
+            
             // Обновляем статус подключения
             const statusDiv = document.getElementById('connectionStatus');
             const remoteName = document.getElementById('remoteParticipantName');
             const remoteAvatar = document.getElementById('remoteAvatar');
             
             if (otherUser) {
-                statusDiv.className = 'connection-status status-connected';
-                statusDiv.innerHTML = '✅ Собеседник подключен';
+                remoteUser = {
+                    id: otherUser,
+                    name: users[otherUser].name
+                };
+                
+                statusDiv.className = 'connection-status status-info';
+                statusDiv.innerHTML = '🔄 Установка соединения...';
                 remoteName.textContent = users[otherUser].name || 'Собеседник';
-                remoteAvatar.textContent = '👤';
+                
+                addDebug(`Собеседник найден: ${users[otherUser].name} (${otherUser})`);
                 
                 // Запускаем таймер
                 startTimer();
                 
-                // Если есть другой пользователь и нет peer соединения, инициируем звонок
-                if (otherUser && !peer) {
-                    initiateCall(otherUser);
+                // Если нет peer соединения, создаем его
+                if (!peer) {
+                    addDebug(`Создание peer соединения (инициатор: ${isInitiator})`);
+                    
+                    peer = new SimplePeer({
+                        initiator: isInitiator,
+                        stream: localStream,
+                        trickle: true,
+                        config: {
+                            iceServers: [
+                                { urls: 'stun:stun.l.google.com:19302' },
+                                { urls: 'stun:stun1.l.google.com:19302' },
+                                { urls: 'stun:stun2.l.google.com:19302' },
+                                { urls: 'stun:stun3.l.google.com:19302' },
+                                { urls: 'stun:stun4.l.google.com:19302' }
+                            ]
+                        }
+                    });
+
+                    setupPeerEvents(peer, otherUser);
                 }
             } else {
+                remoteUser = null;
+                
                 statusDiv.className = 'connection-status status-waiting';
                 statusDiv.innerHTML = '<span class="loading"></span> Ожидание подключения собеседника...';
                 remoteName.textContent = 'Ожидание собеседника...';
                 remoteAvatar.textContent = '👤';
                 
+                addDebug('Ожидание собеседника');
+                
                 // Сбрасываем таймер
                 stopTimer();
                 
-                // Закрываем peer соединение, если нет собеседника
+                // Закрываем peer соединение
                 if (peer) {
+                    addDebug('Закрытие peer соединения');
                     peer.destroy();
                     peer = null;
                 }
             }
         }
 
-        function initiateCall(targetUserId) {
-            peer = new SimplePeer({
-                initiator: true,
-                stream: localStream,
-                trickle: false,
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' }
-                    ]
-                }
-            });
-
-            setupPeerEvents(peer, targetUserId);
-        }
-
-        function handleSignal(snapshot) {
-            const signal = snapshot.val();
-            
-            if (signal.from === currentUser.id) return;
-            
-            if (!peer) {
-                peer = new SimplePeer({
-                    initiator: false,
-                    stream: localStream,
-                    trickle: false,
-                    config: {
-                        iceServers: [
-                            { urls: 'stun:stun.l.google.com:19302' },
-                            { urls: 'stun:stun1.l.google.com:19302' },
-                            { urls: 'stun:stun2.l.google.com:19302' }
-                        ]
-                    }
-                });
-
-                setupPeerEvents(peer, signal.from);
-            }
-            
-            if (signal.data) {
-                try {
-                    peer.signal(signal.data);
-                } catch (e) {
-                    console.error('Signal error:', e);
-                }
-            }
-        }
-
         function setupPeerEvents(peer, targetUserId) {
             peer.on('signal', (data) => {
+                addDebug('Отправка сигнала');
+                
                 // Отправляем сигнал через Firebase
                 if (callRef) {
                     callRef.push({
@@ -678,31 +729,82 @@
                         to: targetUserId,
                         data: data,
                         timestamp: firebase.database.ServerValue.TIMESTAMP
-                    }).catch(e => console.error('Signal send error:', e));
+                    }).then(() => {
+                        addDebug('Сигнал отправлен');
+                    }).catch(e => {
+                        addDebug(`Ошибка отправки сигнала: ${e.message}`);
+                    });
                 }
             });
 
+            peer.on('connect', () => {
+                addDebug('Peer соединение установлено!');
+                showToast('Соединение установлено!');
+                
+                document.getElementById('connectionStatus').className = 'connection-status status-connected';
+                document.getElementById('connectionStatus').innerHTML = '✅ Соединение установлено';
+                document.getElementById('remoteAvatar').textContent = '🎤';
+            });
+
             peer.on('stream', (remoteStream) => {
-                console.log('Remote stream received');
+                addDebug('Получен удаленный аудиопоток');
                 showToast('Собеседник подключился!');
                 
-                // Визуальный индикатор получения аудио
-                const remoteAvatar = document.getElementById('remoteAvatar');
-                remoteAvatar.textContent = '🎤';
-                setTimeout(() => {
-                    remoteAvatar.textContent = '👤';
-                }, 1000);
+                document.getElementById('remoteAvatar').textContent = '🎤';
             });
 
             peer.on('error', (err) => {
                 console.error('Peer error:', err);
+                addDebug(`Ошибка peer: ${err.message}`);
                 showToast('Ошибка соединения');
+                
+                // Пытаемся переподключиться
+                setTimeout(() => {
+                    if (remoteUser && !peer) {
+                        addDebug('Попытка переподключения...');
+                        peer = new SimplePeer({
+                            initiator: isInitiator,
+                            stream: localStream,
+                            trickle: true,
+                            config: {
+                                iceServers: [
+                                    { urls: 'stun:stun.l.google.com:19302' },
+                                    { urls: 'stun:stun1.l.google.com:19302' }
+                                ]
+                            }
+                        });
+                        setupPeerEvents(peer, remoteUser.id);
+                    }
+                }, 2000);
             });
 
             peer.on('close', () => {
-                console.log('Peer connection closed');
+                addDebug('Peer соединение закрыто');
                 peer = null;
             });
+        }
+
+        function handleSignal(snapshot) {
+            const signal = snapshot.val();
+            
+            if (signal.from === currentUser.id) {
+                addDebug('Игнорируем свой сигнал');
+                return;
+            }
+            
+            addDebug(`Получен сигнал от ${signal.from}`);
+            
+            if (peer) {
+                addDebug('Передаем сигнал в peer');
+                try {
+                    peer.signal(signal.data);
+                    addDebug('Сигнал обработан');
+                } catch (e) {
+                    addDebug(`Ошибка обработки сигнала: ${e.message}`);
+                }
+            } else {
+                addDebug('Peer не готов, сигнал не обработан');
+            }
         }
 
         function toggleMicrophone() {
@@ -716,9 +818,11 @@
                     if (isMicEnabled) {
                         micBtn.classList.remove('muted');
                         micBtn.innerHTML = '🎤';
+                        addDebug('Микрофон включен');
                     } else {
                         micBtn.classList.add('muted');
                         micBtn.innerHTML = '🔇';
+                        addDebug('Микрофон выключен');
                     }
                     
                     showToast(isMicEnabled ? 'Микрофон включен' : 'Микрофон выключен');
@@ -726,7 +830,34 @@
             }
         }
 
+        function reconnectCall() {
+            addDebug('Ручное переподключение');
+            
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+            
+            if (remoteUser) {
+                peer = new SimplePeer({
+                    initiator: isInitiator,
+                    stream: localStream,
+                    trickle: true,
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' }
+                        ]
+                    }
+                });
+                setupPeerEvents(peer, remoteUser.id);
+                showToast('Переподключение...');
+            }
+        }
+
         function startTimer() {
+            if (timerInterval) return;
+            
             callStartTime = Date.now();
             timerInterval = setInterval(() => {
                 if (callStartTime) {
@@ -736,6 +867,7 @@
                     document.getElementById('callTimer').textContent = `${minutes}:${seconds}`;
                 }
             }, 1000);
+            addDebug('Таймер запущен');
         }
 
         function stopTimer() {
@@ -747,12 +879,14 @@
         }
 
         function endCall() {
+            addDebug('Завершение звонка');
+            
             // Удаляем себя из комнаты
             if (roomRef && currentUser.id) {
                 roomRef.child('users/' + currentUser.id).remove();
             }
             
-            // Удаляем слушатели - ИСПРАВЛЕНО: отписываемся от событий
+            // Удаляем слушатели
             if (roomRef) {
                 roomRef.child('users').off('value', handleUsersChange);
             }
@@ -788,25 +922,23 @@
         }
 
         function resetToSetup() {
-            // Показываем настройки
             document.getElementById('setupSection').classList.remove('hidden');
             document.getElementById('callSection').classList.add('hidden');
-            document.getElementById('permissionRequest').classList.add('hidden');
-
-            // Сбрасываем переменные
+            
             currentRoom = null;
             roomRef = null;
             callRef = null;
+            remoteUser = null;
             joinBtn.disabled = false;
-
-            // Сбрасываем кнопку микрофона
+            
             const micBtn = document.getElementById('micBtn');
             micBtn.classList.remove('muted');
             micBtn.innerHTML = '🎤';
             isMicEnabled = true;
             
-            // Сбрасываем визуализацию
             document.getElementById('micLevel').style.width = '0%';
+            
+            addDebug('Возврат к настройкам');
         }
 
         function copyRoomId() {
@@ -842,6 +974,7 @@
         // Обработка ошибок
         window.addEventListener('error', (e) => {
             console.error('Global error:', e.error);
+            addDebug(`Глобальная ошибка: ${e.error?.message}`);
         });
     </script>
 </body>
