@@ -404,6 +404,7 @@
             measurementId: "G-TK6GVEX9G5"
         };
 
+        // Инициализируем Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
@@ -463,7 +464,7 @@
                 // Явно запрашиваем только аудио
                 localStream = await navigator.mediaDevices.getUserMedia({ 
                     audio: true,
-                    video: false  // Видео отключено
+                    video: false
                 });
 
                 // Скрываем запрос разрешения
@@ -533,8 +534,8 @@
                 // Устанавливаем обработчик отключения
                 roomRef.child('users/' + currentUser.id).onDisconnect().remove();
 
-                // Слушаем изменения в комнате
-                roomRef.child('users').on('usersChanged', handleUsersChange);
+                // Слушаем изменения в комнате - ИСПРАВЛЕНО: используем 'value' вместо 'usersChanged'
+                roomRef.child('users').on('value', handleUsersChange);
 
                 // Слушаем сигналы WebRTC
                 callRef = database.ref('calls/' + currentRoom);
@@ -566,7 +567,7 @@
                         if (analyser) {
                             analyser.getByteFrequencyData(dataArray);
                             let average = dataArray.reduce((a, b) => a + b) / bufferLength;
-                            let level = (average / 128) * 100; // Нормализуем до процентов
+                            let level = (average / 128) * 100;
                             
                             document.getElementById('micLevel').style.width = Math.min(level, 100) + '%';
                         }
@@ -640,7 +641,7 @@
         function handleSignal(snapshot) {
             const signal = snapshot.val();
             
-            if (signal.from === currentUser.id) return; // Игнорируем свои сигналы
+            if (signal.from === currentUser.id) return;
             
             if (!peer) {
                 peer = new SimplePeer({
@@ -751,13 +752,13 @@
                 roomRef.child('users/' + currentUser.id).remove();
             }
             
-            // Удаляем слушатели
+            // Удаляем слушатели - ИСПРАВЛЕНО: отписываемся от событий
             if (roomRef) {
-                roomRef.child('users').off();
+                roomRef.child('users').off('value', handleUsersChange);
             }
             
             if (callRef) {
-                callRef.off();
+                callRef.off('child_added', handleSignal);
             }
 
             // Закрываем peer соединение
