@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kcalls - Звонки через интернет</title>
+    <title>Kcalls - Звонки по ссылке</title>
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -55,6 +55,7 @@
             align-items: center;
             gap: 10px;
             margin-bottom: 15px;
+            flex-wrap: wrap;
         }
         .log {
             margin-top: 20px;
@@ -72,13 +73,21 @@
             margin: 2px 0;
             border-bottom: 1px solid #333;
         }
+        .link-info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📞 Звонки через интернет</h1>
+        <h1>📞 Звонки по ссылке</h1>
         
         <div id="setup">
+            <div class="link-info" id="linkInfo"></div>
             <input type="text" id="userName" placeholder="Ваше имя" value="Гость">
             <br>
             <input type="text" id="roomId" placeholder="ID комнаты">
@@ -90,7 +99,8 @@
         <div id="call" class="hidden">
             <div class="room-header">
                 <strong>Комната: <span id="currentRoomDisplay"></span></strong>
-                <button onclick="copyRoomId()" style="padding: 5px 10px;">📋 Копировать</button>
+                <button onclick="copyRoomId()" style="padding: 5px 10px;">📋 Копировать ID</button>
+                <button onclick="copyCallLink()" style="padding: 5px 10px;">🔗 Скопировать ссылку</button>
             </div>
             <div id="status" class="status">Ожидание...</div>
             <div id="remoteName"></div>
@@ -141,6 +151,7 @@
         const roomIdInput = document.getElementById('roomId');
         const currentRoomDisplay = document.getElementById('currentRoomDisplay');
         const logDiv = document.getElementById('log');
+        const linkInfoDiv = document.getElementById('linkInfo');
 
         // Функция логирования
         function log(message) {
@@ -148,7 +159,31 @@
             entry.className = 'log-entry';
             entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
             logDiv.appendChild(entry);
-            logDiv.scrollTop = logDiv.scrollHeight; // автоскролл вниз
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // Получаем параметры из URL
+        function getUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('call');
+        }
+
+        // Обновляем информацию о ссылке
+        function updateLinkInfo(roomId) {
+            if (roomId) {
+                const link = window.location.origin + window.location.pathname + '?call=' + roomId;
+                linkInfoDiv.innerHTML = `🔗 Ссылка для приглашения: <br><small>${link}</small>`;
+            } else {
+                linkInfoDiv.innerHTML = '';
+            }
+        }
+
+        // Проверяем URL при загрузке
+        const callParam = getUrlParams();
+        if (callParam) {
+            roomIdInput.value = callParam;
+            updateLinkInfo(callParam);
+            log('Обнаружена ссылка на комнату: ' + callParam);
         }
 
         userNameInput.oninput = (e) => currentUser.name = e.target.value || 'Гость';
@@ -164,8 +199,21 @@
             });
         }
 
+        function copyCallLink() {
+            const roomId = currentRoomDisplay.textContent;
+            const link = window.location.origin + window.location.pathname + '?call=' + roomId;
+            navigator.clipboard.writeText(link).then(() => {
+                log('Ссылка на звонок скопирована');
+                alert('Ссылка на звонок скопирована');
+            }).catch(() => {
+                log('Ошибка копирования ссылки');
+                alert('Не удалось скопировать ссылку');
+            });
+        }
+
         function createRoom() {
             roomIdInput.value = Math.random().toString(36).substring(2, 8);
+            updateLinkInfo(roomIdInput.value);
             log('Создана новая комната: ' + roomIdInput.value);
             joinRoom();
         }
@@ -185,6 +233,7 @@
                 
                 currentRoom = roomId;
                 currentRoomDisplay.textContent = roomId;
+                updateLinkInfo(roomId);
                 setupDiv.classList.add('hidden');
                 callDiv.classList.remove('hidden');
                 
@@ -263,7 +312,6 @@
                             peer.on('error', (err) => {
                                 statusDiv.textContent = '❌ Ошибка: ' + err.message;
                                 log('❌ Ошибка peer: ' + err.message);
-                                console.log('Peer error:', err);
                             });
 
                             peer.on('close', () => {
@@ -325,6 +373,7 @@
             localStream = null;
             setupDiv.classList.remove('hidden');
             callDiv.classList.add('hidden');
+            updateLinkInfo(roomIdInput.value);
         }
     </script>
 </body>
