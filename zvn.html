@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kcalls - Звонки по ссылке</title>
+    <title>Kcalls - Групповые звонки</title>
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -12,7 +12,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 600px;
+            max-width: 800px;
             margin: 20px auto;
             padding: 20px;
             text-align: center;
@@ -47,8 +47,6 @@
             background: #f0f0f0;
             border-radius: 5px;
         }
-        audio { width: 100%; margin: 10px 0; }
-        #roomId { width: 200px; }
         .room-header {
             display: flex;
             justify-content: center;
@@ -56,6 +54,50 @@
             gap: 10px;
             margin-bottom: 15px;
             flex-wrap: wrap;
+        }
+        .participants-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .participant-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            position: relative;
+        }
+        .participant-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .participant-status {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        .participant-avatar {
+            font-size: 40px;
+            margin: 10px 0;
+        }
+        .speaking-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4caf50;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .hidden-indicator {
+            display: none;
         }
         .log {
             margin-top: 20px;
@@ -88,11 +130,16 @@
             margin: 10px 0;
             font-weight: bold;
         }
+        .ice-status {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📞 Звонки по ссылке</h1>
+        <h1>👥 Групповые звонки (до 6 человек)</h1>
         
         <div id="setup">
             <div class="link-info" id="linkInfo"></div>
@@ -111,12 +158,16 @@
                 <button onclick="copyRoomId()" style="padding: 5px 10px;">📋 Копировать ID</button>
                 <button onclick="copyCallLink()" style="padding: 5px 10px;">🔗 Скопировать ссылку</button>
             </div>
+            
             <div id="status" class="status">Ожидание...</div>
-            <div id="remoteName"></div>
-            <audio id="remoteAudio" autoplay controls></audio>
-            <div>
+            
+            <!-- Сетка участников -->
+            <div id="participantsGrid" class="participants-grid"></div>
+            
+            <div class="controls">
                 <button onclick="toggleMic()" id="micBtn">🔇 Выкл микрофон</button>
                 <button onclick="endCall()" style="background: #dc3545;">📞 Завершить</button>
+                <button onclick="retryAllConnections()" id="retryBtn" style="background: #ffc107; color: black;">🔄 Переподключить всех</button>
             </div>
         </div>
 
@@ -141,21 +192,20 @@
 
         // Переменные
         let localStream = null;
-        let peer = null;
+        let peers = {}; // Объект для хранения всех peer-соединений { userId: peer }
         let currentRoom = null;
         let currentUser = {
             id: 'user_' + Math.random().toString(36).substring(2, 10),
             name: 'Гость'
         };
-        let remoteUser = null;
+        let allUsers = {}; // Все пользователи в комнате
         let autoJoinAttempted = false;
+        let reconnectTimeouts = {};
 
         // Элементы
         const setupDiv = document.getElementById('setup');
         const callDiv = document.getElementById('call');
         const statusDiv = document.getElementById('status');
-        const remoteNameSpan = document.getElementById('remoteName');
-        const remoteAudio = document.getElementById('remoteAudio');
         const micBtn = document.getElementById('micBtn');
         const userNameInput = document.getElementById('userName');
         const roomIdInput = document.getElementById('roomId');
@@ -163,6 +213,7 @@
         const logDiv = document.getElementById('log');
         const linkInfoDiv = document.getElementById('linkInfo');
         const autoJoinMessageDiv = document.getElementById('autoJoinMessage');
+        const participantsGrid = document.getElementById('participantsGrid');
 
         // Функция логирования
         function log(message) {
@@ -189,6 +240,43 @@
             }
         }
 
+        // Обновление сетки участников
+        function updateParticipantsGrid() {
+            let html = '';
+            
+            // Добавляем себя
+            html += `
+                <div class="participant-card">
+                    <div class="participant-name">${currentUser.name} (Вы)</div>
+                    <div class="participant-avatar">👤</div>
+                    <div class="participant-status">Микрофон: ${localStream?.getAudioTracks()[0]?.enabled ? '🎤' : '🔇'}</div>
+                </div>
+            `;
+            
+            // Добавляем всех остальных
+            Object.values(allUsers).forEach(user => {
+                if (user.id !== currentUser.id) {
+                    const peer = peers[user.id];
+                    const isConnected = peer && peer.connected;
+                    const hasStream = peer && peer._remoteStreams?.length > 0;
+                    
+                    html += `
+                        <div class="participant-card" id="participant-${user.id}">
+                            <div class="participant-name">${user.name}</div>
+                            <div class="participant-avatar">👤</div>
+                            <div class="participant-status">
+                                ${isConnected ? '✅ Подключен' : '🔄 Подключение...'}
+                                ${hasStream ? '🎵' : ''}
+                            </div>
+                            <div class="speaking-indicator hidden-indicator" id="speaking-${user.id}"></div>
+                        </div>
+                    `;
+                }
+            });
+            
+            participantsGrid.innerHTML = html;
+        }
+
         // Автоматическое подключение при загрузке
         async function autoJoin() {
             const callParam = getUrlParams();
@@ -197,21 +285,18 @@
                 roomIdInput.value = callParam;
                 updateLinkInfo(callParam);
                 
-                // Показываем сообщение об автоматическом подключении
                 autoJoinMessageDiv.textContent = `🔄 Автоматическое подключение к комнате ${callParam}...`;
                 autoJoinMessageDiv.classList.remove('hidden');
                 
                 log('🔗 Обнаружена ссылка на комнату: ' + callParam);
                 log('🔄 Автоматическое подключение...');
                 
-                // Небольшая задержка, чтобы пользователь увидел сообщение
                 setTimeout(() => {
                     joinRoom();
                 }, 1000);
             }
         }
 
-        // Запускаем автоподключение при загрузке
         window.addEventListener('load', autoJoin);
 
         userNameInput.oninput = (e) => currentUser.name = e.target.value || 'Гость';
@@ -246,6 +331,24 @@
             joinRoom();
         }
 
+        // ICE серверы
+        function getIceServers() {
+            return [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                {
+                    urls: [
+                        'turn:openrelay.metered.ca:80',
+                        'turn:openrelay.metered.ca:443',
+                        'turn:openrelay.metered.ca:443?transport=tcp'
+                    ],
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                }
+            ];
+        }
+
         async function joinRoom() {
             const roomId = roomIdInput.value.trim();
             if (!roomId) {
@@ -253,13 +356,19 @@
                 return alert('Введите ID комнаты');
             }
 
-            // Скрываем сообщение об автоподключении
             autoJoinMessageDiv.classList.add('hidden');
 
             try {
                 statusDiv.textContent = '🎤 Запрашиваем микрофон...';
                 log('Запрос доступа к микрофону...');
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }, 
+                    video: false 
+                });
                 log('✅ Микрофон получен');
                 
                 currentRoom = roomId;
@@ -269,7 +378,12 @@
                 callDiv.classList.remove('hidden');
                 
                 const roomRef = db.ref('rooms/' + roomId);
-                await roomRef.child('users/' + currentUser.id).set({ name: currentUser.name });
+                
+                // Добавляем себя
+                await roomRef.child('users/' + currentUser.id).set({ 
+                    name: currentUser.name,
+                    timestamp: Date.now()
+                });
                 roomRef.child('users/' + currentUser.id).onDisconnect().remove();
                 log('Подключен к комнате ' + roomId);
 
@@ -278,99 +392,48 @@
                     const users = snap.val();
                     if (!users) return;
                     
-                    const other = Object.keys(users).find(id => id !== currentUser.id);
+                    // Обновляем список всех пользователей
+                    allUsers = users;
                     
-                    if (other) {
-                        remoteUser = { id: other, name: users[other].name };
-                        remoteNameSpan.textContent = '👤 ' + users[other].name;
-                        statusDiv.textContent = '🔄 Устанавливаем соединение...';
-                        log('Найден собеседник: ' + users[other].name);
-                        
-                        if (!peer) {
-                            const isInit = currentUser.id < remoteUser.id;
-                            log('Инициатор: ' + isInit);
-                            
-                            // TURN серверы для работы через интернет
-                            const iceServers = [
-                                { urls: 'stun:stun.l.google.com:19302' },
-                                { urls: 'stun:stun1.l.google.com:19302' },
-                                { urls: 'stun:stun2.l.google.com:19302' },
-                                {
-                                    urls: 'turn:openrelay.metered.ca:80',
-                                    username: 'openrelayproject',
-                                    credential: 'openrelayproject'
-                                },
-                                {
-                                    urls: 'turn:openrelay.metered.ca:443',
-                                    username: 'openrelayproject',
-                                    credential: 'openrelayproject'
-                                },
-                                {
-                                    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                                    username: 'openrelayproject',
-                                    credential: 'openrelayproject'
-                                }
-                            ];
-
-                            peer = new SimplePeer({ 
-                                initiator: isInit, 
-                                stream: localStream,
-                                trickle: true,
-                                config: { iceServers }
-                            });
-
-                            peer.on('signal', data => {
-                                log('📤 Отправка сигнала');
-                                db.ref('calls/' + roomId).push({
-                                    from: currentUser.id,
-                                    to: remoteUser.id,
-                                    data: data
-                                });
-                            });
-
-                            peer.on('stream', stream => {
-                                remoteAudio.srcObject = stream;
-                                statusDiv.textContent = '✅ Соединение установлено!';
-                                log('✅ Получен аудиопоток');
-                                remoteAudio.play().catch(e => log('Ошибка воспроизведения: ' + e.message));
-                            });
-
-                            peer.on('connect', () => {
-                                statusDiv.textContent = '✅ Соединение установлено!';
-                                log('✅ Peer соединение установлено');
-                            });
-
-                            peer.on('error', (err) => {
-                                statusDiv.textContent = '❌ Ошибка: ' + err.message;
-                                log('❌ Ошибка peer: ' + err.message);
-                            });
-
-                            peer.on('close', () => {
-                                log('🔒 Peer закрыт');
-                            });
-
-                            peer.on('iceStateChange', (state) => {
-                                log('🔌 ICE состояние: ' + state);
-                            });
+                    // Находим новых пользователей
+                    Object.keys(users).forEach(userId => {
+                        if (userId !== currentUser.id && !peers[userId]) {
+                            const newUser = users[userId];
+                            log(`👤 Новый участник: ${newUser.name}`);
+                            createPeerWith(userId, newUser.name);
                         }
-                    } else {
-                        remoteUser = null;
-                        remoteNameSpan.textContent = '⏳ Ожидание собеседника...';
-                        statusDiv.textContent = 'Ожидание...';
-                        log('Ожидание собеседника...');
-                    }
+                    });
+                    
+                    // Удаляем отключившихся
+                    Object.keys(peers).forEach(userId => {
+                        if (!users[userId]) {
+                            log(`👋 Участник отключился: ${peers[userId].remoteName}`);
+                            if (reconnectTimeouts[userId]) {
+                                clearTimeout(reconnectTimeouts[userId]);
+                                delete reconnectTimeouts[userId];
+                            }
+                            peers[userId].destroy();
+                            delete peers[userId];
+                        }
+                    });
+                    
+                    updateParticipantsGrid();
+                    
+                    // Обновляем статус
+                    const count = Object.keys(users).length;
+                    statusDiv.textContent = `👥 В комнате: ${count} ${count === 1 ? 'участник' : 'участников'}`;
                 });
 
-                // Слушаем сигналы
+                // Слушаем сигналы для всех
                 db.ref('calls/' + roomId).on('child_added', (snap) => {
                     const signal = snap.val();
-                    if (signal.from !== currentUser.id && peer) {
-                        log('📨 Получен сигнал от ' + signal.from);
+                    if (signal.from !== currentUser.id && peers[signal.from]) {
+                        log(`📨 Получен сигнал от ${signal.from}`);
                         try {
-                            peer.signal(signal.data);
+                            peers[signal.from].signal(signal.data);
                             log('✅ Сигнал применен');
                         } catch (e) {
-                            log('❌ Ошибка применения сигнала: ' + e.message);
+                            log(`❌ Ошибка применения сигнала: ${e.message}`);
                         }
                         snap.ref.remove();
                     }
@@ -383,30 +446,164 @@
             }
         }
 
+        function createPeerWith(userId, userName) {
+            log(`🔧 Создаем peer с ${userName} (${userId})`);
+            
+            const isInit = currentUser.id < userId;
+            
+            try {
+                const peer = new SimplePeer({ 
+                    initiator: isInit, 
+                    stream: localStream,
+                    trickle: true,
+                    config: { iceServers: getIceServers() }
+                });
+                
+                // Сохраняем имя для логов
+                peer.remoteName = userName;
+                
+                // Создаем аудио элемент для этого участника
+                const audioEl = document.createElement('audio');
+                audioEl.id = `audio-${userId}`;
+                audioEl.autoplay = true;
+                audioEl.style.display = 'none';
+                document.body.appendChild(audioEl);
+
+                peer.on('signal', data => {
+                    log(`📤 Отправка сигнала для ${userName}`);
+                    db.ref('calls/' + currentRoom).push({
+                        from: currentUser.id,
+                        to: userId,
+                        data: data
+                    });
+                });
+
+                peer.on('stream', stream => {
+                    log(`🎵 Получен аудиопоток от ${userName}`);
+                    audioEl.srcObject = stream;
+                    updateParticipantsGrid();
+                    
+                    // Визуализация говорящего
+                    const audioContext = new AudioContext();
+                    const analyser = audioContext.createAnalyser();
+                    const source = audioContext.createMediaStreamSource(stream);
+                    source.connect(analyser);
+                    
+                    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                    
+                    setInterval(() => {
+                        analyser.getByteFrequencyData(dataArray);
+                        const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                        const indicator = document.getElementById(`speaking-${userId}`);
+                        if (indicator) {
+                            if (avg > 10) {
+                                indicator.classList.remove('hidden-indicator');
+                            } else {
+                                indicator.classList.add('hidden-indicator');
+                            }
+                        }
+                    }, 100);
+                });
+
+                peer.on('connect', () => {
+                    log(`✅ Peer соединение с ${userName} установлено`);
+                    updateParticipantsGrid();
+                    
+                    if (reconnectTimeouts[userId]) {
+                        clearTimeout(reconnectTimeouts[userId]);
+                        delete reconnectTimeouts[userId];
+                    }
+                });
+
+                peer.on('error', (err) => {
+                    log(`❌ Ошибка peer с ${userName}: ${err.message}`);
+                    
+                    // Пытаемся переподключиться
+                    if (!reconnectTimeouts[userId]) {
+                        reconnectTimeouts[userId] = setTimeout(() => {
+                            log(`🔄 Переподключение к ${userName}...`);
+                            if (peers[userId]) {
+                                peers[userId].destroy();
+                                delete peers[userId];
+                            }
+                            createPeerWith(userId, userName);
+                            delete reconnectTimeouts[userId];
+                        }, 3000);
+                    }
+                });
+
+                peer.on('close', () => {
+                    log(`🔒 Peer с ${userName} закрыт`);
+                    audioEl.remove();
+                    updateParticipantsGrid();
+                });
+
+                peer.on('iceStateChange', (state) => {
+                    log(`🔌 ICE с ${userName}: ${state}`);
+                });
+
+                peers[userId] = peer;
+
+            } catch (err) {
+                log(`❌ Ошибка создания peer с ${userName}: ${err.message}`);
+            }
+        }
+
         function toggleMic() {
             if (localStream) {
                 const track = localStream.getAudioTracks()[0];
                 track.enabled = !track.enabled;
                 micBtn.textContent = track.enabled ? '🔇 Выкл микрофон' : '🎤 Вкл микрофон';
                 log('Микрофон ' + (track.enabled ? 'включен' : 'выключен'));
+                updateParticipantsGrid();
             }
+        }
+
+        function retryAllConnections() {
+            log('🔄 Переподключение ко всем участникам');
+            
+            // Очищаем все таймауты
+            Object.values(reconnectTimeouts).forEach(timeout => clearTimeout(timeout));
+            reconnectTimeouts = {};
+            
+            // Пересоздаем все peer-соединения
+            Object.keys(peers).forEach(userId => {
+                const userName = peers[userId].remoteName;
+                peers[userId].destroy();
+                delete peers[userId];
+                createPeerWith(userId, userName);
+            });
         }
 
         function endCall() {
             log('Завершение звонка');
+            
+            // Очищаем все таймауты
+            Object.values(reconnectTimeouts).forEach(timeout => clearTimeout(timeout));
+            reconnectTimeouts = {};
+            
             if (currentRoom) {
                 db.ref('rooms/' + currentRoom + '/users/' + currentUser.id).remove();
                 db.ref('calls/' + currentRoom).remove();
             }
-            if (peer) peer.destroy();
-            if (localStream) localStream.getTracks().forEach(t => t.stop());
             
-            peer = null;
-            localStream = null;
+            // Уничтожаем все peer-соединения
+            Object.values(peers).forEach(peer => peer.destroy());
+            peers = {};
+            
+            // Удаляем все аудио элементы
+            document.querySelectorAll('audio[id^="audio-"]').forEach(el => el.remove());
+            
+            if (localStream) {
+                localStream.getTracks().forEach(t => t.stop());
+                localStream = null;
+            }
+            
             setupDiv.classList.remove('hidden');
             callDiv.classList.add('hidden');
             updateLinkInfo(roomIdInput.value);
-            autoJoinAttempted = false; // Сбрасываем для следующего раза
+            autoJoinAttempted = false;
+            allUsers = {};
         }
     </script>
 </body>
