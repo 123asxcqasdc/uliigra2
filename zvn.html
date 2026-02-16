@@ -49,6 +49,29 @@
         }
         audio { width: 100%; margin: 10px 0; }
         #roomId { width: 200px; }
+        .room-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .log {
+            margin-top: 20px;
+            text-align: left;
+            background: #1e1e1e;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 2px 0;
+            border-bottom: 1px solid #333;
+        }
     </style>
 </head>
 <body>
@@ -65,6 +88,10 @@
         </div>
 
         <div id="call" class="hidden">
+            <div class="room-header">
+                <strong>Комната: <span id="currentRoomDisplay"></span></strong>
+                <button onclick="copyRoomId()" style="padding: 5px 10px;">📋 Копировать</button>
+            </div>
             <div id="status" class="status">Ожидание...</div>
             <div id="remoteName"></div>
             <audio id="remoteAudio" autoplay controls></audio>
@@ -72,6 +99,11 @@
                 <button onclick="toggleMic()" id="micBtn">🔇 Выкл микрофон</button>
                 <button onclick="endCall()" style="background: #dc3545;">📞 Завершить</button>
             </div>
+        </div>
+
+        <!-- Блок логов -->
+        <div id="log" class="log">
+            <div class="log-entry">[Система] Лог загружен</div>
         </div>
     </div>
 
@@ -107,29 +139,59 @@
         const micBtn = document.getElementById('micBtn');
         const userNameInput = document.getElementById('userName');
         const roomIdInput = document.getElementById('roomId');
+        const currentRoomDisplay = document.getElementById('currentRoomDisplay');
+        const logDiv = document.getElementById('log');
+
+        // Функция логирования
+        function log(message) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight; // автоскролл вниз
+        }
 
         userNameInput.oninput = (e) => currentUser.name = e.target.value || 'Гость';
 
+        function copyRoomId() {
+            const roomId = currentRoomDisplay.textContent;
+            navigator.clipboard.writeText(roomId).then(() => {
+                log('ID комнаты скопирован');
+                alert('ID комнаты скопирован');
+            }).catch(() => {
+                log('Ошибка копирования ID');
+                alert('Не удалось скопировать');
+            });
+        }
+
         function createRoom() {
             roomIdInput.value = Math.random().toString(36).substring(2, 8);
+            log('Создана новая комната: ' + roomIdInput.value);
             joinRoom();
         }
 
         async function joinRoom() {
             const roomId = roomIdInput.value.trim();
-            if (!roomId) return alert('Введите ID комнаты');
+            if (!roomId) {
+                log('Ошибка: не введен ID комнаты');
+                return alert('Введите ID комнаты');
+            }
 
             try {
                 statusDiv.textContent = '🎤 Запрашиваем микрофон...';
+                log('Запрос доступа к микрофону...');
                 localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                log('✅ Микрофон получен');
                 
                 currentRoom = roomId;
+                currentRoomDisplay.textContent = roomId;
                 setupDiv.classList.add('hidden');
                 callDiv.classList.remove('hidden');
                 
                 const roomRef = db.ref('rooms/' + roomId);
                 await roomRef.child('users/' + currentUser.id).set({ name: currentUser.name });
                 roomRef.child('users/' + currentUser.id).onDisconnect().remove();
+                log('Подключен к комнате ' + roomId);
 
                 // Следим за пользователями
                 roomRef.child('users').on('value', (snap) => {
@@ -142,9 +204,11 @@
                         remoteUser = { id: other, name: users[other].name };
                         remoteNameSpan.textContent = '👤 ' + users[other].name;
                         statusDiv.textContent = '🔄 Устанавливаем соединение...';
+                        log('Найден собеседник: ' + users[other].name);
                         
                         if (!peer) {
                             const isInit = currentUser.id < remoteUser.id;
+                            log('Инициатор: ' + isInit);
                             
                             // TURN серверы для работы через интернет
                             const iceServers = [
@@ -176,6 +240,7 @@
                             });
 
                             peer.on('signal', data => {
+                                log('📤 Отправка сигнала');
                                 db.ref('calls/' + roomId).push({
                                     from: currentUser.id,
                                     to: remoteUser.id,
@@ -186,22 +251,34 @@
                             peer.on('stream', stream => {
                                 remoteAudio.srcObject = stream;
                                 statusDiv.textContent = '✅ Соединение установлено!';
-                                remoteAudio.play().catch(e => console.log('audio play error:', e));
+                                log('✅ Получен аудиопоток');
+                                remoteAudio.play().catch(e => log('Ошибка воспроизведения: ' + e.message));
                             });
 
                             peer.on('connect', () => {
                                 statusDiv.textContent = '✅ Соединение установлено!';
+                                log('✅ Peer соединение установлено');
                             });
 
                             peer.on('error', (err) => {
                                 statusDiv.textContent = '❌ Ошибка: ' + err.message;
+                                log('❌ Ошибка peer: ' + err.message);
                                 console.log('Peer error:', err);
+                            });
+
+                            peer.on('close', () => {
+                                log('🔒 Peer закрыт');
+                            });
+
+                            peer.on('iceStateChange', (state) => {
+                                log('🔌 ICE состояние: ' + state);
                             });
                         }
                     } else {
                         remoteUser = null;
                         remoteNameSpan.textContent = '⏳ Ожидание собеседника...';
                         statusDiv.textContent = 'Ожидание...';
+                        log('Ожидание собеседника...');
                     }
                 });
 
@@ -209,12 +286,19 @@
                 db.ref('calls/' + roomId).on('child_added', (snap) => {
                     const signal = snap.val();
                     if (signal.from !== currentUser.id && peer) {
-                        peer.signal(signal.data);
+                        log('📨 Получен сигнал от ' + signal.from);
+                        try {
+                            peer.signal(signal.data);
+                            log('✅ Сигнал применен');
+                        } catch (e) {
+                            log('❌ Ошибка применения сигнала: ' + e.message);
+                        }
                         snap.ref.remove();
                     }
                 });
 
             } catch (err) {
+                log('❌ Ошибка: ' + err.message);
                 alert('Ошибка: ' + err.message);
             }
         }
@@ -224,10 +308,12 @@
                 const track = localStream.getAudioTracks()[0];
                 track.enabled = !track.enabled;
                 micBtn.textContent = track.enabled ? '🔇 Выкл микрофон' : '🎤 Вкл микрофон';
+                log('Микрофон ' + (track.enabled ? 'включен' : 'выключен'));
             }
         }
 
         function endCall() {
+            log('Завершение звонка');
             if (currentRoom) {
                 db.ref('rooms/' + currentRoom + '/users/' + currentUser.id).remove();
                 db.ref('calls/' + currentRoom).remove();
