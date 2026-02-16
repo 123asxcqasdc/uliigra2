@@ -34,9 +34,16 @@
             color: white;
             border: none;
             border-radius: 5px;
+            padding: 10px 20px;
         }
         button:hover {
             background: #5a6fd8;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
         }
         .hidden {
             display: none;
@@ -56,9 +63,20 @@
             background: #f5f5f5;
             padding: 10px;
             margin-top: 20px;
-            max-height: 200px;
+            max-height: 300px;
             overflow-y: auto;
             font-size: 12px;
+            font-family: monospace;
+        }
+        .room-info {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .avatar {
+            font-size: 64px;
+            margin: 20px;
         }
     </style>
 </head>
@@ -68,41 +86,45 @@
         
         <!-- Настройка -->
         <div id="setup">
-            <div>
+            <div style="margin-bottom: 20px;">
                 <label>Ваше имя:</label>
-                <input type="text" id="userName" value="Гость">
+                <input type="text" id="userName" value="Гость" placeholder="Введите ваше имя">
             </div>
-            <div>
+            <div style="margin-bottom: 20px;">
                 <label>ID комнаты:</label>
-                <input type="text" id="roomId">
+                <input type="text" id="roomId" placeholder="Например: abc123">
             </div>
-            <button onclick="joinRoom()">Присоединиться</button>
-            <button onclick="createRoom()">Создать комнату</button>
+            <button onclick="joinRoom()">🔗 Присоединиться</button>
+            <button onclick="createRoom()">✨ Создать комнату</button>
         </div>
 
         <!-- Звонок -->
         <div id="call" class="hidden">
-            <div>
+            <div class="room-info">
                 <strong>Комната: <span id="currentRoom"></span></strong>
-                <button onclick="copyRoomId()">📋 Копировать</button>
+                <button onclick="copyRoomId()" style="margin-left: 10px;">📋 Копировать</button>
             </div>
             
             <div id="status" class="status waiting">
-                Ожидание собеседника...
+                ⏳ Ожидание собеседника...
             </div>
 
-            <div>
-                <div style="font-size: 48px; margin: 20px;">👤</div>
-                <div id="remoteName">Ожидание...</div>
-                <div id="timer">00:00</div>
-            </div>
+            <div class="avatar" id="remoteAvatar">👤</div>
+            <div style="font-size: 18px; margin-bottom: 20px;" id="remoteName">Ожидание...</div>
+            <div style="font-size: 24px; margin-bottom: 20px;" id="timer">00:00</div>
 
-            <div>
+            <div style="margin-top: 20px;">
                 <button onclick="toggleMic()" id="micBtn">🎤 Выключить микрофон</button>
-                <button onclick="endCall()">📞 Завершить</button>
+                <button onclick="endCall()" class="danger">📞 Завершить</button>
             </div>
 
-            <div class="debug" id="debug"></div>
+            <div style="margin-top: 20px;">
+                <button onclick="retryConnection()" id="retryBtn" class="hidden">🔄 Повторить попытку</button>
+            </div>
+
+            <div class="debug" id="debug">
+                <strong>Лог соединения:</strong><br>
+            </div>
         </div>
     </div>
 
@@ -126,30 +148,38 @@
         let peer = null;
         let currentRoom = null;
         let currentUser = {
-            id: 'user_' + Math.random().toString(36).substring(2, 10),
+            id: 'user_' + Math.random().toString(36).substring(2, 15),
             name: 'Гость'
         };
         let remoteUser = null;
         let timerInterval = null;
         let callStartTime = null;
+        let roomRef = null;
+        let callsRef = null;
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 3;
 
         // DOM элементы
         const setupDiv = document.getElementById('setup');
         const callDiv = document.getElementById('call');
         const statusDiv = document.getElementById('status');
         const remoteNameSpan = document.getElementById('remoteName');
+        const remoteAvatar = document.getElementById('remoteAvatar');
         const timerSpan = document.getElementById('timer');
         const debugDiv = document.getElementById('debug');
+        const retryBtn = document.getElementById('retryBtn');
         const userNameInput = document.getElementById('userName');
         const roomIdInput = document.getElementById('roomId');
+        const micBtn = document.getElementById('micBtn');
 
         userNameInput.addEventListener('input', (e) => {
             currentUser.name = e.target.value || 'Гость';
         });
 
-        function log(msg) {
+        function log(msg, isError = false) {
             const time = new Date().toLocaleTimeString();
-            debugDiv.innerHTML = `[${time}] ${msg}<br>` + debugDiv.innerHTML;
+            const color = isError ? 'red' : 'black';
+            debugDiv.innerHTML = `<span style="color: ${color};">[${time}] ${msg}</span><br>` + debugDiv.innerHTML;
             console.log(msg);
         }
 
@@ -167,137 +197,246 @@
             }
 
             try {
-                log('Запрашиваем микрофон...');
+                log('🔍 Запрашиваем доступ к микрофону...');
                 localStream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: true, 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }, 
                     video: false 
                 });
-                log('Микрофон получен');
+                log('✅ Микрофон получен');
 
                 currentRoom = roomId;
                 document.getElementById('currentRoom').textContent = roomId;
                 
                 setupDiv.classList.add('hidden');
                 callDiv.classList.remove('hidden');
+                retryBtn.classList.add('hidden');
 
                 // Подключаемся к комнате
-                const roomRef = db.ref('rooms/' + roomId);
+                roomRef = db.ref('rooms/' + roomId);
                 
                 // Добавляем себя
                 await roomRef.child('users/' + currentUser.id).set({
                     name: currentUser.name,
-                    timestamp: Date.now()
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
                 });
+
+                // Удаляем себя при отключении
+                roomRef.child('users/' + currentUser.id).onDisconnect().remove();
 
                 // Слушаем других пользователей
-                roomRef.child('users').on('value', (snapshot) => {
-                    const users = snapshot.val();
-                    if (!users) return;
-
-                    const otherUser = Object.keys(users).find(id => id !== currentUser.id);
-                    
-                    if (otherUser) {
-                        remoteUser = {
-                            id: otherUser,
-                            name: users[otherUser].name
-                        };
-                        remoteNameSpan.textContent = users[otherUser].name;
-                        
-                        statusDiv.className = 'status connecting';
-                        statusDiv.textContent = '🔄 Устанавливаем соединение...';
-                        
-                        // Создаем peer соединение
-                        createPeer();
-                    } else {
-                        remoteUser = null;
-                        remoteNameSpan.textContent = 'Ожидание...';
-                        statusDiv.className = 'status waiting';
-                        statusDiv.textContent = '⏳ Ожидание собеседника...';
-                    }
-                });
+                roomRef.child('users').on('value', handleUsersChange);
 
                 // Слушаем сигналы
-                const callsRef = db.ref('calls/' + roomId);
-                callsRef.on('child_added', (snapshot) => {
-                    const signal = snapshot.val();
-                    if (signal.from !== currentUser.id) {
-                        log(`Получен сигнал от ${signal.from}`);
+                callsRef = db.ref('calls/' + roomId);
+                callsRef.on('child_added', handleIncomingSignal);
+
+                startTimer();
+                log('👋 Ожидание собеседника...');
+
+            } catch (error) {
+                log(`❌ Ошибка: ${error.message}`, true);
+                alert('Ошибка доступа к микрофону: ' + error.message);
+            }
+        }
+
+        function handleUsersChange(snapshot) {
+            const users = snapshot.val();
+            if (!users) return;
+
+            const otherUser = Object.keys(users).find(id => id !== currentUser.id);
+            
+            if (otherUser) {
+                remoteUser = {
+                    id: otherUser,
+                    name: users[otherUser].name
+                };
+                remoteNameSpan.textContent = users[otherUser].name;
+                remoteAvatar.textContent = '🎤';
+                
+                statusDiv.className = 'status connecting';
+                statusDiv.textContent = '🔄 Устанавливаем соединение...';
+                
+                log(`👤 Собеседник найден: ${users[otherUser].name}`);
+                
+                // Создаем peer соединение, если его нет
+                if (!peer) {
+                    createPeer();
+                }
+            } else {
+                remoteUser = null;
+                remoteNameSpan.textContent = 'Ожидание...';
+                remoteAvatar.textContent = '👤';
+                statusDiv.className = 'status waiting';
+                statusDiv.textContent = '⏳ Ожидание собеседника...';
+                
+                // Закрываем peer, если нет собеседника
+                if (peer) {
+                    peer.destroy();
+                    peer = null;
+                }
+            }
+        }
+
+        function handleIncomingSignal(snapshot) {
+            const signal = snapshot.val();
+            if (signal.from !== currentUser.id) {
+                log(`📨 Получен сигнал от ${signal.from}`);
+                
+                if (peer) {
+                    try {
+                        peer.signal(signal.data);
+                        log('✅ Сигнал применен');
+                        snapshot.ref.remove(); // Удаляем после обработки
+                    } catch (e) {
+                        log(`❌ Ошибка сигнала: ${e.message}`, true);
+                    }
+                } else {
+                    log('⚠️ Peer не готов, сигнал сохранен');
+                    // Сохраняем сигнал для последующей обработки
+                    setTimeout(() => {
                         if (peer) {
                             try {
                                 peer.signal(signal.data);
-                                log('Сигнал применен');
-                                snapshot.ref.remove(); // Удаляем после обработки
+                                log('✅ Отложенный сигнал применен');
+                                snapshot.ref.remove();
                             } catch (e) {
-                                log(`Ошибка сигнала: ${e.message}`);
+                                log(`❌ Ошибка отложенного сигнала: ${e.message}`, true);
                             }
                         }
-                    }
-                });
-
-                startTimer();
-
-            } catch (error) {
-                log(`Ошибка: ${error.message}`);
-                alert('Ошибка доступа к микрофону');
+                    }, 1000);
+                }
             }
         }
 
         function createPeer() {
             if (!remoteUser) return;
 
-            // Простое определение инициатора
             const isInitiator = currentUser.id < remoteUser.id;
-            log(`Создаем peer (инициатор: ${isInitiator})`);
+            log(`🔧 Создаем peer (инициатор: ${isInitiator})`);
 
             try {
+                // Расширенная конфигурация ICE серверов
+                const iceServers = [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' },
+                    // Публичные TURN серверы (для обхода NAT)
+                    {
+                        urls: 'turn:openrelay.metered.ca:80',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    },
+                    {
+                        urls: 'turn:openrelay.metered.ca:443',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    },
+                    {
+                        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    }
+                ];
+
                 peer = new SimplePeer({
                     initiator: isInitiator,
                     stream: localStream,
                     trickle: true,
-                    config: {
-                        iceServers: [
-                            { urls: 'stun:stun.l.google.com:19302' }
-                        ]
-                    }
+                    config: { iceServers },
+                    iceTransportPolicy: 'all' // Пробуем все варианты
                 });
 
                 peer.on('signal', (data) => {
-                    log('Отправляем сигнал');
-                    db.ref('calls/' + currentRoom).push({
-                        from: currentUser.id,
-                        to: remoteUser.id,
-                        data: data,
-                        timestamp: Date.now()
-                    });
+                    log('📤 Отправляем сигнал');
+                    if (callsRef && remoteUser) {
+                        callsRef.push({
+                            from: currentUser.id,
+                            to: remoteUser.id,
+                            data: data,
+                            timestamp: firebase.database.ServerValue.TIMESTAMP
+                        });
+                    }
                 });
 
                 peer.on('connect', () => {
                     log('✅ СОЕДИНЕНИЕ УСТАНОВЛЕНО!');
                     statusDiv.className = 'status connected';
                     statusDiv.textContent = '✅ Соединение установлено';
+                    remoteAvatar.textContent = '🎤🎤';
+                    reconnectAttempts = 0;
+                    retryBtn.classList.add('hidden');
+                });
+
+                peer.on('stream', (remoteStream) => {
+                    log('🎵 Получен аудиопоток');
+                    // Здесь можно подключить remoteStream к аудио элементу
+                    // но для аудиозвонка это не обязательно
                 });
 
                 peer.on('error', (err) => {
-                    log(`Ошибка peer: ${err.message}`);
+                    log(`❌ Ошибка peer: ${err.message}`, true);
                     statusDiv.className = 'status error';
                     statusDiv.textContent = '❌ Ошибка соединения';
+                    
+                    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                        reconnectAttempts++;
+                        log(`🔄 Попытка переподключения ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
+                        retryBtn.classList.remove('hidden');
+                    }
                 });
 
                 peer.on('close', () => {
-                    log('Peer закрыт');
+                    log('🔒 Peer закрыт');
+                    peer = null;
+                    
+                    if (remoteUser && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                        statusDiv.textContent = '⚠️ Соединение потеряно';
+                    }
                 });
 
+                // Таймаут на соединение
+                setTimeout(() => {
+                    if (peer && !peer.connected) {
+                        log('⚠️ Таймаут соединения', true);
+                        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                            reconnectAttempts++;
+                            log(`🔄 Попытка переподключения ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
+                            retryBtn.classList.remove('hidden');
+                        }
+                    }
+                }, 10000);
+
             } catch (error) {
-                log(`Ошибка создания peer: ${error.message}`);
+                log(`❌ Ошибка создания peer: ${error.message}`, true);
             }
+        }
+
+        function retryConnection() {
+            log('🔄 Повторная попытка соединения');
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+            if (remoteUser) {
+                createPeer();
+            }
+            retryBtn.classList.add('hidden');
         }
 
         function toggleMic() {
             if (localStream) {
-                const enabled = localStream.getAudioTracks()[0].enabled;
-                localStream.getAudioTracks()[0].enabled = !enabled;
-                document.getElementById('micBtn').textContent = 
-                    !enabled ? '🎤 Выключить микрофон' : '🔇 Включить микрофон';
+                const audioTrack = localStream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = !audioTrack.enabled;
+                    micBtn.textContent = audioTrack.enabled ? '🎤 Выключить микрофон' : '🔇 Включить микрофон';
+                    log(audioTrack.enabled ? '🎤 Микрофон включен' : '🔇 Микрофон выключен');
+                }
             }
         }
 
@@ -312,37 +451,66 @@
         }
 
         function endCall() {
-            if (currentRoom) {
-                db.ref('rooms/' + currentRoom + '/users/' + currentUser.id).remove();
-                db.ref('calls/' + currentRoom).remove();
+            log('👋 Завершение звонка');
+            
+            // Удаляем себя из комнаты
+            if (roomRef && currentUser.id) {
+                roomRef.child('users/' + currentUser.id).remove();
+                roomRef.child('users').off('value', handleUsersChange);
             }
             
+            // Удаляем все сигналы
+            if (callsRef) {
+                callsRef.off('child_added', handleIncomingSignal);
+                callsRef.remove();
+            }
+            
+            // Закрываем peer
             if (peer) {
                 peer.destroy();
                 peer = null;
             }
             
+            // Останавливаем микрофон
             if (localStream) {
                 localStream.getTracks().forEach(t => t.stop());
                 localStream = null;
             }
             
+            // Останавливаем таймер
             if (timerInterval) {
                 clearInterval(timerInterval);
                 timerInterval = null;
             }
             
+            // Возвращаемся к настройкам
             setupDiv.classList.remove('hidden');
             callDiv.classList.add('hidden');
             currentRoom = null;
             remoteUser = null;
-            log('Звонок завершен');
+            reconnectAttempts = 0;
+            retryBtn.classList.add('hidden');
+            
+            log('✅ Звонок завершен');
         }
 
         function copyRoomId() {
             navigator.clipboard.writeText(currentRoom);
-            alert('ID комнаты скопирован');
+            log('📋 ID комнаты скопирован');
         }
+
+        // Обработка закрытия страницы
+        window.addEventListener('beforeunload', () => {
+            if (roomRef && currentUser.id) {
+                roomRef.child('users/' + currentUser.id).remove();
+            }
+            if (callsRef) {
+                callsRef.remove();
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(t => t.stop());
+            }
+        });
     </script>
 </body>
 </html>
