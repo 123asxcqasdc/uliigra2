@@ -80,6 +80,14 @@
             margin: 10px 0;
             font-size: 14px;
         }
+        .auto-join-message {
+            background: #4caf50;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -88,6 +96,7 @@
         
         <div id="setup">
             <div class="link-info" id="linkInfo"></div>
+            <div id="autoJoinMessage" class="auto-join-message hidden"></div>
             <input type="text" id="userName" placeholder="Ваше имя" value="Гость">
             <br>
             <input type="text" id="roomId" placeholder="ID комнаты">
@@ -139,6 +148,7 @@
             name: 'Гость'
         };
         let remoteUser = null;
+        let autoJoinAttempted = false;
 
         // Элементы
         const setupDiv = document.getElementById('setup');
@@ -152,6 +162,7 @@
         const currentRoomDisplay = document.getElementById('currentRoomDisplay');
         const logDiv = document.getElementById('log');
         const linkInfoDiv = document.getElementById('linkInfo');
+        const autoJoinMessageDiv = document.getElementById('autoJoinMessage');
 
         // Функция логирования
         function log(message) {
@@ -178,13 +189,30 @@
             }
         }
 
-        // Проверяем URL при загрузке
-        const callParam = getUrlParams();
-        if (callParam) {
-            roomIdInput.value = callParam;
-            updateLinkInfo(callParam);
-            log('Обнаружена ссылка на комнату: ' + callParam);
+        // Автоматическое подключение при загрузке
+        async function autoJoin() {
+            const callParam = getUrlParams();
+            if (callParam && !autoJoinAttempted) {
+                autoJoinAttempted = true;
+                roomIdInput.value = callParam;
+                updateLinkInfo(callParam);
+                
+                // Показываем сообщение об автоматическом подключении
+                autoJoinMessageDiv.textContent = `🔄 Автоматическое подключение к комнате ${callParam}...`;
+                autoJoinMessageDiv.classList.remove('hidden');
+                
+                log('🔗 Обнаружена ссылка на комнату: ' + callParam);
+                log('🔄 Автоматическое подключение...');
+                
+                // Небольшая задержка, чтобы пользователь увидел сообщение
+                setTimeout(() => {
+                    joinRoom();
+                }, 1000);
+            }
         }
+
+        // Запускаем автоподключение при загрузке
+        window.addEventListener('load', autoJoin);
 
         userNameInput.oninput = (e) => currentUser.name = e.target.value || 'Гость';
 
@@ -224,6 +252,9 @@
                 log('Ошибка: не введен ID комнаты');
                 return alert('Введите ID комнаты');
             }
+
+            // Скрываем сообщение об автоподключении
+            autoJoinMessageDiv.classList.add('hidden');
 
             try {
                 statusDiv.textContent = '🎤 Запрашиваем микрофон...';
@@ -348,6 +379,7 @@
             } catch (err) {
                 log('❌ Ошибка: ' + err.message);
                 alert('Ошибка: ' + err.message);
+                autoJoinMessageDiv.classList.add('hidden');
             }
         }
 
@@ -374,6 +406,7 @@
             setupDiv.classList.remove('hidden');
             callDiv.classList.add('hidden');
             updateLinkInfo(roomIdInput.value);
+            autoJoinAttempted = false; // Сбрасываем для следующего раза
         }
     </script>
 </body>
