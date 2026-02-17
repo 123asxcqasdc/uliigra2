@@ -183,25 +183,6 @@
             justify-content: center;
             flex-wrap: wrap;
         }
-        .mic-btn {
-            background: #2e7d5e;
-        }
-        .mic-btn.muted {
-            background: #7d5e2e;
-        }
-        .end-call-btn {
-            background: #7d3e3e;
-        }
-        .end-call-btn:hover {
-            background: #9e4e4e;
-        }
-        .retry-btn {
-            background: #7d6b3e;
-            color: #e8e0b0;
-        }
-        .retry-btn:hover {
-            background: #9e8b4e;
-        }
         .user-count {
             background: #1a4a30;
             padding: 5px 12px;
@@ -212,12 +193,6 @@
         }
         audio {
             display: none;
-        }
-        #roomId {
-            width: 220px;
-        }
-        #userName {
-            width: 220px;
         }
     </style>
 </head>
@@ -250,9 +225,9 @@
             <div id="participantsGrid" class="participants-grid"></div>
             
             <div class="controls">
-                <button onclick="toggleMic()" id="micBtn" class="mic-btn">🔇 Выкл микрофон</button>
-                <button onclick="endCall()" class="end-call-btn">📞 Завершить</button>
-                <button onclick="retryAllConnections()" id="retryBtn" class="retry-btn">🔄 Переподключить всех</button>
+                <button onclick="toggleMic()" id="micBtn">🔇 Выкл микрофон</button>
+                <button onclick="endCall()" style="background: #7d3e3e;">📞 Завершить</button>
+                <button onclick="retryAllConnections()" style="background: #7d6b3e;">🔄 Переподключить всех</button>
             </div>
         </div>
 
@@ -277,16 +252,16 @@
 
         // Переменные
         let localStream = null;
-        let peers = {}; // { userId: peer }
+        let peers = {};
         let currentRoom = null;
         let currentUser = {
             id: 'user_' + Math.random().toString(36).substring(2, 10),
             name: 'Гость'
         };
-        let allUsers = {}; // { userId: { name, id } }
+        let allUsers = {};
         let autoJoinAttempted = false;
         let reconnectTimeouts = {};
-        let pendingSignals = {}; // Очередь сигналов для каждого userId
+        let pendingSignals = {};
 
         // Элементы
         const setupDiv = document.getElementById('setup');
@@ -302,13 +277,107 @@
         const participantsGrid = document.getElementById('participantsGrid');
         const participantCountSpan = document.getElementById('participantCount');
 
-        // Функция логирования
+        // ==================== ЗВУКОВЫЕ ЭФФЕКТЫ ====================
+        function playSound(type) {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Возобновляем контекст, если он приостановлен (нужно для некоторых браузеров)
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Настройки звука в зависимости от типа события
+                switch(type) {
+                    case 'join': // Вход в комнату
+                        oscillator.frequency.value = 880; // Нота Ля
+                        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                        oscillator.start();
+                        oscillator.stop(audioContext.currentTime + 0.3);
+                        break;
+                        
+                    case 'participant-joined': // Подключился участник
+                        oscillator.frequency.value = 659.25; // Нота Ми
+                        gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                        oscillator.start();
+                        oscillator.stop(audioContext.currentTime + 0.2);
+                        
+                        // Добавляем второй короткий звук через 0.1 сек
+                        setTimeout(() => {
+                            const osc2 = audioContext.createOscillator();
+                            const gain2 = audioContext.createGain();
+                            osc2.connect(gain2);
+                            gain2.connect(audioContext.destination);
+                            osc2.frequency.value = 880; // Ля
+                            gain2.gain.setValueAtTime(0.1, audioContext.currentTime);
+                            gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+                            osc2.start();
+                            osc2.stop(audioContext.currentTime + 0.15);
+                        }, 100);
+                        break;
+                        
+                    case 'participant-left': // Отключился участник
+                        oscillator.frequency.value = 440; // Нота Ля (октавой ниже)
+                        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.25);
+                        oscillator.start();
+                        oscillator.stop(audioContext.currentTime + 0.25);
+                        break;
+                        
+                    case 'message': // Получение сигнала (тихий)
+                        oscillator.frequency.value = 523.25; // До
+                        gainNode.gain.setValueAtTime(0.03, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+                        oscillator.start();
+                        oscillator.stop(audioContext.currentTime + 0.1);
+                        break;
+                        
+                    case 'connected': // Соединение установлено
+                        oscillator.frequency.value = 1046.5; // До (высокое)
+                        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+                        oscillator.start();
+                        oscillator.stop(audioContext.currentTime + 0.4);
+                        
+                        // Трель из двух нот
+                        setTimeout(() => {
+                            const osc2 = audioContext.createOscillator();
+                            const gain2 = audioContext.createGain();
+                            osc2.connect(gain2);
+                            gain2.connect(audioContext.destination);
+                            osc2.frequency.value = 1318.5; // Ми
+                            gain2.gain.setValueAtTime(0.15, audioContext.currentTime);
+                            gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                            osc2.start();
+                            osc2.stop(audioContext.currentTime + 0.3);
+                        }, 150);
+                        break;
+                }
+            } catch (e) {
+                console.log('Ошибка воспроизведения звука:', e);
+            }
+        }
+
+        // Логирование
         function log(message) {
             const entry = document.createElement('div');
             entry.className = 'log-entry';
             entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
             logDiv.appendChild(entry);
             logDiv.scrollTop = logDiv.scrollHeight;
+            
+            // Воспроизводим звук для некоторых типов сообщений
+            if (message.includes('Получен сигнал')) {
+                playSound('message');
+            }
         }
 
         // Получаем параметры из URL
@@ -327,14 +396,13 @@
             }
         }
 
-        // Обновление сетки участников (исправлено: своё имя только один раз)
+        // Обновление сетки участников
         function updateParticipantsGrid() {
             if (!allUsers) return;
             
             let html = '';
             const userIds = Object.keys(allUsers);
             
-            // Сортируем: сначала текущий пользователь, потом остальные
             const sortedIds = userIds.sort((a, b) => {
                 if (a === currentUser.id) return -1;
                 if (b === currentUser.id) return 1;
@@ -348,9 +416,7 @@
                 const isMe = userId === currentUser.id;
                 const peer = peers[userId];
                 
-                // Определяем статус подключения
                 let statusText = '⏳ Подключение...';
-                let statusClass = '';
                 
                 if (isMe) {
                     statusText = localStream?.getAudioTracks()[0]?.enabled ? '🎤 Готов' : '🔇 Микрофон выключен';
@@ -369,14 +435,13 @@
                         <div class="participant-name">${user.name}${isMe ? ' (Вы)' : ''}</div>
                         <div class="participant-avatar">👤</div>
                         <div class="participant-status">${statusText}</div>
-                        <div class="speaking-indicator ${isMe ? 'hidden-indicator' : ''}" id="speaking-${userId}"></div>
+                        <div class="speaking-indicator hidden-indicator" id="speaking-${userId}"></div>
                     </div>
                 `;
             });
             
             participantsGrid.innerHTML = html;
             
-            // Обновляем счётчик
             const count = Object.keys(allUsers).length;
             participantCountSpan.textContent = `${count} ${count === 1 ? 'участник' : (count < 5 ? 'участника' : 'участников')}`;
         }
@@ -435,7 +500,7 @@
             joinRoom();
         }
 
-        // ICE серверы (расширенный набор)
+        // ICE серверы
         function getIceServers() {
             return [
                 { urls: 'stun:stun.l.google.com:19302' },
@@ -483,6 +548,9 @@
                 });
                 log('✅ Микрофон получен');
                 
+                // Звук входа
+                playSound('join');
+                
                 currentRoom = roomId;
                 currentRoomDisplay.textContent = roomId;
                 updateLinkInfo(roomId);
@@ -499,19 +567,64 @@
                 roomRef.child('users/' + currentUser.id).onDisconnect().remove();
                 log('Подключен к комнате ' + roomId);
 
+                // Слушаем сигналы
+                db.ref('calls/' + roomId).on('child_added', (snap) => {
+                    const signal = snap.val();
+                    if (signal.from !== currentUser.id) {
+                        log(`📨 Получен сигнал от ${signal.from}`);
+                        
+                        if (peers[signal.from] && !peers[signal.from].destroyed) {
+                            try {
+                                peers[signal.from].signal(signal.data);
+                                log('✅ Сигнал применен');
+                            } catch (e) {
+                                log(`❌ Ошибка применения сигнала: ${e.message}`);
+                                if (!pendingSignals[signal.from]) pendingSignals[signal.from] = [];
+                                pendingSignals[signal.from].push(signal.data);
+                            }
+                        } else {
+                            if (!pendingSignals[signal.from]) pendingSignals[signal.from] = [];
+                            pendingSignals[signal.from].push(signal.data);
+                            log(`📦 Сигнал сохранен в очередь (${pendingSignals[signal.from].length})`);
+                        }
+                        snap.ref.remove();
+                    }
+                });
+
                 // Следим за пользователями
                 roomRef.child('users').on('value', (snap) => {
                     const users = snap.val();
                     if (!users) return;
                     
+                    // Определяем новых пользователей (которые появились сейчас)
+                    const newUsers = Object.keys(users).filter(id => 
+                        id !== currentUser.id && !allUsers[id]
+                    );
+                    
+                    // Определяем отключившихся пользователей
+                    const leftUsers = Object.keys(allUsers).filter(id => 
+                        id !== currentUser.id && !users[id]
+                    );
+                    
                     // Обновляем список всех пользователей
                     allUsers = users;
                     
-                    // Находим новых пользователей
+                    // Звуки для новых участников
+                    newUsers.forEach(userId => {
+                        playSound('participant-joined');
+                        log(`🔔 Новый участник: ${users[userId].name}`);
+                    });
+                    
+                    // Звуки для отключившихся
+                    leftUsers.forEach(userId => {
+                        playSound('participant-left');
+                        log(`🔔 Участник отключился: ${allUsers[userId]?.name || userId}`);
+                    });
+                    
+                    // Находим новых пользователей и создаем peer
                     Object.keys(users).forEach(userId => {
                         if (userId !== currentUser.id && !peers[userId]) {
                             const newUser = users[userId];
-                            log(`👤 Новый участник: ${newUser.name}`);
                             createPeerWith(userId, newUser.name);
                         }
                     });
@@ -519,7 +632,6 @@
                     // Удаляем отключившихся
                     Object.keys(peers).forEach(userId => {
                         if (!users[userId]) {
-                            log(`👋 Участник отключился: ${peers[userId].remoteName || userId}`);
                             if (reconnectTimeouts[userId]) {
                                 clearTimeout(reconnectTimeouts[userId]);
                                 delete reconnectTimeouts[userId];
@@ -529,7 +641,6 @@
                             }
                             delete peers[userId];
                             
-                            // Удаляем аудио элемент
                             const audioEl = document.getElementById(`audio-${userId}`);
                             if (audioEl) audioEl.remove();
                         }
@@ -537,36 +648,8 @@
                     
                     updateParticipantsGrid();
                     
-                    // Обновляем статус
                     const count = Object.keys(users).length;
                     statusDiv.textContent = `👥 В комнате: ${count} ${count === 1 ? 'участник' : (count < 5 ? 'участника' : 'участников')}`;
-                });
-
-                // Слушаем сигналы для всех
-                db.ref('calls/' + roomId).on('child_added', (snap) => {
-                    const signal = snap.val();
-                    if (signal.from !== currentUser.id) {
-                        log(`📨 Получен сигнал от ${signal.from}`);
-                        
-                        // Если peer уже есть, отправляем сигнал сразу
-                        if (peers[signal.from] && !peers[signal.from].destroyed) {
-                            try {
-                                peers[signal.from].signal(signal.data);
-                                log('✅ Сигнал применен');
-                            } catch (e) {
-                                log(`❌ Ошибка применения сигнала: ${e.message}`);
-                                // Сохраняем в очередь на случай ошибки
-                                if (!pendingSignals[signal.from]) pendingSignals[signal.from] = [];
-                                pendingSignals[signal.from].push(signal.data);
-                            }
-                        } else {
-                            // Сохраняем сигнал в очередь
-                            if (!pendingSignals[signal.from]) pendingSignals[signal.from] = [];
-                            pendingSignals[signal.from].push(signal.data);
-                            log(`📦 Сигнал сохранен в очередь (всего: ${pendingSignals[signal.from].length})`);
-                        }
-                        snap.ref.remove();
-                    }
                 });
 
             } catch (err) {
@@ -589,10 +672,8 @@
                     config: { iceServers: getIceServers() }
                 });
                 
-                // Сохраняем имя для логов
                 peer.remoteName = userName;
                 
-                // Создаем аудио элемент для этого участника
                 const audioEl = document.createElement('audio');
                 audioEl.id = `audio-${userId}`;
                 audioEl.autoplay = true;
@@ -611,9 +692,10 @@
                 peer.on('stream', stream => {
                     log(`🎵 Получен аудиопоток от ${userName}`);
                     audioEl.srcObject = stream;
-                    
-                    // Обновляем сетку - показываем что подключен
                     updateParticipantsGrid();
+                    
+                    // Звук успешного подключения
+                    playSound('connected');
                     
                     // Визуализация говорящего
                     try {
@@ -638,13 +720,12 @@
                             }
                         }, 150);
                         
-                        // Очищаем интервал при закрытии
                         peer.once('close', () => clearInterval(interval));
                     } catch (e) {
                         log(`Ошибка анализатора: ${e.message}`);
                     }
                     
-                    // Применяем накопленные сигналы, если были
+                    // Применяем накопленные сигналы
                     if (pendingSignals[userId] && pendingSignals[userId].length > 0) {
                         log(`📦 Применяем ${pendingSignals[userId].length} накопленных сигналов`);
                         pendingSignals[userId].forEach(signalData => {
@@ -672,8 +753,7 @@
                     log(`❌ Ошибка peer с ${userName}: ${err.message}`);
                     updateParticipantsGrid();
                     
-                    // Пытаемся переподключиться
-                    if (!reconnectTimeouts[userId] && remoteUserExists(userId)) {
+                    if (!reconnectTimeouts[userId] && allUsers[userId]) {
                         reconnectTimeouts[userId] = setTimeout(() => {
                             log(`🔄 Переподключение к ${userName}...`);
                             if (peers[userId] && !peers[userId].destroyed) {
@@ -692,22 +772,11 @@
                     updateParticipantsGrid();
                 });
 
-                peer.on('iceStateChange', (state) => {
-                    log(`🔌 ICE с ${userName}: ${state}`);
-                    if (state === 'failed' && remoteUserExists(userId)) {
-                        // Пробуем перезапустить ICE
-                        if (peer && !peer.destroyed) {
-                            peer.restartIce();
-                        }
-                    }
-                });
-
                 peers[userId] = peer;
                 
-                // Проверяем, есть ли накопленные сигналы
+                // Проверяем накопленные сигналы
                 if (pendingSignals[userId] && pendingSignals[userId].length > 0) {
                     log(`📦 Есть ${pendingSignals[userId].length} накопленных сигналов для ${userName}`);
-                    // Даем время на инициализацию
                     setTimeout(() => {
                         if (peers[userId] && !peers[userId].destroyed) {
                             pendingSignals[userId].forEach(signalData => {
@@ -719,7 +788,7 @@
                             });
                             delete pendingSignals[userId];
                         }
-                    }, 500);
+                    }, 1000);
                 }
 
             } catch (err) {
@@ -727,16 +796,11 @@
             }
         }
 
-        function remoteUserExists(userId) {
-            return allUsers && allUsers[userId];
-        }
-
         function toggleMic() {
             if (localStream) {
                 const track = localStream.getAudioTracks()[0];
                 track.enabled = !track.enabled;
                 micBtn.textContent = track.enabled ? '🔇 Выкл микрофон' : '🎤 Вкл микрофон';
-                micBtn.classList.toggle('muted', !track.enabled);
                 log('Микрофон ' + (track.enabled ? 'включен' : 'выключен'));
                 updateParticipantsGrid();
             }
@@ -745,20 +809,17 @@
         function retryAllConnections() {
             log('🔄 Переподключение ко всем участникам');
             
-            // Очищаем все таймауты
             Object.values(reconnectTimeouts).forEach(timeout => clearTimeout(timeout));
             reconnectTimeouts = {};
             
-            // Пересоздаем все peer-соединения
             const users = { ...allUsers };
             Object.keys(peers).forEach(userId => {
-                const userName = peers[userId].remoteName || users[userId]?.name || userId;
+                const userName = peers[userId]?.remoteName || users[userId]?.name || userId;
                 if (peers[userId] && !peers[userId].destroyed) {
                     peers[userId].destroy();
                 }
                 delete peers[userId];
                 
-                // Удаляем аудио элемент
                 const audioEl = document.getElementById(`audio-${userId}`);
                 if (audioEl) audioEl.remove();
                 
@@ -771,7 +832,6 @@
         function endCall() {
             log('Завершение звонка');
             
-            // Очищаем все таймауты
             Object.values(reconnectTimeouts).forEach(timeout => clearTimeout(timeout));
             reconnectTimeouts = {};
             
@@ -780,13 +840,11 @@
                 db.ref('calls/' + currentRoom).remove();
             }
             
-            // Уничтожаем все peer-соединения
             Object.values(peers).forEach(peer => {
                 if (peer && !peer.destroyed) peer.destroy();
             });
             peers = {};
             
-            // Удаляем все аудио элементы
             document.querySelectorAll('audio[id^="audio-"]').forEach(el => el.remove());
             
             if (localStream) {
