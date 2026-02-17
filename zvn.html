@@ -262,6 +262,9 @@
         let autoJoinAttempted = false;
         let reconnectTimeouts = {};
         let pendingSignals = {};
+        let roomRef = null;
+        let callsRef = null;
+        let analyserIntervals = {};
 
         // Элементы
         const setupDiv = document.getElementById('setup');
@@ -282,7 +285,6 @@
             try {
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 
-                // Возобновляем контекст, если он приостановлен (нужно для некоторых браузеров)
                 if (audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
@@ -293,30 +295,28 @@
                 oscillator.connect(gainNode);
                 gainNode.connect(audioContext.destination);
                 
-                // Настройки звука в зависимости от типа события
                 switch(type) {
-                    case 'join': // Вход в комнату
-                        oscillator.frequency.value = 880; // Нота Ля
+                    case 'join':
+                        oscillator.frequency.value = 880;
                         gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
                         gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
                         oscillator.start();
                         oscillator.stop(audioContext.currentTime + 0.3);
                         break;
                         
-                    case 'participant-joined': // Подключился участник
-                        oscillator.frequency.value = 659.25; // Нота Ми
+                    case 'participant-joined':
+                        oscillator.frequency.value = 659.25;
                         gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
                         gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
                         oscillator.start();
                         oscillator.stop(audioContext.currentTime + 0.2);
                         
-                        // Добавляем второй короткий звук через 0.1 сек
                         setTimeout(() => {
                             const osc2 = audioContext.createOscillator();
                             const gain2 = audioContext.createGain();
                             osc2.connect(gain2);
                             gain2.connect(audioContext.destination);
-                            osc2.frequency.value = 880; // Ля
+                            osc2.frequency.value = 880;
                             gain2.gain.setValueAtTime(0.1, audioContext.currentTime);
                             gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
                             osc2.start();
@@ -324,36 +324,35 @@
                         }, 100);
                         break;
                         
-                    case 'participant-left': // Отключился участник
-                        oscillator.frequency.value = 440; // Нота Ля (октавой ниже)
+                    case 'participant-left':
+                        oscillator.frequency.value = 440;
                         gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
                         gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.25);
                         oscillator.start();
                         oscillator.stop(audioContext.currentTime + 0.25);
                         break;
                         
-                    case 'message': // Получение сигнала (тихий)
-                        oscillator.frequency.value = 523.25; // До
+                    case 'message':
+                        oscillator.frequency.value = 523.25;
                         gainNode.gain.setValueAtTime(0.03, audioContext.currentTime);
                         gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
                         oscillator.start();
                         oscillator.stop(audioContext.currentTime + 0.1);
                         break;
                         
-                    case 'connected': // Соединение установлено
-                        oscillator.frequency.value = 1046.5; // До (высокое)
+                    case 'connected':
+                        oscillator.frequency.value = 1046.5;
                         gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
                         gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
                         oscillator.start();
                         oscillator.stop(audioContext.currentTime + 0.4);
                         
-                        // Трель из двух нот
                         setTimeout(() => {
                             const osc2 = audioContext.createOscillator();
                             const gain2 = audioContext.createGain();
                             osc2.connect(gain2);
                             gain2.connect(audioContext.destination);
-                            osc2.frequency.value = 1318.5; // Ми
+                            osc2.frequency.value = 1318.5;
                             gain2.gain.setValueAtTime(0.15, audioContext.currentTime);
                             gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
                             osc2.start();
@@ -374,7 +373,6 @@
             logDiv.appendChild(entry);
             logDiv.scrollTop = logDiv.scrollHeight;
             
-            // Воспроизводим звук для некоторых типов сообщений
             if (message.includes('Получен сигнал')) {
                 playSound('message');
             }
@@ -548,7 +546,6 @@
                 });
                 log('✅ Микрофон получен');
                 
-                // Звук входа
                 playSound('join');
                 
                 currentRoom = roomId;
@@ -557,7 +554,7 @@
                 setupDiv.classList.add('hidden');
                 callDiv.classList.remove('hidden');
                 
-                const roomRef = db.ref('rooms/' + roomId);
+                roomRef = db.ref('rooms/' + roomId);
                 
                 // Добавляем себя
                 await roomRef.child('users/' + currentUser.id).set({ 
@@ -568,7 +565,8 @@
                 log('Подключен к комнате ' + roomId);
 
                 // Слушаем сигналы
-                db.ref('calls/' + roomId).on('child_added', (snap) => {
+                callsRef = db.ref('calls/' + roomId);
+                callsRef.on('child_added', (snap) => {
                     const signal = snap.val();
                     if (signal.from !== currentUser.id) {
                         log(`📨 Получен сигнал от ${signal.from}`);
@@ -596,32 +594,26 @@
                     const users = snap.val();
                     if (!users) return;
                     
-                    // Определяем новых пользователей (которые появились сейчас)
                     const newUsers = Object.keys(users).filter(id => 
                         id !== currentUser.id && !allUsers[id]
                     );
                     
-                    // Определяем отключившихся пользователей
                     const leftUsers = Object.keys(allUsers).filter(id => 
                         id !== currentUser.id && !users[id]
                     );
                     
-                    // Обновляем список всех пользователей
                     allUsers = users;
                     
-                    // Звуки для новых участников
                     newUsers.forEach(userId => {
                         playSound('participant-joined');
                         log(`🔔 Новый участник: ${users[userId].name}`);
                     });
                     
-                    // Звуки для отключившихся
                     leftUsers.forEach(userId => {
                         playSound('participant-left');
                         log(`🔔 Участник отключился: ${allUsers[userId]?.name || userId}`);
                     });
                     
-                    // Находим новых пользователей и создаем peer
                     Object.keys(users).forEach(userId => {
                         if (userId !== currentUser.id && !peers[userId]) {
                             const newUser = users[userId];
@@ -629,7 +621,6 @@
                         }
                     });
                     
-                    // Удаляем отключившихся
                     Object.keys(peers).forEach(userId => {
                         if (!users[userId]) {
                             if (reconnectTimeouts[userId]) {
@@ -640,6 +631,11 @@
                                 peers[userId].destroy();
                             }
                             delete peers[userId];
+                            
+                            if (analyserIntervals[userId]) {
+                                clearInterval(analyserIntervals[userId]);
+                                delete analyserIntervals[userId];
+                            }
                             
                             const audioEl = document.getElementById(`audio-${userId}`);
                             if (audioEl) audioEl.remove();
@@ -660,6 +656,11 @@
         }
 
         function createPeerWith(userId, userName) {
+            if (peers[userId] && !peers[userId].destroyed) {
+                log(`⚠️ Peer с ${userName} уже существует`);
+                return;
+            }
+            
             log(`🔧 Создаем peer с ${userName} (${userId})`);
             
             const isInit = currentUser.id < userId;
@@ -694,10 +695,8 @@
                     audioEl.srcObject = stream;
                     updateParticipantsGrid();
                     
-                    // Звук успешного подключения
                     playSound('connected');
                     
-                    // Визуализация говорящего
                     try {
                         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                         const analyser = audioContext.createAnalyser();
@@ -707,7 +706,11 @@
                         analyser.fftSize = 256;
                         const dataArray = new Uint8Array(analyser.frequencyBinCount);
                         
-                        const interval = setInterval(() => {
+                        if (analyserIntervals[userId]) {
+                            clearInterval(analyserIntervals[userId]);
+                        }
+                        
+                        analyserIntervals[userId] = setInterval(() => {
                             analyser.getByteFrequencyData(dataArray);
                             const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
                             const indicator = document.getElementById(`speaking-${userId}`);
@@ -719,13 +722,10 @@
                                 }
                             }
                         }, 150);
-                        
-                        peer.once('close', () => clearInterval(interval));
                     } catch (e) {
                         log(`Ошибка анализатора: ${e.message}`);
                     }
                     
-                    // Применяем накопленные сигналы
                     if (pendingSignals[userId] && pendingSignals[userId].length > 0) {
                         log(`📦 Применяем ${pendingSignals[userId].length} накопленных сигналов`);
                         pendingSignals[userId].forEach(signalData => {
@@ -760,6 +760,12 @@
                                 peers[userId].destroy();
                             }
                             delete peers[userId];
+                            
+                            if (analyserIntervals[userId]) {
+                                clearInterval(analyserIntervals[userId]);
+                                delete analyserIntervals[userId];
+                            }
+                            
                             createPeerWith(userId, userName);
                             delete reconnectTimeouts[userId];
                         }, 3000);
@@ -770,11 +776,15 @@
                     log(`🔒 Peer с ${userName} закрыт`);
                     audioEl.remove();
                     updateParticipantsGrid();
+                    
+                    if (analyserIntervals[userId]) {
+                        clearInterval(analyserIntervals[userId]);
+                        delete analyserIntervals[userId];
+                    }
                 });
 
                 peers[userId] = peer;
                 
-                // Проверяем накопленные сигналы
                 if (pendingSignals[userId] && pendingSignals[userId].length > 0) {
                     log(`📦 Есть ${pendingSignals[userId].length} накопленных сигналов для ${userName}`);
                     setTimeout(() => {
@@ -813,52 +823,87 @@
             reconnectTimeouts = {};
             
             const users = { ...allUsers };
+            
+            // Очищаем все существующие соединения
             Object.keys(peers).forEach(userId => {
-                const userName = peers[userId]?.remoteName || users[userId]?.name || userId;
                 if (peers[userId] && !peers[userId].destroyed) {
                     peers[userId].destroy();
                 }
                 delete peers[userId];
                 
+                if (analyserIntervals[userId]) {
+                    clearInterval(analyserIntervals[userId]);
+                    delete analyserIntervals[userId];
+                }
+                
                 const audioEl = document.getElementById(`audio-${userId}`);
                 if (audioEl) audioEl.remove();
-                
-                if (users[userId]) {
-                    createPeerWith(userId, userName);
+            });
+            
+            // Создаем новые соединения
+            Object.keys(users).forEach(userId => {
+                if (userId !== currentUser.id) {
+                    const userName = users[userId]?.name || userId;
+                    setTimeout(() => {
+                        createPeerWith(userId, userName);
+                    }, 100 * Math.random()); // Небольшая рандомизация
                 }
             });
+            
+            log('🔄 Запросы на переподключение отправлены');
         }
 
         function endCall() {
             log('Завершение звонка');
             
+            // Очищаем слушатели Firebase
+            if (roomRef) {
+                roomRef.child('users').off();
+                roomRef.child('users/' + currentUser.id).remove();
+                roomRef = null;
+            }
+            
+            if (callsRef) {
+                callsRef.off();
+                callsRef.remove();
+                callsRef = null;
+            }
+            
+            // Очищаем таймауты
             Object.values(reconnectTimeouts).forEach(timeout => clearTimeout(timeout));
             reconnectTimeouts = {};
             
-            if (currentRoom) {
-                db.ref('rooms/' + currentRoom + '/users/' + currentUser.id).remove();
-                db.ref('calls/' + currentRoom).remove();
-            }
+            // Очищаем интервалы анализаторов
+            Object.values(analyserIntervals).forEach(interval => clearInterval(interval));
+            analyserIntervals = {};
             
+            // Уничтожаем все peer-соединения
             Object.values(peers).forEach(peer => {
                 if (peer && !peer.destroyed) peer.destroy();
             });
             peers = {};
             
+            // Удаляем аудио элементы
             document.querySelectorAll('audio[id^="audio-"]').forEach(el => el.remove());
             
+            // Останавливаем локальный поток
             if (localStream) {
                 localStream.getTracks().forEach(t => t.stop());
                 localStream = null;
             }
             
+            // Очищаем очереди и данные
             pendingSignals = {};
             allUsers = {};
+            currentRoom = null;
             
+            // Возвращаемся в меню
             setupDiv.classList.remove('hidden');
             callDiv.classList.add('hidden');
             updateLinkInfo(roomIdInput.value);
             autoJoinAttempted = false;
+            
+            log('✅ Звонок завершен, можно подключаться заново');
         }
     </script>
 </body>
