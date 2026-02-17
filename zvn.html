@@ -11,135 +11,219 @@
     <script src="https://cdn.jsdelivr.net/npm/simple-peer@9.11.1/simplepeer.min.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 900px;
             margin: 20px auto;
             padding: 20px;
             text-align: center;
+            background: #0a2f1f;
+            color: #e0f2e9;
         }
         .container {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: #1a3f2a;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+            border: 1px solid #2a5a3a;
+        }
+        h1 {
+            color: #8bc34a;
+            margin-bottom: 25px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         input, button {
-            padding: 10px;
-            margin: 5px;
+            padding: 12px 18px;
+            margin: 8px;
             font-size: 16px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            border-radius: 8px;
+            border: 1px solid #2a5a3a;
+            background: #2a4a35;
+            color: #e0f2e9;
+            transition: all 0.3s;
+        }
+        input {
+            width: 250px;
+            background: #1a3f2a;
+            border: 1px solid #3a6b4a;
+        }
+        input::placeholder {
+            color: #8fbc8f;
         }
         button {
-            background: #667eea;
+            background: #2e7d5e;
             color: white;
             border: none;
             cursor: pointer;
-            padding: 10px 20px;
+            font-weight: bold;
+            border: 1px solid #3e9e7a;
         }
         button:hover {
-            background: #5a6fd8;
+            background: #3e9e7a;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,100,50,0.4);
         }
         .hidden { display: none; }
         .status {
-            padding: 10px;
-            margin: 10px 0;
-            background: #f0f0f0;
-            border-radius: 5px;
+            padding: 12px;
+            margin: 15px 0;
+            background: #1a4a30;
+            border-radius: 8px;
+            color: #b8e0b8;
+            border-left: 4px solid #8bc34a;
+            font-weight: bold;
         }
         .room-header {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 12px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
+            background: #1a4a30;
+            padding: 12px;
+            border-radius: 8px;
         }
         .participants-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 15px;
-            margin: 20px 0;
+            margin: 25px 0;
         }
         .participant-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
+            background: linear-gradient(145deg, #1e4a2e, #0e3a1e);
+            color: #e8f5e8;
+            padding: 18px;
+            border-radius: 12px;
             position: relative;
+            border: 1px solid #3a7a4a;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        .participant-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,80,40,0.4);
         }
         .participant-name {
             font-size: 18px;
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            color: #a5d6a5;
         }
         .participant-status {
-            font-size: 12px;
-            opacity: 0.9;
+            font-size: 13px;
+            background: #1e3a2a;
+            padding: 4px 8px;
+            border-radius: 15px;
+            display: inline-block;
+            color: #b8e0b8;
         }
         .participant-avatar {
-            font-size: 40px;
+            font-size: 45px;
             margin: 10px 0;
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3));
         }
         .speaking-indicator {
-            width: 10px;
-            height: 10px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
-            background: #4caf50;
+            background: #6eff6e;
             position: absolute;
-            top: 10px;
-            right: 10px;
-            animation: pulse 1s infinite;
+            top: 12px;
+            right: 12px;
+            box-shadow: 0 0 10px #00ff00;
+            animation: pulse 1.2s infinite;
         }
         @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.2); opacity: 0.7; }
-            100% { transform: scale(1); opacity: 1; }
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
         }
         .hidden-indicator {
             display: none;
         }
         .log {
-            margin-top: 20px;
+            margin-top: 25px;
             text-align: left;
-            background: #1e1e1e;
-            color: #0f0;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
+            background: #0e2a1a;
+            color: #a0e0a0;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
             font-size: 12px;
-            max-height: 150px;
+            max-height: 180px;
             overflow-y: auto;
+            border: 1px solid #2a5a3a;
         }
         .log-entry {
-            margin: 2px 0;
-            border-bottom: 1px solid #333;
+            margin: 3px 0;
+            border-bottom: 1px solid #1a4a2a;
+            padding-bottom: 2px;
         }
         .link-info {
-            background: #e3f2fd;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
+            background: #1a4a30;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
             font-size: 14px;
+            border: 1px solid #3a7a4a;
         }
         .auto-join-message {
-            background: #4caf50;
-            color: white;
+            background: #2e6b4e;
+            color: #e0ffe0;
             padding: 15px;
-            border-radius: 5px;
-            margin: 10px 0;
+            border-radius: 8px;
+            margin: 15px 0;
             font-weight: bold;
+            border-left: 4px solid #8bc34a;
         }
-        .ice-status {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .mic-btn {
+            background: #2e7d5e;
+        }
+        .mic-btn.muted {
+            background: #7d5e2e;
+        }
+        .end-call-btn {
+            background: #7d3e3e;
+        }
+        .end-call-btn:hover {
+            background: #9e4e4e;
+        }
+        .retry-btn {
+            background: #7d6b3e;
+            color: #e8e0b0;
+        }
+        .retry-btn:hover {
+            background: #9e8b4e;
+        }
+        .user-count {
+            background: #1a4a30;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #b8e0b8;
+            border: 1px solid #3a7a4a;
+        }
+        audio {
+            display: none;
+        }
+        #roomId {
+            width: 220px;
+        }
+        #userName {
+            width: 220px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>👥 Групповые звонки (до 6 человек)</h1>
+        <h1>🌿 Kcalls — Групповые звонки</h1>
         
         <div id="setup">
             <div class="link-info" id="linkInfo"></div>
@@ -154,9 +238,10 @@
 
         <div id="call" class="hidden">
             <div class="room-header">
-                <strong>Комната: <span id="currentRoomDisplay"></span></strong>
-                <button onclick="copyRoomId()" style="padding: 5px 10px;">📋 Копировать ID</button>
-                <button onclick="copyCallLink()" style="padding: 5px 10px;">🔗 Скопировать ссылку</button>
+                <strong>🏠 Комната: <span id="currentRoomDisplay"></span></strong>
+                <button onclick="copyRoomId()" style="padding: 6px 12px;">📋 Копировать ID</button>
+                <button onclick="copyCallLink()" style="padding: 6px 12px;">🔗 Скопировать ссылку</button>
+                <span id="participantCount" class="user-count">0 участников</span>
             </div>
             
             <div id="status" class="status">Ожидание...</div>
@@ -165,9 +250,9 @@
             <div id="participantsGrid" class="participants-grid"></div>
             
             <div class="controls">
-                <button onclick="toggleMic()" id="micBtn">🔇 Выкл микрофон</button>
-                <button onclick="endCall()" style="background: #dc3545;">📞 Завершить</button>
-                <button onclick="retryAllConnections()" id="retryBtn" style="background: #ffc107; color: black;">🔄 Переподключить всех</button>
+                <button onclick="toggleMic()" id="micBtn" class="mic-btn">🔇 Выкл микрофон</button>
+                <button onclick="endCall()" class="end-call-btn">📞 Завершить</button>
+                <button onclick="retryAllConnections()" id="retryBtn" class="retry-btn">🔄 Переподключить всех</button>
             </div>
         </div>
 
@@ -192,15 +277,16 @@
 
         // Переменные
         let localStream = null;
-        let peers = {}; // Объект для хранения всех peer-соединений { userId: peer }
+        let peers = {}; // { userId: peer }
         let currentRoom = null;
         let currentUser = {
             id: 'user_' + Math.random().toString(36).substring(2, 10),
             name: 'Гость'
         };
-        let allUsers = {}; // Все пользователи в комнате
+        let allUsers = {}; // { userId: { name, id } }
         let autoJoinAttempted = false;
         let reconnectTimeouts = {};
+        let pendingSignals = {}; // Очередь сигналов для каждого userId
 
         // Элементы
         const setupDiv = document.getElementById('setup');
@@ -214,6 +300,7 @@
         const linkInfoDiv = document.getElementById('linkInfo');
         const autoJoinMessageDiv = document.getElementById('autoJoinMessage');
         const participantsGrid = document.getElementById('participantsGrid');
+        const participantCountSpan = document.getElementById('participantCount');
 
         // Функция логирования
         function log(message) {
@@ -234,47 +321,64 @@
         function updateLinkInfo(roomId) {
             if (roomId) {
                 const link = window.location.origin + window.location.pathname + '?call=' + roomId;
-                linkInfoDiv.innerHTML = `🔗 Ссылка для приглашения: <br><small>${link}</small>`;
+                linkInfoDiv.innerHTML = `🔗 Ссылка для приглашения: <br><small style="color: #b8e0b8;">${link}</small>`;
             } else {
                 linkInfoDiv.innerHTML = '';
             }
         }
 
-        // Обновление сетки участников
+        // Обновление сетки участников (исправлено: своё имя только один раз)
         function updateParticipantsGrid() {
+            if (!allUsers) return;
+            
             let html = '';
+            const userIds = Object.keys(allUsers);
             
-            // Добавляем себя
-            html += `
-                <div class="participant-card">
-                    <div class="participant-name">${currentUser.name} (Вы)</div>
-                    <div class="participant-avatar">👤</div>
-                    <div class="participant-status">Микрофон: ${localStream?.getAudioTracks()[0]?.enabled ? '🎤' : '🔇'}</div>
-                </div>
-            `;
+            // Сортируем: сначала текущий пользователь, потом остальные
+            const sortedIds = userIds.sort((a, b) => {
+                if (a === currentUser.id) return -1;
+                if (b === currentUser.id) return 1;
+                return (allUsers[a].name || '').localeCompare(allUsers[b].name || '');
+            });
             
-            // Добавляем всех остальных
-            Object.values(allUsers).forEach(user => {
-                if (user.id !== currentUser.id) {
-                    const peer = peers[user.id];
-                    const isConnected = peer && peer.connected;
-                    const hasStream = peer && peer._remoteStreams?.length > 0;
-                    
-                    html += `
-                        <div class="participant-card" id="participant-${user.id}">
-                            <div class="participant-name">${user.name}</div>
-                            <div class="participant-avatar">👤</div>
-                            <div class="participant-status">
-                                ${isConnected ? '✅ Подключен' : '🔄 Подключение...'}
-                                ${hasStream ? '🎵' : ''}
-                            </div>
-                            <div class="speaking-indicator hidden-indicator" id="speaking-${user.id}"></div>
-                        </div>
-                    `;
+            sortedIds.forEach(userId => {
+                const user = allUsers[userId];
+                if (!user) return;
+                
+                const isMe = userId === currentUser.id;
+                const peer = peers[userId];
+                
+                // Определяем статус подключения
+                let statusText = '⏳ Подключение...';
+                let statusClass = '';
+                
+                if (isMe) {
+                    statusText = localStream?.getAudioTracks()[0]?.enabled ? '🎤 Готов' : '🔇 Микрофон выключен';
+                } else if (peer) {
+                    if (peer.connected || peer._remoteStreams?.length > 0) {
+                        statusText = '✅ Подключён';
+                    } else if (peer.destroyed) {
+                        statusText = '❌ Ошибка';
+                    } else {
+                        statusText = '🔄 Соединение...';
+                    }
                 }
+                
+                html += `
+                    <div class="participant-card" id="participant-${userId}">
+                        <div class="participant-name">${user.name}${isMe ? ' (Вы)' : ''}</div>
+                        <div class="participant-avatar">👤</div>
+                        <div class="participant-status">${statusText}</div>
+                        <div class="speaking-indicator ${isMe ? 'hidden-indicator' : ''}" id="speaking-${userId}"></div>
+                    </div>
+                `;
             });
             
             participantsGrid.innerHTML = html;
+            
+            // Обновляем счётчик
+            const count = Object.keys(allUsers).length;
+            participantCountSpan.textContent = `${count} ${count === 1 ? 'участник' : (count < 5 ? 'участника' : 'участников')}`;
         }
 
         // Автоматическое подключение при загрузке
@@ -331,18 +435,26 @@
             joinRoom();
         }
 
-        // ICE серверы
+        // ICE серверы (расширенный набор)
         function getIceServers() {
             return [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
                 { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' },
                 {
-                    urls: [
-                        'turn:openrelay.metered.ca:80',
-                        'turn:openrelay.metered.ca:443',
-                        'turn:openrelay.metered.ca:443?transport=tcp'
-                    ],
+                    urls: 'turn:openrelay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
                     username: 'openrelayproject',
                     credential: 'openrelayproject'
                 }
@@ -407,13 +519,19 @@
                     // Удаляем отключившихся
                     Object.keys(peers).forEach(userId => {
                         if (!users[userId]) {
-                            log(`👋 Участник отключился: ${peers[userId].remoteName}`);
+                            log(`👋 Участник отключился: ${peers[userId].remoteName || userId}`);
                             if (reconnectTimeouts[userId]) {
                                 clearTimeout(reconnectTimeouts[userId]);
                                 delete reconnectTimeouts[userId];
                             }
-                            peers[userId].destroy();
+                            if (peers[userId] && !peers[userId].destroyed) {
+                                peers[userId].destroy();
+                            }
                             delete peers[userId];
+                            
+                            // Удаляем аудио элемент
+                            const audioEl = document.getElementById(`audio-${userId}`);
+                            if (audioEl) audioEl.remove();
                         }
                     });
                     
@@ -421,19 +539,31 @@
                     
                     // Обновляем статус
                     const count = Object.keys(users).length;
-                    statusDiv.textContent = `👥 В комнате: ${count} ${count === 1 ? 'участник' : 'участников'}`;
+                    statusDiv.textContent = `👥 В комнате: ${count} ${count === 1 ? 'участник' : (count < 5 ? 'участника' : 'участников')}`;
                 });
 
                 // Слушаем сигналы для всех
                 db.ref('calls/' + roomId).on('child_added', (snap) => {
                     const signal = snap.val();
-                    if (signal.from !== currentUser.id && peers[signal.from]) {
+                    if (signal.from !== currentUser.id) {
                         log(`📨 Получен сигнал от ${signal.from}`);
-                        try {
-                            peers[signal.from].signal(signal.data);
-                            log('✅ Сигнал применен');
-                        } catch (e) {
-                            log(`❌ Ошибка применения сигнала: ${e.message}`);
+                        
+                        // Если peer уже есть, отправляем сигнал сразу
+                        if (peers[signal.from] && !peers[signal.from].destroyed) {
+                            try {
+                                peers[signal.from].signal(signal.data);
+                                log('✅ Сигнал применен');
+                            } catch (e) {
+                                log(`❌ Ошибка применения сигнала: ${e.message}`);
+                                // Сохраняем в очередь на случай ошибки
+                                if (!pendingSignals[signal.from]) pendingSignals[signal.from] = [];
+                                pendingSignals[signal.from].push(signal.data);
+                            }
+                        } else {
+                            // Сохраняем сигнал в очередь
+                            if (!pendingSignals[signal.from]) pendingSignals[signal.from] = [];
+                            pendingSignals[signal.from].push(signal.data);
+                            log(`📦 Сигнал сохранен в очередь (всего: ${pendingSignals[signal.from].length})`);
                         }
                         snap.ref.remove();
                     }
@@ -481,28 +611,51 @@
                 peer.on('stream', stream => {
                     log(`🎵 Получен аудиопоток от ${userName}`);
                     audioEl.srcObject = stream;
+                    
+                    // Обновляем сетку - показываем что подключен
                     updateParticipantsGrid();
                     
                     // Визуализация говорящего
-                    const audioContext = new AudioContext();
-                    const analyser = audioContext.createAnalyser();
-                    const source = audioContext.createMediaStreamSource(stream);
-                    source.connect(analyser);
-                    
-                    const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                    
-                    setInterval(() => {
-                        analyser.getByteFrequencyData(dataArray);
-                        const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
-                        const indicator = document.getElementById(`speaking-${userId}`);
-                        if (indicator) {
-                            if (avg > 10) {
-                                indicator.classList.remove('hidden-indicator');
-                            } else {
-                                indicator.classList.add('hidden-indicator');
+                    try {
+                        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        const analyser = audioContext.createAnalyser();
+                        const source = audioContext.createMediaStreamSource(stream);
+                        source.connect(analyser);
+                        
+                        analyser.fftSize = 256;
+                        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                        
+                        const interval = setInterval(() => {
+                            analyser.getByteFrequencyData(dataArray);
+                            const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                            const indicator = document.getElementById(`speaking-${userId}`);
+                            if (indicator) {
+                                if (avg > 15) {
+                                    indicator.classList.remove('hidden-indicator');
+                                } else {
+                                    indicator.classList.add('hidden-indicator');
+                                }
                             }
-                        }
-                    }, 100);
+                        }, 150);
+                        
+                        // Очищаем интервал при закрытии
+                        peer.once('close', () => clearInterval(interval));
+                    } catch (e) {
+                        log(`Ошибка анализатора: ${e.message}`);
+                    }
+                    
+                    // Применяем накопленные сигналы, если были
+                    if (pendingSignals[userId] && pendingSignals[userId].length > 0) {
+                        log(`📦 Применяем ${pendingSignals[userId].length} накопленных сигналов`);
+                        pendingSignals[userId].forEach(signalData => {
+                            try {
+                                peer.signal(signalData);
+                            } catch (e) {
+                                log(`Ошибка при накопленном сигнале: ${e.message}`);
+                            }
+                        });
+                        delete pendingSignals[userId];
+                    }
                 });
 
                 peer.on('connect', () => {
@@ -517,15 +670,16 @@
 
                 peer.on('error', (err) => {
                     log(`❌ Ошибка peer с ${userName}: ${err.message}`);
+                    updateParticipantsGrid();
                     
                     // Пытаемся переподключиться
-                    if (!reconnectTimeouts[userId]) {
+                    if (!reconnectTimeouts[userId] && remoteUserExists(userId)) {
                         reconnectTimeouts[userId] = setTimeout(() => {
                             log(`🔄 Переподключение к ${userName}...`);
-                            if (peers[userId]) {
+                            if (peers[userId] && !peers[userId].destroyed) {
                                 peers[userId].destroy();
-                                delete peers[userId];
                             }
+                            delete peers[userId];
                             createPeerWith(userId, userName);
                             delete reconnectTimeouts[userId];
                         }, 3000);
@@ -540,13 +694,41 @@
 
                 peer.on('iceStateChange', (state) => {
                     log(`🔌 ICE с ${userName}: ${state}`);
+                    if (state === 'failed' && remoteUserExists(userId)) {
+                        // Пробуем перезапустить ICE
+                        if (peer && !peer.destroyed) {
+                            peer.restartIce();
+                        }
+                    }
                 });
 
                 peers[userId] = peer;
+                
+                // Проверяем, есть ли накопленные сигналы
+                if (pendingSignals[userId] && pendingSignals[userId].length > 0) {
+                    log(`📦 Есть ${pendingSignals[userId].length} накопленных сигналов для ${userName}`);
+                    // Даем время на инициализацию
+                    setTimeout(() => {
+                        if (peers[userId] && !peers[userId].destroyed) {
+                            pendingSignals[userId].forEach(signalData => {
+                                try {
+                                    peers[userId].signal(signalData);
+                                } catch (e) {
+                                    log(`Ошибка при накопленном сигнале: ${e.message}`);
+                                }
+                            });
+                            delete pendingSignals[userId];
+                        }
+                    }, 500);
+                }
 
             } catch (err) {
                 log(`❌ Ошибка создания peer с ${userName}: ${err.message}`);
             }
+        }
+
+        function remoteUserExists(userId) {
+            return allUsers && allUsers[userId];
         }
 
         function toggleMic() {
@@ -554,6 +736,7 @@
                 const track = localStream.getAudioTracks()[0];
                 track.enabled = !track.enabled;
                 micBtn.textContent = track.enabled ? '🔇 Выкл микрофон' : '🎤 Вкл микрофон';
+                micBtn.classList.toggle('muted', !track.enabled);
                 log('Микрофон ' + (track.enabled ? 'включен' : 'выключен'));
                 updateParticipantsGrid();
             }
@@ -567,11 +750,21 @@
             reconnectTimeouts = {};
             
             // Пересоздаем все peer-соединения
+            const users = { ...allUsers };
             Object.keys(peers).forEach(userId => {
-                const userName = peers[userId].remoteName;
-                peers[userId].destroy();
+                const userName = peers[userId].remoteName || users[userId]?.name || userId;
+                if (peers[userId] && !peers[userId].destroyed) {
+                    peers[userId].destroy();
+                }
                 delete peers[userId];
-                createPeerWith(userId, userName);
+                
+                // Удаляем аудио элемент
+                const audioEl = document.getElementById(`audio-${userId}`);
+                if (audioEl) audioEl.remove();
+                
+                if (users[userId]) {
+                    createPeerWith(userId, userName);
+                }
             });
         }
 
@@ -588,7 +781,9 @@
             }
             
             // Уничтожаем все peer-соединения
-            Object.values(peers).forEach(peer => peer.destroy());
+            Object.values(peers).forEach(peer => {
+                if (peer && !peer.destroyed) peer.destroy();
+            });
             peers = {};
             
             // Удаляем все аудио элементы
@@ -599,11 +794,13 @@
                 localStream = null;
             }
             
+            pendingSignals = {};
+            allUsers = {};
+            
             setupDiv.classList.remove('hidden');
             callDiv.classList.add('hidden');
             updateLinkInfo(roomIdInput.value);
             autoJoinAttempted = false;
-            allUsers = {};
         }
     </script>
 </body>
