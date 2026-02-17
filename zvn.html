@@ -225,6 +225,15 @@
             background: #8bc34a;
             transition: width 0.1s;
         }
+        .debug-panel {
+            margin-top: 10px;
+            font-size: 11px;
+            color: #a0d0a0;
+            text-align: left;
+            background: #1a3f2a;
+            padding: 5px;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -261,9 +270,11 @@
             <div class="controls">
                 <button onclick="toggleMic()" id="micBtn">🔇 Выкл микрофон</button>
                 <button onclick="testAudioOutput()" id="testAudioBtn" style="background: #1e4a2e;">🔊 Тест звука</button>
+                <button onclick="forceAudioRestart()" style="background: #7d6b3e;">🔄 Перезапустить аудио</button>
                 <button onclick="endCall()" style="background: #7d3e3e;">📞 Завершить</button>
-                <button onclick="retryAllConnections()" style="background: #7d6b3e;">🔄 Переподключить всех</button>
             </div>
+            
+            <div class="debug-panel" id="debugPanel"></div>
         </div>
 
         <!-- Блок логов -->
@@ -300,7 +311,8 @@
         let roomRef = null;
         let callsRef = null;
         let analyserIntervals = {};
-        let audioElements = {}; // Храним аудио элементы
+        let audioElements = {};
+        let peerStreams = {}; // Отслеживаем, от кого получили поток
 
         // Элементы
         const setupDiv = document.getElementById('setup');
@@ -316,6 +328,7 @@
         const participantsGrid = document.getElementById('participantsGrid');
         const participantCountSpan = document.getElementById('participantCount');
         const unlockAudioDiv = document.getElementById('unlockAudio');
+        const debugPanel = document.getElementById('debugPanel');
 
         // ==================== РАЗБЛОКИРОВКА АУДИО ====================
         let audioUnlocked = false;
@@ -428,6 +441,16 @@
             logDiv.scrollTop = logDiv.scrollHeight;
         }
 
+        function updateDebugInfo() {
+            let html = '<strong>Отладка:</strong><br>';
+            html += `Локальный поток: ${localStream ? '✅' : '❌'}<br>`;
+            html += `Аудио треков: ${localStream?.getAudioTracks().length || 0}<br>`;
+            html += `Peer соединений: ${Object.keys(peers).length}<br>`;
+            html += `Аудио элементов: ${Object.keys(audioElements).length}<br>`;
+            html += `Потоки получены от: ${Object.keys(peerStreams).join(', ') || 'никого'}<br>`;
+            debugPanel.innerHTML = html;
+        }
+
         // Получаем параметры из URL
         function getUrlParams() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -463,15 +486,17 @@
                 
                 const isMe = userId === currentUser.id;
                 const peer = peers[userId];
+                const hasStream = peerStreams[userId];
                 
                 let statusText = '⏳ Подключение...';
-                let volumeLevel = 0;
                 
                 if (isMe) {
                     statusText = localStream?.getAudioTracks()[0]?.enabled ? '🎤 Готов' : '🔇 Микрофон выключен';
                 } else if (peer) {
-                    if (peer.connected || peer._remoteStreams?.length > 0) {
-                        statusText = '✅ Подключён';
+                    if (peer.connected && hasStream) {
+                        statusText = '✅ Аудио активно';
+                    } else if (peer.connected) {
+                        statusText = '🔄 Ожидание аудио';
                     } else if (peer.destroyed) {
                         statusText = '❌ Ошибка';
                     } else {
@@ -496,6 +521,7 @@
             
             const count = Object.keys(allUsers).length;
             participantCountSpan.textContent = `${count} ${count === 1 ? 'участник' : (count < 5 ? 'участника' : 'участников')}`;
+            updateDebugInfo();
         }
 
         // Автоматическое подключение при загрузке
@@ -602,7 +628,7 @@
         // Тест вывода звука
         function testAudioOutput() {
             try {
-                unlockAudio(); // Разблокируем аудио
+                unlockAudio();
                 
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 const oscillator = audioContext.createOscillator();
@@ -622,6 +648,36 @@
             } catch (err) {
                 log('❌ Ошибка воспроизведения: ' + err.message);
             }
+        }
+
+        // Принудительный перезапуск аудио
+        function forceAudioRestart() {
+            log('🔄 Принудительный перезапуск аудио');
+            
+            // Пересоздаем все аудио элементы
+            Object.keys(audioElements).forEach(userId => {
+                const oldAudio = audioElements[userId];
+                const stream = oldAudio.srcObject;
+                
+                if (stream) {
+                    const newAudio = document.createElement('audio');
+                    newAudio.id = `audio-${userId}`;
+                    newAudio.autoplay = true;
+                    newAudio.controls = false;
+                    newAudio.style.display = 'none';
+                    newAudio.srcObject = stream;
+                    document.body.appendChild(newAudio);
+                    
+                    oldAudio.remove();
+                    audioElements[userId] = newAudio;
+                    
+                    if (audioUnlocked) {
+                        newAudio.play().catch(e => log(`Ошибка: ${e.message}`));
+                    }
+                }
+            });
+            
+            log('✅ Аудио перезапущено');
         }
 
         // ==================== ICE СЕРВЕРЫ ====================
@@ -767,6 +823,8 @@
                                 audioElements[userId].remove();
                                 delete audioElements[userId];
                             }
+                            
+                            delete peerStreams[userId];
                         }
                     });
                     
@@ -807,7 +865,7 @@
                 
                 peer.remoteName = userName;
                 
-                // Создаем аудио элемент и сохраняем его
+                // Создаем аудио элемент
                 const audioEl = document.createElement('audio');
                 audioEl.id = `audio-${userId}`;
                 audioEl.autoplay = true;
@@ -829,6 +887,13 @@
                     log(`🎵 Получен аудиопоток от ${userName}`);
                     log(`📊 Треков в потоке: ${stream.getAudioTracks().length}`);
                     
+                    // Проверяем, есть ли аудиотреки
+                    if (stream.getAudioTracks().length === 0) {
+                        log('⚠️ Внимание: получен поток без аудиотреков!');
+                    }
+                    
+                    peerStreams[userId] = true;
+                    
                     // Подключаем поток к аудио элементу
                     audioEl.srcObject = stream;
                     
@@ -836,6 +901,13 @@
                     if (!audioUnlocked) {
                         unlockAudioDiv.classList.remove('hidden');
                         log('🔇 Аудио заблокировано браузером, нажмите кнопку');
+                    } else {
+                        // Пробуем воспроизвести
+                        audioEl.play().then(() => {
+                            log(`✅ Аудио от ${userName} воспроизводится`);
+                        }).catch(e => {
+                            log(`❌ Ошибка воспроизведения: ${e.message}`);
+                        });
                     }
                     
                     updateParticipantsGrid();
@@ -878,6 +950,7 @@
                         log(`Ошибка анализатора: ${e.message}`);
                     }
                     
+                    // Применяем накопленные сигналы
                     if (pendingSignals[userId] && pendingSignals[userId].length > 0) {
                         log(`📦 Применяем ${pendingSignals[userId].length} накопленных сигналов`);
                         pendingSignals[userId].forEach(signalData => {
@@ -923,6 +996,8 @@
                                 delete audioElements[userId];
                             }
                             
+                            delete peerStreams[userId];
+                            
                             createPeerWith(userId, userName);
                             delete reconnectTimeouts[userId];
                         }, 3000);
@@ -937,6 +1012,7 @@
                         delete audioElements[userId];
                     }
                     
+                    delete peerStreams[userId];
                     updateParticipantsGrid();
                     
                     if (analyserIntervals[userId]) {
@@ -980,43 +1056,6 @@
             }
         }
 
-        function retryAllConnections() {
-            log('🔄 Переподключение ко всем участникам');
-            
-            Object.values(reconnectTimeouts).forEach(timeout => clearTimeout(timeout));
-            reconnectTimeouts = {};
-            
-            const users = { ...allUsers };
-            
-            Object.keys(peers).forEach(userId => {
-                if (peers[userId] && !peers[userId].destroyed) {
-                    peers[userId].destroy();
-                }
-                delete peers[userId];
-                
-                if (analyserIntervals[userId]) {
-                    clearInterval(analyserIntervals[userId]);
-                    delete analyserIntervals[userId];
-                }
-                
-                if (audioElements[userId]) {
-                    audioElements[userId].remove();
-                    delete audioElements[userId];
-                }
-            });
-            
-            Object.keys(users).forEach(userId => {
-                if (userId !== currentUser.id) {
-                    const userName = users[userId]?.name || userId;
-                    setTimeout(() => {
-                        createPeerWith(userId, userName);
-                    }, 100 * Math.random());
-                }
-            });
-            
-            log('🔄 Запросы на переподключение отправлены');
-        }
-
         function endCall() {
             log('Завершение звонка');
             
@@ -1046,6 +1085,8 @@
             Object.values(audioElements).forEach(audio => audio.remove());
             audioElements = {};
             
+            peerStreams = {};
+            
             if (localStream) {
                 localStream.getTracks().forEach(t => t.stop());
                 localStream = null;
@@ -1062,6 +1103,7 @@
             unlockAudioDiv.classList.add('hidden');
             
             log('✅ Звонок завершен');
+            updateDebugInfo();
         }
     </script>
 </body>
