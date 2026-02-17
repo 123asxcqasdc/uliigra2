@@ -503,7 +503,7 @@
             joinRoom();
         }
 
-        // ==================== УЛУЧШЕННЫЕ ICE СЕРВЕРЫ ====================
+        // ==================== ИСПРАВЛЕННЫЕ ICE СЕРВЕРЫ ====================
         function getIceServers() {
             return [
                 // STUN серверы (для определения внешнего IP)
@@ -518,18 +518,7 @@
                 
                 // === ПУБЛИЧНЫЕ TURN СЕРВЕРЫ (для обхода NAT) ===
                 
-                // 1. Metered.ca (бесплатные тестовые)
-                {
-                    urls: [
-                        'turn:turn.metered.ca:80',
-                        'turn:turn.metered.ca:443',
-                        'turn:turn.metered.ca:3478'
-                    ],
-                    username: '035b0b5d0fb7fd17cbaaa531',
-                    credential: 'vGB8O8g4z59d0q24'
-                },
-                
-                // 2. OpenRelay (самые стабильные публичные)
+                // 1. OpenRelay (самые стабильные публичные)
                 {
                     urls: [
                         'turn:openrelay.metered.ca:80',
@@ -540,7 +529,7 @@
                     credential: 'openrelayproject'
                 },
                 
-                // 3. Xirsys (тестовый)
+                // 2. Xirsys (тестовый)
                 {
                     urls: [
                         'turn:turn1.xirsys.com:80?transport=udp',
@@ -552,7 +541,7 @@
                     credential: 'f5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5'
                 },
                 
-                // 4. Twilio (тестовый)
+                // 3. Twilio (тестовый)
                 {
                     urls: [
                         'turn:global.turn.twilio.com:3478?transport=udp',
@@ -562,7 +551,7 @@
                     credential: 'f5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5'
                 },
                 
-                // 5. Ably (публичный)
+                // 4. Ably (публичный)
                 {
                     urls: [
                         'turn:turn.ably.io:443?transport=tcp',
@@ -570,26 +559,6 @@
                     ],
                     username: 'ably',
                     credential: 'ably'
-                },
-                
-                // 6. Reserve TURN (запасной)
-                {
-                    urls: [
-                        'turn:turn2.ably.io:443?transport=tcp',
-                        'turn:turn2.ably.io:443?transport=udp'
-                    ],
-                    username: 'ably',
-                    credential: 'ably'
-                },
-                
-                // 7. Another public TURN
-                {
-                    urls: [
-                        'turn:turn.noc.ams-01.multiplay.co.uk:3478?transport=udp',
-                        'turn:turn.noc.ams-01. multiplay.co.uk:3478?transport=tcp'
-                    ],
-                    username: 'multiplay',
-                    credential: 'multiplay'
                 }
             ];
         }
@@ -742,8 +711,8 @@
                     trickle: true,
                     config: { 
                         iceServers: getIceServers(),
-                        iceTransportPolicy: 'all', // Пробовать все варианты
-                        iceCandidatePoolSize: 10   // Больше кандидатов
+                        iceTransportPolicy: 'all',
+                        iceCandidatePoolSize: 10
                     }
                 });
                 
@@ -857,7 +826,6 @@
                     }
                 });
 
-                // Отслеживание ICE кандидатов для диагностики
                 peer.on('iceCandidate', (candidate) => {
                     if (candidate) {
                         log(`🔌 ICE кандидат: ${candidate.type || 'unknown'}`);
