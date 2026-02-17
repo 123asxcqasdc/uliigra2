@@ -12,7 +12,7 @@
     <style>
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            max-width: 900px;
+            max-width: 1200px;
             margin: 20px auto;
             padding: 20px;
             text-align: center;
@@ -85,8 +85,8 @@
         }
         .participants-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
             margin: 25px 0;
         }
         .participant-card {
@@ -98,6 +98,8 @@
             border: 1px solid #3a7a4a;
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
             transition: transform 0.2s;
+            display: flex;
+            flex-direction: column;
         }
         .participant-card:hover {
             transform: translateY(-3px);
@@ -116,6 +118,7 @@
             border-radius: 15px;
             display: inline-block;
             color: #b8e0b8;
+            margin-bottom: 10px;
         }
         .participant-avatar {
             font-size: 45px;
@@ -209,7 +212,10 @@
             background: #a5d6a5;
         }
         audio {
-            display: none;
+            width: 100%;
+            margin: 10px 0;
+            border-radius: 5px;
+            background: #1a3f2a;
         }
         .volume-indicator {
             width: 100%;
@@ -233,6 +239,20 @@
             background: #1a3f2a;
             padding: 5px;
             border-radius: 5px;
+        }
+        .local-volume {
+            width: 100%;
+            height: 4px;
+            background: #1e3a2a;
+            border-radius: 2px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        .local-volume-level {
+            height: 100%;
+            width: 0%;
+            background: #ffaa00;
+            transition: width 0.1s;
         }
     </style>
 </head>
@@ -312,7 +332,7 @@
         let callsRef = null;
         let analyserIntervals = {};
         let audioElements = {};
-        let peerStreams = {}; // Отслеживаем, от кого получили поток
+        let peerStreams = {};
 
         // Элементы
         const setupDiv = document.getElementById('setup');
@@ -336,14 +356,12 @@
         function unlockAudio() {
             if (audioUnlocked) return;
             
-            // Создаем пустой аудио контекст для разблокировки
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             audioContext.resume().then(() => {
                 log('🔊 Аудио разблокировано');
                 audioUnlocked = true;
                 unlockAudioDiv.classList.add('hidden');
                 
-                // Пробуем воспроизвести все аудио элементы
                 Object.values(audioElements).forEach(audio => {
                     audio.play().catch(e => log(`Ошибка воспроизведения: ${e.message}`));
                 });
@@ -352,7 +370,6 @@
 
         unlockAudioDiv.addEventListener('click', unlockAudio);
 
-        // Разблокируем аудио при первом взаимодействии с страницей
         document.addEventListener('click', function once() {
             unlockAudio();
             document.removeEventListener('click', once);
@@ -451,13 +468,11 @@
             debugPanel.innerHTML = html;
         }
 
-        // Получаем параметры из URL
         function getUrlParams() {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get('call');
         }
 
-        // Обновляем информацию о ссылке
         function updateLinkInfo(roomId) {
             if (roomId) {
                 const link = window.location.origin + window.location.pathname + '?call=' + roomId;
@@ -467,7 +482,7 @@
             }
         }
 
-        // Обновление сетки участников
+        // Обновление сетки участников с видимыми аудиоплеерами
         function updateParticipantsGrid() {
             if (!allUsers) return;
             
@@ -509,6 +524,15 @@
                         <div class="participant-name">${user.name}${isMe ? ' (Вы)' : ''}</div>
                         <div class="participant-avatar">👤</div>
                         <div class="participant-status">${statusText}</div>
+                        ${!isMe ? `
+                            <audio id="audio-${userId}" controls style="width: 100%; margin: 10px 0;" preload="none">
+                                <source src="" type="audio/webm">
+                            </audio>
+                        ` : `
+                            <div class="local-volume">
+                                <div class="local-volume-level" id="localVolume"></div>
+                            </div>
+                        `}
                         <div class="speaking-indicator hidden-indicator" id="speaking-${userId}"></div>
                         <div class="volume-indicator">
                             <div class="volume-level" id="volume-${userId}" style="width: 0%"></div>
@@ -521,10 +545,18 @@
             
             const count = Object.keys(allUsers).length;
             participantCountSpan.textContent = `${count} ${count === 1 ? 'участник' : (count < 5 ? 'участника' : 'участников')}`;
+            
+            // После обновления DOM, подключаем потоки к аудио элементам
+            Object.keys(peerStreams).forEach(userId => {
+                const audioEl = document.getElementById(`audio-${userId}`);
+                if (audioEl && audioElements[userId] && audioElements[userId].srcObject) {
+                    audioEl.srcObject = audioElements[userId].srcObject;
+                }
+            });
+            
             updateDebugInfo();
         }
 
-        // Автоматическое подключение при загрузке
         async function autoJoin() {
             const callParam = getUrlParams();
             if (callParam && !autoJoinAttempted) {
@@ -578,7 +610,6 @@
             joinRoom();
         }
 
-        // Тест микрофона
         async function testMicrophone() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -625,7 +656,6 @@
             }
         }
 
-        // Тест вывода звука
         function testAudioOutput() {
             try {
                 unlockAudio();
@@ -650,29 +680,20 @@
             }
         }
 
-        // Принудительный перезапуск аудио
         function forceAudioRestart() {
             log('🔄 Принудительный перезапуск аудио');
             
-            // Пересоздаем все аудио элементы
             Object.keys(audioElements).forEach(userId => {
                 const oldAudio = audioElements[userId];
                 const stream = oldAudio.srcObject;
                 
                 if (stream) {
-                    const newAudio = document.createElement('audio');
-                    newAudio.id = `audio-${userId}`;
-                    newAudio.autoplay = true;
-                    newAudio.controls = false;
-                    newAudio.style.display = 'none';
-                    newAudio.srcObject = stream;
-                    document.body.appendChild(newAudio);
-                    
-                    oldAudio.remove();
-                    audioElements[userId] = newAudio;
-                    
-                    if (audioUnlocked) {
-                        newAudio.play().catch(e => log(`Ошибка: ${e.message}`));
+                    const audioEl = document.getElementById(`audio-${userId}`);
+                    if (audioEl) {
+                        audioEl.srcObject = stream;
+                        if (audioUnlocked) {
+                            audioEl.play().catch(e => log(`Ошибка: ${e.message}`));
+                        }
                     }
                 }
             });
@@ -680,7 +701,6 @@
             log('✅ Аудио перезапущено');
         }
 
-        // ==================== ICE СЕРВЕРЫ ====================
         function getIceServers() {
             return [
                 { urls: 'stun:stun.l.google.com:19302' },
@@ -865,14 +885,13 @@
                 
                 peer.remoteName = userName;
                 
-                // Создаем аудио элемент
-                const audioEl = document.createElement('audio');
-                audioEl.id = `audio-${userId}`;
-                audioEl.autoplay = true;
-                audioEl.controls = false;
-                audioEl.style.display = 'none';
-                document.body.appendChild(audioEl);
-                audioElements[userId] = audioEl;
+                // Создаем скрытый аудио элемент для хранения потока
+                const hiddenAudio = document.createElement('audio');
+                hiddenAudio.id = `hidden-audio-${userId}`;
+                hiddenAudio.autoplay = true;
+                hiddenAudio.style.display = 'none';
+                document.body.appendChild(hiddenAudio);
+                audioElements[userId] = hiddenAudio;
 
                 peer.on('signal', data => {
                     log(`📤 Отправка сигнала для ${userName}`);
@@ -887,33 +906,32 @@
                     log(`🎵 Получен аудиопоток от ${userName}`);
                     log(`📊 Треков в потоке: ${stream.getAudioTracks().length}`);
                     
-                    // Проверяем, есть ли аудиотреки
                     if (stream.getAudioTracks().length === 0) {
                         log('⚠️ Внимание: получен поток без аудиотреков!');
                     }
                     
                     peerStreams[userId] = true;
                     
-                    // Подключаем поток к аудио элементу
-                    audioEl.srcObject = stream;
+                    // Подключаем поток к скрытому аудио элементу
+                    hiddenAudio.srcObject = stream;
                     
-                    // Показываем кнопку разблокировки если нужно
+                    // Находим видимый аудио элемент в сетке и подключаем к нему поток
+                    const visibleAudio = document.getElementById(`audio-${userId}`);
+                    if (visibleAudio) {
+                        visibleAudio.srcObject = stream;
+                        if (audioUnlocked) {
+                            visibleAudio.play().catch(e => log(`Ошибка воспроизведения: ${e.message}`));
+                        }
+                    }
+                    
                     if (!audioUnlocked) {
                         unlockAudioDiv.classList.remove('hidden');
                         log('🔇 Аудио заблокировано браузером, нажмите кнопку');
-                    } else {
-                        // Пробуем воспроизвести
-                        audioEl.play().then(() => {
-                            log(`✅ Аудио от ${userName} воспроизводится`);
-                        }).catch(e => {
-                            log(`❌ Ошибка воспроизведения: ${e.message}`);
-                        });
                     }
                     
                     updateParticipantsGrid();
                     playSound('connected');
                     
-                    // Анализируем уровень звука
                     try {
                         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                         const analyser = audioContext.createAnalyser();
@@ -950,7 +968,6 @@
                         log(`Ошибка анализатора: ${e.message}`);
                     }
                     
-                    // Применяем накопленные сигналы
                     if (pendingSignals[userId] && pendingSignals[userId].length > 0) {
                         log(`📦 Применяем ${pendingSignals[userId].length} накопленных сигналов`);
                         pendingSignals[userId].forEach(signalData => {
