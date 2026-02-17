@@ -85,7 +85,7 @@
         }
         .participants-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
             margin: 25px 0;
         }
@@ -240,20 +240,6 @@
             padding: 5px;
             border-radius: 5px;
         }
-        .local-volume {
-            width: 100%;
-            height: 4px;
-            background: #1e3a2a;
-            border-radius: 2px;
-            margin-top: 5px;
-            overflow: hidden;
-        }
-        .local-volume-level {
-            height: 100%;
-            width: 0%;
-            background: #ffaa00;
-            transition: width 0.1s;
-        }
     </style>
 </head>
 <body>
@@ -331,7 +317,7 @@
         let roomRef = null;
         let callsRef = null;
         let analyserIntervals = {};
-        let audioElements = {};
+        let audioElements = {}; // Храним ссылки на аудио элементы
         let peerStreams = {};
 
         // Элементы
@@ -362,14 +348,18 @@
                 audioUnlocked = true;
                 unlockAudioDiv.classList.add('hidden');
                 
+                // Запускаем все аудио элементы
                 Object.values(audioElements).forEach(audio => {
-                    audio.play().catch(e => log(`Ошибка воспроизведения: ${e.message}`));
+                    if (audio.srcObject) {
+                        audio.play().catch(e => log(`Ошибка воспроизведения: ${e.message}`));
+                    }
                 });
             });
         }
 
         unlockAudioDiv.addEventListener('click', unlockAudio);
 
+        // Разблокируем аудио при первом клике
         document.addEventListener('click', function once() {
             unlockAudio();
             document.removeEventListener('click', once);
@@ -525,14 +515,8 @@
                         <div class="participant-avatar">👤</div>
                         <div class="participant-status">${statusText}</div>
                         ${!isMe ? `
-                            <audio id="audio-${userId}" controls style="width: 100%; margin: 10px 0;" preload="none">
-                                <source src="" type="audio/webm">
-                            </audio>
-                        ` : `
-                            <div class="local-volume">
-                                <div class="local-volume-level" id="localVolume"></div>
-                            </div>
-                        `}
+                            <audio id="audio-${userId}" controls style="width: 100%; margin: 10px 0;" preload="none"></audio>
+                        ` : ''}
                         <div class="speaking-indicator hidden-indicator" id="speaking-${userId}"></div>
                         <div class="volume-indicator">
                             <div class="volume-level" id="volume-${userId}" style="width: 0%"></div>
@@ -546,13 +530,20 @@
             const count = Object.keys(allUsers).length;
             participantCountSpan.textContent = `${count} ${count === 1 ? 'участник' : (count < 5 ? 'участника' : 'участников')}`;
             
-            // После обновления DOM, подключаем потоки к аудио элементам
-            Object.keys(peerStreams).forEach(userId => {
-                const audioEl = document.getElementById(`audio-${userId}`);
-                if (audioEl && audioElements[userId] && audioElements[userId].srcObject) {
-                    audioEl.srcObject = audioElements[userId].srcObject;
-                }
-            });
+            // После обновления DOM, подключаем потоки к видимым аудио элементам
+            setTimeout(() => {
+                Object.keys(peerStreams).forEach(userId => {
+                    const audioEl = document.getElementById(`audio-${userId}`);
+                    if (audioEl && audioElements[userId] && audioElements[userId].srcObject) {
+                        audioEl.srcObject = audioElements[userId].srcObject;
+                        log(`🔄 Поток для ${userId} подключен к видимому плееру`);
+                        
+                        if (audioUnlocked) {
+                            audioEl.play().catch(e => log(`Ошибка: ${e.message}`));
+                        }
+                    }
+                });
+            }, 100);
             
             updateDebugInfo();
         }
@@ -684,16 +675,11 @@
             log('🔄 Принудительный перезапуск аудио');
             
             Object.keys(audioElements).forEach(userId => {
-                const oldAudio = audioElements[userId];
-                const stream = oldAudio.srcObject;
-                
-                if (stream) {
-                    const audioEl = document.getElementById(`audio-${userId}`);
-                    if (audioEl) {
-                        audioEl.srcObject = stream;
-                        if (audioUnlocked) {
-                            audioEl.play().catch(e => log(`Ошибка: ${e.message}`));
-                        }
+                const audioEl = document.getElementById(`audio-${userId}`);
+                if (audioEl && audioElements[userId].srcObject) {
+                    audioEl.srcObject = audioElements[userId].srcObject;
+                    if (audioUnlocked) {
+                        audioEl.play().catch(e => log(`Ошибка: ${e.message}`));
                     }
                 }
             });
@@ -885,13 +871,16 @@
                 
                 peer.remoteName = userName;
                 
-                // Создаем скрытый аудио элемент для хранения потока
-                const hiddenAudio = document.createElement('audio');
-                hiddenAudio.id = `hidden-audio-${userId}`;
-                hiddenAudio.autoplay = true;
-                hiddenAudio.style.display = 'none';
-                document.body.appendChild(hiddenAudio);
-                audioElements[userId] = hiddenAudio;
+                // Создаем аудио элемент для этого участника и сохраняем его
+                const audioEl = document.createElement('audio');
+                audioEl.id = `audio-${userId}`;
+                audioEl.autoplay = true;
+                audioEl.controls = true;
+                audioEl.style.width = '100%';
+                audioEl.style.margin = '10px 0';
+                audioEl.style.display = 'none'; // Скрываем до появления в сетке
+                document.body.appendChild(audioEl);
+                audioElements[userId] = audioEl;
 
                 peer.on('signal', data => {
                     log(`📤 Отправка сигнала для ${userName}`);
@@ -912,15 +901,14 @@
                     
                     peerStreams[userId] = true;
                     
-                    // Подключаем поток к скрытому аудио элементу
-                    hiddenAudio.srcObject = stream;
-                    
-                    // Находим видимый аудио элемент в сетке и подключаем к нему поток
-                    const visibleAudio = document.getElementById(`audio-${userId}`);
-                    if (visibleAudio) {
-                        visibleAudio.srcObject = stream;
+                    // Подключаем поток к аудио элементу
+                    if (audioElements[userId]) {
+                        audioElements[userId].srcObject = stream;
+                        log(`✅ Аудиоплеер для ${userName} подключен к потоку`);
+                        
+                        // Если аудио уже разблокировано, пробуем воспроизвести
                         if (audioUnlocked) {
-                            visibleAudio.play().catch(e => log(`Ошибка воспроизведения: ${e.message}`));
+                            audioElements[userId].play().catch(e => log(`Ошибка: ${e.message}`));
                         }
                     }
                     
@@ -932,6 +920,7 @@
                     updateParticipantsGrid();
                     playSound('connected');
                     
+                    // Анализируем уровень звука
                     try {
                         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                         const analyser = audioContext.createAnalyser();
