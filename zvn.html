@@ -317,8 +317,7 @@
         let roomRef = null;
         let callsRef = null;
         let analyserIntervals = {};
-        let peerStreams = {};
-        let pendingStreams = {}; // Потоки, ожидающие подключения к плееру
+        let audioElements = {}; // Храним все аудио элементы
 
         // Элементы
         const setupDiv = document.getElementById('setup');
@@ -348,8 +347,8 @@
                 audioUnlocked = true;
                 unlockAudioDiv.classList.add('hidden');
                 
-                // Запускаем все видимые аудио элементы
-                document.querySelectorAll('audio[id^="audio-"]').forEach(audio => {
+                // Запускаем все сохраненные аудио элементы
+                Object.values(audioElements).forEach(audio => {
                     if (audio.srcObject) {
                         audio.play().catch(e => log(`Ошибка воспроизведения: ${e.message}`));
                     }
@@ -453,8 +452,7 @@
             html += `Локальный поток: ${localStream ? '✅' : '❌'}<br>`;
             html += `Аудио треков: ${localStream?.getAudioTracks().length || 0}<br>`;
             html += `Peer соединений: ${Object.keys(peers).length}<br>`;
-            html += `Потоки получены от: ${Object.keys(peerStreams).join(', ') || 'никого'}<br>`;
-            html += `Ожидают плеер: ${Object.keys(pendingStreams).join(', ') || 'нет'}<br>`;
+            html += `Аудио элементов: ${Object.keys(audioElements).length}<br>`;
             debugPanel.innerHTML = html;
         }
 
@@ -472,7 +470,7 @@
             }
         }
 
-        // Обновление сетки участников с видимыми аудиоплеерами
+        // Обновление сетки участников
         function updateParticipantsGrid() {
             if (!allUsers) return;
             
@@ -491,14 +489,14 @@
                 
                 const isMe = userId === currentUser.id;
                 const peer = peers[userId];
-                const hasStream = peerStreams[userId] || pendingStreams[userId];
+                const hasAudio = audioElements[userId] && audioElements[userId].srcObject;
                 
                 let statusText = '⏳ Подключение...';
                 
                 if (isMe) {
                     statusText = localStream?.getAudioTracks()[0]?.enabled ? '🎤 Готов' : '🔇 Микрофон выключен';
                 } else if (peer) {
-                    if (peer.connected && hasStream) {
+                    if (peer.connected && hasAudio) {
                         statusText = '✅ Аудио активно';
                     } else if (peer.connected) {
                         statusText = '🔄 Ожидание аудио';
@@ -527,20 +525,29 @@
             
             participantsGrid.innerHTML = html;
             
-            // Подключаем сохраненные потоки к новым плеерам
-            Object.keys(pendingStreams).forEach(userId => {
-                const audioEl = document.getElementById(`audio-${userId}`);
-                if (audioEl && pendingStreams[userId]) {
-                    audioEl.srcObject = pendingStreams[userId];
-                    log(`🔄 Сохраненный поток для ${userId} подключен к плееру`);
+            // Перемещаем существующие аудио элементы в сетку
+            Object.keys(audioElements).forEach(userId => {
+                const oldAudio = audioElements[userId];
+                const newAudio = document.getElementById(`audio-${userId}`);
+                
+                if (newAudio && oldAudio && oldAudio.srcObject) {
+                    // Копируем srcObject из старого элемента в новый
+                    newAudio.srcObject = oldAudio.srcObject;
                     
-                    if (audioUnlocked) {
-                        audioEl.play().catch(e => log(`Ошибка: ${e.message}`));
+                    // Удаляем старый элемент
+                    if (oldAudio.parentNode) {
+                        oldAudio.parentNode.removeChild(oldAudio);
                     }
                     
-                    // Переносим из pending в peerStreams
-                    peerStreams[userId] = true;
-                    delete pendingStreams[userId];
+                    // Обновляем ссылку
+                    audioElements[userId] = newAudio;
+                    
+                    // Пробуем воспроизвести
+                    if (audioUnlocked) {
+                        newAudio.play().catch(e => log(`Ошибка: ${e.message}`));
+                    }
+                    
+                    log(`🔄 Аудио элемент для ${userId} перемещен в сетку`);
                 }
             });
             
@@ -675,9 +682,8 @@
         function forceAudioRestart() {
             log('🔄 Принудительный перезапуск аудио');
             
-            document.querySelectorAll('audio[id^="audio-"]').forEach(audio => {
+            Object.values(audioElements).forEach(audio => {
                 if (audio.srcObject) {
-                    // Перезапускаем воспроизведение
                     audio.play().catch(e => log(`Ошибка: ${e.message}`));
                 }
             });
@@ -823,8 +829,10 @@
                                 delete analyserIntervals[userId];
                             }
                             
-                            delete peerStreams[userId];
-                            delete pendingStreams[userId];
+                            if (audioElements[userId]) {
+                                audioElements[userId].remove();
+                                delete audioElements[userId];
+                            }
                         }
                     });
                     
@@ -838,44 +846,6 @@
                 log('❌ Ошибка: ' + err.message);
                 alert('Ошибка: ' + err.message);
                 autoJoinMessageDiv.classList.add('hidden');
-            }
-        }
-
-        function setupAudioAnalyser(stream, userId) {
-            try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const analyser = audioContext.createAnalyser();
-                const source = audioContext.createMediaStreamSource(stream);
-                source.connect(analyser);
-                
-                analyser.fftSize = 256;
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                
-                if (analyserIntervals[userId]) {
-                    clearInterval(analyserIntervals[userId]);
-                }
-                
-                analyserIntervals[userId] = setInterval(() => {
-                    analyser.getByteFrequencyData(dataArray);
-                    const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
-                    
-                    const volumeEl = document.getElementById(`volume-${userId}`);
-                    if (volumeEl) {
-                        const percent = Math.min(100, (avg / 128) * 100);
-                        volumeEl.style.width = percent + '%';
-                    }
-                    
-                    const indicator = document.getElementById(`speaking-${userId}`);
-                    if (indicator) {
-                        if (avg > 20) {
-                            indicator.classList.remove('hidden-indicator');
-                        } else {
-                            indicator.classList.add('hidden-indicator');
-                        }
-                    }
-                }, 100);
-            } catch (e) {
-                log(`Ошибка анализатора для ${userId}: ${e.message}`);
             }
         }
 
@@ -902,6 +872,17 @@
                 });
                 
                 peer.remoteName = userName;
+                
+                // Создаем аудио элемент ДО получения потока
+                const audioEl = document.createElement('audio');
+                audioEl.id = `audio-${userId}`;
+                audioEl.autoplay = true;
+                audioEl.controls = true;
+                audioEl.style.width = '100%';
+                audioEl.style.margin = '10px 0';
+                audioEl.style.display = 'none'; // Скрываем, пока не появится в сетке
+                document.body.appendChild(audioEl);
+                audioElements[userId] = audioEl;
 
                 peer.on('signal', data => {
                     log(`📤 Отправка сигнала для ${userName}`);
@@ -921,17 +902,14 @@
                         return;
                     }
                     
-                    // Ищем видимый аудиоплеер в сетке
-                    const audioEl = document.getElementById(`audio-${userId}`);
-                    
-                    if (audioEl) {
-                        // Подключаем поток напрямую к видимому плееру
-                        audioEl.srcObject = stream;
-                        log(`✅ Аудиопоток подключен к видимому плееру ${userName}`);
+                    // Подключаем поток к аудио элементу
+                    if (audioElements[userId]) {
+                        audioElements[userId].srcObject = stream;
+                        log(`✅ Аудиопоток подключен к элементу ${userName}`);
                         
                         // Пробуем воспроизвести
                         if (audioUnlocked) {
-                            audioEl.play().then(() => {
+                            audioElements[userId].play().then(() => {
                                 log(`✅ Аудио от ${userName} воспроизводится`);
                             }).catch(e => {
                                 log(`❌ Ошибка воспроизведения: ${e.message}`);
@@ -940,19 +918,47 @@
                             unlockAudioDiv.classList.remove('hidden');
                             log('🔇 Аудио заблокировано, нажмите кнопку');
                         }
-                        
-                        peerStreams[userId] = true;
-                    } else {
-                        log(`⚠️ Видимый плеер для ${userName} не найден, сохраняем поток`);
-                        // Сохраняем поток для последующего подключения
-                        pendingStreams[userId] = stream;
                     }
                     
                     updateParticipantsGrid();
                     playSound('connected');
                     
                     // Анализируем уровень звука
-                    setupAudioAnalyser(stream, userId);
+                    try {
+                        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        const analyser = audioContext.createAnalyser();
+                        const source = audioContext.createMediaStreamSource(stream);
+                        source.connect(analyser);
+                        
+                        analyser.fftSize = 256;
+                        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                        
+                        if (analyserIntervals[userId]) {
+                            clearInterval(analyserIntervals[userId]);
+                        }
+                        
+                        analyserIntervals[userId] = setInterval(() => {
+                            analyser.getByteFrequencyData(dataArray);
+                            const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                            
+                            const volumeEl = document.getElementById(`volume-${userId}`);
+                            if (volumeEl) {
+                                const percent = Math.min(100, (avg / 128) * 100);
+                                volumeEl.style.width = percent + '%';
+                            }
+                            
+                            const indicator = document.getElementById(`speaking-${userId}`);
+                            if (indicator) {
+                                if (avg > 20) {
+                                    indicator.classList.remove('hidden-indicator');
+                                } else {
+                                    indicator.classList.add('hidden-indicator');
+                                }
+                            }
+                        }, 100);
+                    } catch (e) {
+                        log(`Ошибка анализатора: ${e.message}`);
+                    }
                     
                     if (pendingSignals[userId] && pendingSignals[userId].length > 0) {
                         log(`📦 Применяем ${pendingSignals[userId].length} накопленных сигналов`);
@@ -994,8 +1000,10 @@
                                 delete analyserIntervals[userId];
                             }
                             
-                            delete peerStreams[userId];
-                            delete pendingStreams[userId];
+                            if (audioElements[userId]) {
+                                audioElements[userId].remove();
+                                delete audioElements[userId];
+                            }
                             
                             createPeerWith(userId, userName);
                             delete reconnectTimeouts[userId];
@@ -1005,8 +1013,12 @@
 
                 peer.on('close', () => {
                     log(`🔒 Peer с ${userName} закрыт`);
-                    delete peerStreams[userId];
-                    delete pendingStreams[userId];
+                    
+                    if (audioElements[userId]) {
+                        audioElements[userId].remove();
+                        delete audioElements[userId];
+                    }
+                    
                     updateParticipantsGrid();
                     
                     if (analyserIntervals[userId]) {
@@ -1076,8 +1088,8 @@
             });
             peers = {};
             
-            peerStreams = {};
-            pendingStreams = {};
+            Object.values(audioElements).forEach(audio => audio.remove());
+            audioElements = {};
             
             if (localStream) {
                 localStream.getTracks().forEach(t => t.stop());
