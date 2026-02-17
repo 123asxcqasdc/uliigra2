@@ -192,7 +192,29 @@
             border: 1px solid #3a7a4a;
         }
         audio {
+            width: 100%;
+            margin: 10px 0;
             display: none;
+        }
+        .volume-indicator {
+            width: 100%;
+            height: 4px;
+            background: #1e3a2a;
+            border-radius: 2px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        .volume-level {
+            height: 100%;
+            width: 0%;
+            background: #8bc34a;
+            transition: width 0.1s;
+        }
+        .test-audio-btn {
+            font-size: 12px;
+            padding: 4px 8px;
+            margin-top: 5px;
+            background: #1e4a2e;
         }
     </style>
 </head>
@@ -209,6 +231,7 @@
             <br>
             <button onclick="createRoom()">✨ Создать комнату</button>
             <button onclick="joinRoom()">🔗 Присоединиться</button>
+            <button onclick="testMicrophone()" style="background: #1e4a2e;">🎤 Тест микрофона</button>
         </div>
 
         <div id="call" class="hidden">
@@ -226,6 +249,7 @@
             
             <div class="controls">
                 <button onclick="toggleMic()" id="micBtn">🔇 Выкл микрофон</button>
+                <button onclick="testAudioOutput()" id="testAudioBtn" style="background: #1e4a2e;">🔊 Тест звука</button>
                 <button onclick="endCall()" style="background: #7d3e3e;">📞 Завершить</button>
                 <button onclick="retryAllConnections()" style="background: #7d6b3e;">🔄 Переподключить всех</button>
             </div>
@@ -265,6 +289,7 @@
         let roomRef = null;
         let callsRef = null;
         let analyserIntervals = {};
+        let testAudioContext = null;
 
         // Элементы
         const setupDiv = document.getElementById('setup');
@@ -372,10 +397,6 @@
             entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
             logDiv.appendChild(entry);
             logDiv.scrollTop = logDiv.scrollHeight;
-            
-            if (message.includes('Получен сигнал')) {
-                playSound('message');
-            }
         }
 
         // Получаем параметры из URL
@@ -415,11 +436,12 @@
                 const peer = peers[userId];
                 
                 let statusText = '⏳ Подключение...';
+                let volumeLevel = 0;
                 
                 if (isMe) {
                     statusText = localStream?.getAudioTracks()[0]?.enabled ? '🎤 Готов' : '🔇 Микрофон выключен';
                 } else if (peer) {
-                    if (peer.connected || peer._remoteStreams?.length > 0) {
+                    if (peer.connected) {
                         statusText = '✅ Подключён';
                     } else if (peer.destroyed) {
                         statusText = '❌ Ошибка';
@@ -434,6 +456,9 @@
                         <div class="participant-avatar">👤</div>
                         <div class="participant-status">${statusText}</div>
                         <div class="speaking-indicator hidden-indicator" id="speaking-${userId}"></div>
+                        <div class="volume-indicator">
+                            <div class="volume-level" id="volume-${userId}" style="width: 0%"></div>
+                        </div>
                     </div>
                 `;
             });
@@ -498,20 +523,86 @@
             joinRoom();
         }
 
-        // ==================== ИСПРАВЛЕННЫЕ ICE СЕРВЕРЫ ====================
+        // Тест микрофона
+        async function testMicrophone() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                log('✅ Микрофон работает');
+                
+                // Показываем индикатор уровня звука
+                const audioContext = new AudioContext();
+                const analyser = audioContext.createAnalyser();
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                
+                analyser.fftSize = 256;
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                
+                // Создаем временный индикатор
+                const indicator = document.createElement('div');
+                indicator.style.position = 'fixed';
+                indicator.style.top = '10px';
+                indicator.style.right = '10px';
+                indicator.style.background = '#1a4a30';
+                indicator.style.padding = '10px';
+                indicator.style.borderRadius = '5px';
+                indicator.style.zIndex = '1000';
+                document.body.appendChild(indicator);
+                
+                const interval = setInterval(() => {
+                    analyser.getByteFrequencyData(dataArray);
+                    const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                    indicator.textContent = `🎤 Уровень: ${Math.round(avg)}`;
+                    if (avg > 10) {
+                        indicator.style.background = '#2e7d5e';
+                    } else {
+                        indicator.style.background = '#7d3e3e';
+                    }
+                }, 100);
+                
+                setTimeout(() => {
+                    clearInterval(interval);
+                    indicator.remove();
+                    stream.getTracks().forEach(t => t.stop());
+                }, 3000);
+                
+            } catch (err) {
+                log('❌ Ошибка микрофона: ' + err.message);
+                alert('Ошибка доступа к микрофону: ' + err.message);
+            }
+        }
+
+        // Тест вывода звука
+        function testAudioOutput() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 440;
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.5);
+                
+                log('✅ Тестовый звук воспроизведен');
+            } catch (err) {
+                log('❌ Ошибка воспроизведения: ' + err.message);
+            }
+        }
+
+        // ==================== ICE СЕРВЕРЫ ====================
         function getIceServers() {
             return [
-                // STUN серверы (для определения внешнего IP)
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
                 { urls: 'stun:stun2.l.google.com:19302' },
                 { urls: 'stun:stun3.l.google.com:19302' },
                 { urls: 'stun:stun4.l.google.com:19302' },
-                
-                // === ПРОВЕРЕННЫЕ TURN СЕРВЕРЫ ===
-                // Только те, которые точно работают
-                
-                // 1. OpenRelay (самый надежный публичный)
                 {
                     urls: [
                         'turn:openrelay.metered.ca:80',
@@ -535,15 +626,27 @@
             try {
                 statusDiv.textContent = '🎤 Запрашиваем микрофон...';
                 log('Запрос доступа к микрофону...');
+                
+                // Явно запрашиваем аудио с правильными настройками
                 localStream = await navigator.mediaDevices.getUserMedia({ 
                     audio: {
                         echoCancellation: true,
                         noiseSuppression: true,
-                        autoGainControl: true
+                        autoGainControl: true,
+                        channelCount: 1,
+                        sampleRate: 48000
                     }, 
                     video: false 
                 });
+                
                 log('✅ Микрофон получен');
+                log(`🎵 Аудио треков: ${localStream.getAudioTracks().length}`);
+                
+                // Включаем треки
+                localStream.getAudioTracks().forEach(track => {
+                    track.enabled = true;
+                    log(`🎤 Трек: ${track.label}, готов: ${track.readyState}`);
+                });
                 
                 playSound('join');
                 
@@ -678,9 +781,11 @@
                 
                 peer.remoteName = userName;
                 
+                // Создаем аудио элемент для этого участника
                 const audioEl = document.createElement('audio');
                 audioEl.id = `audio-${userId}`;
                 audioEl.autoplay = true;
+                audioEl.controls = false;
                 audioEl.style.display = 'none';
                 document.body.appendChild(audioEl);
 
@@ -695,11 +800,26 @@
 
                 peer.on('stream', stream => {
                     log(`🎵 Получен аудиопоток от ${userName}`);
-                    audioEl.srcObject = stream;
-                    updateParticipantsGrid();
+                    log(`📊 Треков в потоке: ${stream.getAudioTracks().length}`);
                     
+                    // Подключаем поток к аудио элементу
+                    audioEl.srcObject = stream;
+                    
+                    // Принудительно воспроизводим
+                    audioEl.play().then(() => {
+                        log(`✅ Аудио от ${userName} воспроизводится`);
+                    }).catch(e => {
+                        log(`❌ Ошибка воспроизведения: ${e.message}`);
+                        // Пробуем еще раз через пользовательский жест
+                        document.addEventListener('click', () => {
+                            audioEl.play();
+                        }, { once: true });
+                    });
+                    
+                    updateParticipantsGrid();
                     playSound('connected');
                     
+                    // Анализируем уровень звука для индикатора
                     try {
                         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                         const analyser = audioContext.createAnalyser();
@@ -716,19 +836,29 @@
                         analyserIntervals[userId] = setInterval(() => {
                             analyser.getByteFrequencyData(dataArray);
                             const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                            
+                            // Обновляем индикатор громкости
+                            const volumeEl = document.getElementById(`volume-${userId}`);
+                            if (volumeEl) {
+                                const percent = Math.min(100, (avg / 128) * 100);
+                                volumeEl.style.width = percent + '%';
+                            }
+                            
+                            // Обновляем индикатор говорящего
                             const indicator = document.getElementById(`speaking-${userId}`);
                             if (indicator) {
-                                if (avg > 15) {
+                                if (avg > 20) {
                                     indicator.classList.remove('hidden-indicator');
                                 } else {
                                     indicator.classList.add('hidden-indicator');
                                 }
                             }
-                        }, 150);
+                        }, 100);
                     } catch (e) {
                         log(`Ошибка анализатора: ${e.message}`);
                     }
                     
+                    // Применяем накопленные сигналы
                     if (pendingSignals[userId] && pendingSignals[userId].length > 0) {
                         log(`📦 Применяем ${pendingSignals[userId].length} накопленных сигналов`);
                         pendingSignals[userId].forEach(signalData => {
@@ -794,9 +924,6 @@
 
                 peer.on('iceStateChange', (state) => {
                     log(`🔌 ICE состояние с ${userName}: ${state}`);
-                    if (state === 'failed') {
-                        log('❌ ICE failed - проблема с соединением через интернет');
-                    }
                 });
 
                 peers[userId] = peer;
@@ -825,10 +952,12 @@
         function toggleMic() {
             if (localStream) {
                 const track = localStream.getAudioTracks()[0];
-                track.enabled = !track.enabled;
-                micBtn.textContent = track.enabled ? '🔇 Выкл микрофон' : '🎤 Вкл микрофон';
-                log('Микрофон ' + (track.enabled ? 'включен' : 'выключен'));
-                updateParticipantsGrid();
+                if (track) {
+                    track.enabled = !track.enabled;
+                    micBtn.textContent = track.enabled ? '🔇 Выкл микрофон' : '🎤 Вкл микрофон';
+                    log('Микрофон ' + (track.enabled ? 'включен' : 'выключен'));
+                    updateParticipantsGrid();
+                }
             }
         }
 
