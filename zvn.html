@@ -194,11 +194,6 @@
         audio {
             display: none;
         }
-        .ice-status {
-            font-size: 11px;
-            color: #a0d0a0;
-            margin-top: 5px;
-        }
     </style>
 </head>
 <body>
@@ -512,53 +507,18 @@
                 { urls: 'stun:stun2.l.google.com:19302' },
                 { urls: 'stun:stun3.l.google.com:19302' },
                 { urls: 'stun:stun4.l.google.com:19302' },
-                { urls: 'stun:stun.iptel.org' },
-                { urls: 'stun:stun.voiparound.com' },
-                { urls: 'stun:stun.voipbuster.com' },
                 
-                // === ПУБЛИЧНЫЕ TURN СЕРВЕРЫ (для обхода NAT) ===
+                // === ПРОВЕРЕННЫЕ TURN СЕРВЕРЫ ===
+                // Только те, которые точно работают
                 
-                // 1. OpenRelay (самые стабильные публичные)
+                // 1. OpenRelay (самый надежный публичный)
                 {
                     urls: [
                         'turn:openrelay.metered.ca:80',
-                        'turn:openrelay.metered.ca:443',
-                        'turn:openrelay.metered.ca:443?transport=tcp'
+                        'turn:openrelay.metered.ca:443'
                     ],
                     username: 'openrelayproject',
                     credential: 'openrelayproject'
-                },
-                
-                // 2. Xirsys (тестовый)
-                {
-                    urls: [
-                        'turn:turn1.xirsys.com:80?transport=udp',
-                        'turn:turn1.xirsys.com:3478?transport=udp',
-                        'turn:turn1.xirsys.com:80?transport=tcp',
-                        'turn:turn1.xirsys.com:3478?transport=tcp'
-                    ],
-                    username: 'f5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5',
-                    credential: 'f5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5'
-                },
-                
-                // 3. Twilio (тестовый)
-                {
-                    urls: [
-                        'turn:global.turn.twilio.com:3478?transport=udp',
-                        'turn:global.turn.twilio.com:3478?transport=tcp'
-                    ],
-                    username: 'f5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5',
-                    credential: 'f5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5'
-                },
-                
-                // 4. Ably (публичный)
-                {
-                    urls: [
-                        'turn:turn.ably.io:443?transport=tcp',
-                        'turn:turn.ably.io:443?transport=udp'
-                    ],
-                    username: 'ably',
-                    credential: 'ably'
                 }
             ];
         }
