@@ -191,9 +191,24 @@
             color: #b8e0b8;
             border: 1px solid #3a7a4a;
         }
+        .unlock-audio {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #8bc34a;
+            color: #0a2f1f;
+            padding: 15px 25px;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 1000;
+            animation: pulse 2s infinite;
+        }
+        .unlock-audio:hover {
+            background: #a5d6a5;
+        }
         audio {
-            width: 100%;
-            margin: 10px 0;
             display: none;
         }
         .volume-indicator {
@@ -210,15 +225,11 @@
             background: #8bc34a;
             transition: width 0.1s;
         }
-        .test-audio-btn {
-            font-size: 12px;
-            padding: 4px 8px;
-            margin-top: 5px;
-            background: #1e4a2e;
-        }
     </style>
 </head>
 <body>
+    <div id="unlockAudio" class="unlock-audio hidden">🔊 Нажмите для включения звука</div>
+
     <div class="container">
         <h1>🌿 Kcalls — Групповые звонки</h1>
         
@@ -289,7 +300,7 @@
         let roomRef = null;
         let callsRef = null;
         let analyserIntervals = {};
-        let testAudioContext = null;
+        let audioElements = {}; // Храним аудио элементы
 
         // Элементы
         const setupDiv = document.getElementById('setup');
@@ -304,16 +315,42 @@
         const autoJoinMessageDiv = document.getElementById('autoJoinMessage');
         const participantsGrid = document.getElementById('participantsGrid');
         const participantCountSpan = document.getElementById('participantCount');
+        const unlockAudioDiv = document.getElementById('unlockAudio');
+
+        // ==================== РАЗБЛОКИРОВКА АУДИО ====================
+        let audioUnlocked = false;
+
+        function unlockAudio() {
+            if (audioUnlocked) return;
+            
+            // Создаем пустой аудио контекст для разблокировки
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            audioContext.resume().then(() => {
+                log('🔊 Аудио разблокировано');
+                audioUnlocked = true;
+                unlockAudioDiv.classList.add('hidden');
+                
+                // Пробуем воспроизвести все аудио элементы
+                Object.values(audioElements).forEach(audio => {
+                    audio.play().catch(e => log(`Ошибка воспроизведения: ${e.message}`));
+                });
+            });
+        }
+
+        unlockAudioDiv.addEventListener('click', unlockAudio);
+
+        // Разблокируем аудио при первом взаимодействии с страницей
+        document.addEventListener('click', function once() {
+            unlockAudio();
+            document.removeEventListener('click', once);
+        }, { once: true });
 
         // ==================== ЗВУКОВЫЕ ЭФФЕКТЫ ====================
         function playSound(type) {
+            if (!audioUnlocked) return;
+            
             try {
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume();
-                }
-                
                 const oscillator = audioContext.createOscillator();
                 const gainNode = audioContext.createGain();
                 
@@ -355,14 +392,6 @@
                         gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.25);
                         oscillator.start();
                         oscillator.stop(audioContext.currentTime + 0.25);
-                        break;
-                        
-                    case 'message':
-                        oscillator.frequency.value = 523.25;
-                        gainNode.gain.setValueAtTime(0.03, audioContext.currentTime);
-                        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
-                        oscillator.start();
-                        oscillator.stop(audioContext.currentTime + 0.1);
                         break;
                         
                     case 'connected':
@@ -441,7 +470,7 @@
                 if (isMe) {
                     statusText = localStream?.getAudioTracks()[0]?.enabled ? '🎤 Готов' : '🔇 Микрофон выключен';
                 } else if (peer) {
-                    if (peer.connected) {
+                    if (peer.connected || peer._remoteStreams?.length > 0) {
                         statusText = '✅ Подключён';
                     } else if (peer.destroyed) {
                         statusText = '❌ Ошибка';
@@ -529,7 +558,6 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 log('✅ Микрофон работает');
                 
-                // Показываем индикатор уровня звука
                 const audioContext = new AudioContext();
                 const analyser = audioContext.createAnalyser();
                 const source = audioContext.createMediaStreamSource(stream);
@@ -538,7 +566,6 @@
                 analyser.fftSize = 256;
                 const dataArray = new Uint8Array(analyser.frequencyBinCount);
                 
-                // Создаем временный индикатор
                 const indicator = document.createElement('div');
                 indicator.style.position = 'fixed';
                 indicator.style.top = '10px';
@@ -575,6 +602,8 @@
         // Тест вывода звука
         function testAudioOutput() {
             try {
+                unlockAudio(); // Разблокируем аудио
+                
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 const oscillator = audioContext.createOscillator();
                 const gainNode = audioContext.createGain();
@@ -627,7 +656,6 @@
                 statusDiv.textContent = '🎤 Запрашиваем микрофон...';
                 log('Запрос доступа к микрофону...');
                 
-                // Явно запрашиваем аудио с правильными настройками
                 localStream = await navigator.mediaDevices.getUserMedia({ 
                     audio: {
                         echoCancellation: true,
@@ -642,7 +670,6 @@
                 log('✅ Микрофон получен');
                 log(`🎵 Аудио треков: ${localStream.getAudioTracks().length}`);
                 
-                // Включаем треки
                 localStream.getAudioTracks().forEach(track => {
                     track.enabled = true;
                     log(`🎤 Трек: ${track.label}, готов: ${track.readyState}`);
@@ -658,7 +685,6 @@
                 
                 roomRef = db.ref('rooms/' + roomId);
                 
-                // Добавляем себя
                 await roomRef.child('users/' + currentUser.id).set({ 
                     name: currentUser.name,
                     timestamp: Date.now()
@@ -666,7 +692,6 @@
                 roomRef.child('users/' + currentUser.id).onDisconnect().remove();
                 log('Подключен к комнате ' + roomId);
 
-                // Слушаем сигналы
                 callsRef = db.ref('calls/' + roomId);
                 callsRef.on('child_added', (snap) => {
                     const signal = snap.val();
@@ -691,7 +716,6 @@
                     }
                 });
 
-                // Следим за пользователями
                 roomRef.child('users').on('value', (snap) => {
                     const users = snap.val();
                     if (!users) return;
@@ -739,8 +763,10 @@
                                 delete analyserIntervals[userId];
                             }
                             
-                            const audioEl = document.getElementById(`audio-${userId}`);
-                            if (audioEl) audioEl.remove();
+                            if (audioElements[userId]) {
+                                audioElements[userId].remove();
+                                delete audioElements[userId];
+                            }
                         }
                     });
                     
@@ -781,13 +807,14 @@
                 
                 peer.remoteName = userName;
                 
-                // Создаем аудио элемент для этого участника
+                // Создаем аудио элемент и сохраняем его
                 const audioEl = document.createElement('audio');
                 audioEl.id = `audio-${userId}`;
                 audioEl.autoplay = true;
                 audioEl.controls = false;
                 audioEl.style.display = 'none';
                 document.body.appendChild(audioEl);
+                audioElements[userId] = audioEl;
 
                 peer.on('signal', data => {
                     log(`📤 Отправка сигнала для ${userName}`);
@@ -805,21 +832,16 @@
                     // Подключаем поток к аудио элементу
                     audioEl.srcObject = stream;
                     
-                    // Принудительно воспроизводим
-                    audioEl.play().then(() => {
-                        log(`✅ Аудио от ${userName} воспроизводится`);
-                    }).catch(e => {
-                        log(`❌ Ошибка воспроизведения: ${e.message}`);
-                        // Пробуем еще раз через пользовательский жест
-                        document.addEventListener('click', () => {
-                            audioEl.play();
-                        }, { once: true });
-                    });
+                    // Показываем кнопку разблокировки если нужно
+                    if (!audioUnlocked) {
+                        unlockAudioDiv.classList.remove('hidden');
+                        log('🔇 Аудио заблокировано браузером, нажмите кнопку');
+                    }
                     
                     updateParticipantsGrid();
                     playSound('connected');
                     
-                    // Анализируем уровень звука для индикатора
+                    // Анализируем уровень звука
                     try {
                         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                         const analyser = audioContext.createAnalyser();
@@ -837,14 +859,12 @@
                             analyser.getByteFrequencyData(dataArray);
                             const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
                             
-                            // Обновляем индикатор громкости
                             const volumeEl = document.getElementById(`volume-${userId}`);
                             if (volumeEl) {
                                 const percent = Math.min(100, (avg / 128) * 100);
                                 volumeEl.style.width = percent + '%';
                             }
                             
-                            // Обновляем индикатор говорящего
                             const indicator = document.getElementById(`speaking-${userId}`);
                             if (indicator) {
                                 if (avg > 20) {
@@ -858,7 +878,6 @@
                         log(`Ошибка анализатора: ${e.message}`);
                     }
                     
-                    // Применяем накопленные сигналы
                     if (pendingSignals[userId] && pendingSignals[userId].length > 0) {
                         log(`📦 Применяем ${pendingSignals[userId].length} накопленных сигналов`);
                         pendingSignals[userId].forEach(signalData => {
@@ -899,6 +918,11 @@
                                 delete analyserIntervals[userId];
                             }
                             
+                            if (audioElements[userId]) {
+                                audioElements[userId].remove();
+                                delete audioElements[userId];
+                            }
+                            
                             createPeerWith(userId, userName);
                             delete reconnectTimeouts[userId];
                         }, 3000);
@@ -907,23 +931,18 @@
 
                 peer.on('close', () => {
                     log(`🔒 Peer с ${userName} закрыт`);
-                    audioEl.remove();
+                    
+                    if (audioElements[userId]) {
+                        audioElements[userId].remove();
+                        delete audioElements[userId];
+                    }
+                    
                     updateParticipantsGrid();
                     
                     if (analyserIntervals[userId]) {
                         clearInterval(analyserIntervals[userId]);
                         delete analyserIntervals[userId];
                     }
-                });
-
-                peer.on('iceCandidate', (candidate) => {
-                    if (candidate) {
-                        log(`🔌 ICE кандидат: ${candidate.type || 'unknown'}`);
-                    }
-                });
-
-                peer.on('iceStateChange', (state) => {
-                    log(`🔌 ICE состояние с ${userName}: ${state}`);
                 });
 
                 peers[userId] = peer;
@@ -980,8 +999,10 @@
                     delete analyserIntervals[userId];
                 }
                 
-                const audioEl = document.getElementById(`audio-${userId}`);
-                if (audioEl) audioEl.remove();
+                if (audioElements[userId]) {
+                    audioElements[userId].remove();
+                    delete audioElements[userId];
+                }
             });
             
             Object.keys(users).forEach(userId => {
@@ -1022,7 +1043,8 @@
             });
             peers = {};
             
-            document.querySelectorAll('audio[id^="audio-"]').forEach(el => el.remove());
+            Object.values(audioElements).forEach(audio => audio.remove());
+            audioElements = {};
             
             if (localStream) {
                 localStream.getTracks().forEach(t => t.stop());
@@ -1037,6 +1059,7 @@
             callDiv.classList.add('hidden');
             updateLinkInfo(roomIdInput.value);
             autoJoinAttempted = false;
+            unlockAudioDiv.classList.add('hidden');
             
             log('✅ Звонок завершен');
         }
