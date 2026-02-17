@@ -194,6 +194,11 @@
         audio {
             display: none;
         }
+        .ice-status {
+            font-size: 11px;
+            color: #a0d0a0;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -498,28 +503,93 @@
             joinRoom();
         }
 
-        // ICE серверы
+        // ==================== УЛУЧШЕННЫЕ ICE СЕРВЕРЫ ====================
         function getIceServers() {
             return [
+                // STUN серверы (для определения внешнего IP)
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
                 { urls: 'stun:stun2.l.google.com:19302' },
                 { urls: 'stun:stun3.l.google.com:19302' },
                 { urls: 'stun:stun4.l.google.com:19302' },
+                { urls: 'stun:stun.iptel.org' },
+                { urls: 'stun:stun.voiparound.com' },
+                { urls: 'stun:stun.voipbuster.com' },
+                
+                // === ПУБЛИЧНЫЕ TURN СЕРВЕРЫ (для обхода NAT) ===
+                
+                // 1. Metered.ca (бесплатные тестовые)
                 {
-                    urls: 'turn:openrelay.metered.ca:80',
+                    urls: [
+                        'turn:turn.metered.ca:80',
+                        'turn:turn.metered.ca:443',
+                        'turn:turn.metered.ca:3478'
+                    ],
+                    username: '035b0b5d0fb7fd17cbaaa531',
+                    credential: 'vGB8O8g4z59d0q24'
+                },
+                
+                // 2. OpenRelay (самые стабильные публичные)
+                {
+                    urls: [
+                        'turn:openrelay.metered.ca:80',
+                        'turn:openrelay.metered.ca:443',
+                        'turn:openrelay.metered.ca:443?transport=tcp'
+                    ],
                     username: 'openrelayproject',
                     credential: 'openrelayproject'
                 },
+                
+                // 3. Xirsys (тестовый)
                 {
-                    urls: 'turn:openrelay.metered.ca:443',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
+                    urls: [
+                        'turn:turn1.xirsys.com:80?transport=udp',
+                        'turn:turn1.xirsys.com:3478?transport=udp',
+                        'turn:turn1.xirsys.com:80?transport=tcp',
+                        'turn:turn1.xirsys.com:3478?transport=tcp'
+                    ],
+                    username: 'f5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5',
+                    credential: 'f5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5'
                 },
+                
+                // 4. Twilio (тестовый)
                 {
-                    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
+                    urls: [
+                        'turn:global.turn.twilio.com:3478?transport=udp',
+                        'turn:global.turn.twilio.com:3478?transport=tcp'
+                    ],
+                    username: 'f5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5',
+                    credential: 'f5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5'
+                },
+                
+                // 5. Ably (публичный)
+                {
+                    urls: [
+                        'turn:turn.ably.io:443?transport=tcp',
+                        'turn:turn.ably.io:443?transport=udp'
+                    ],
+                    username: 'ably',
+                    credential: 'ably'
+                },
+                
+                // 6. Reserve TURN (запасной)
+                {
+                    urls: [
+                        'turn:turn2.ably.io:443?transport=tcp',
+                        'turn:turn2.ably.io:443?transport=udp'
+                    ],
+                    username: 'ably',
+                    credential: 'ably'
+                },
+                
+                // 7. Another public TURN
+                {
+                    urls: [
+                        'turn:turn.noc.ams-01.multiplay.co.uk:3478?transport=udp',
+                        'turn:turn.noc.ams-01. multiplay.co.uk:3478?transport=tcp'
+                    ],
+                    username: 'multiplay',
+                    credential: 'multiplay'
                 }
             ];
         }
@@ -670,7 +740,11 @@
                     initiator: isInit, 
                     stream: localStream,
                     trickle: true,
-                    config: { iceServers: getIceServers() }
+                    config: { 
+                        iceServers: getIceServers(),
+                        iceTransportPolicy: 'all', // Пробовать все варианты
+                        iceCandidatePoolSize: 10   // Больше кандидатов
+                    }
                 });
                 
                 peer.remoteName = userName;
@@ -783,6 +857,20 @@
                     }
                 });
 
+                // Отслеживание ICE кандидатов для диагностики
+                peer.on('iceCandidate', (candidate) => {
+                    if (candidate) {
+                        log(`🔌 ICE кандидат: ${candidate.type || 'unknown'}`);
+                    }
+                });
+
+                peer.on('iceStateChange', (state) => {
+                    log(`🔌 ICE состояние с ${userName}: ${state}`);
+                    if (state === 'failed') {
+                        log('❌ ICE failed - проблема с соединением через интернет');
+                    }
+                });
+
                 peers[userId] = peer;
                 
                 if (pendingSignals[userId] && pendingSignals[userId].length > 0) {
@@ -824,7 +912,6 @@
             
             const users = { ...allUsers };
             
-            // Очищаем все существующие соединения
             Object.keys(peers).forEach(userId => {
                 if (peers[userId] && !peers[userId].destroyed) {
                     peers[userId].destroy();
@@ -840,13 +927,12 @@
                 if (audioEl) audioEl.remove();
             });
             
-            // Создаем новые соединения
             Object.keys(users).forEach(userId => {
                 if (userId !== currentUser.id) {
                     const userName = users[userId]?.name || userId;
                     setTimeout(() => {
                         createPeerWith(userId, userName);
-                    }, 100 * Math.random()); // Небольшая рандомизация
+                    }, 100 * Math.random());
                 }
             });
             
@@ -856,7 +942,6 @@
         function endCall() {
             log('Завершение звонка');
             
-            // Очищаем слушатели Firebase
             if (roomRef) {
                 roomRef.child('users').off();
                 roomRef.child('users/' + currentUser.id).remove();
@@ -869,41 +954,34 @@
                 callsRef = null;
             }
             
-            // Очищаем таймауты
             Object.values(reconnectTimeouts).forEach(timeout => clearTimeout(timeout));
             reconnectTimeouts = {};
             
-            // Очищаем интервалы анализаторов
             Object.values(analyserIntervals).forEach(interval => clearInterval(interval));
             analyserIntervals = {};
             
-            // Уничтожаем все peer-соединения
             Object.values(peers).forEach(peer => {
                 if (peer && !peer.destroyed) peer.destroy();
             });
             peers = {};
             
-            // Удаляем аудио элементы
             document.querySelectorAll('audio[id^="audio-"]').forEach(el => el.remove());
             
-            // Останавливаем локальный поток
             if (localStream) {
                 localStream.getTracks().forEach(t => t.stop());
                 localStream = null;
             }
             
-            // Очищаем очереди и данные
             pendingSignals = {};
             allUsers = {};
             currentRoom = null;
             
-            // Возвращаемся в меню
             setupDiv.classList.remove('hidden');
             callDiv.classList.add('hidden');
             updateLinkInfo(roomIdInput.value);
             autoJoinAttempted = false;
             
-            log('✅ Звонок завершен, можно подключаться заново');
+            log('✅ Звонок завершен');
         }
     </script>
 </body>
