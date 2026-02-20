@@ -362,6 +362,7 @@
         let analyserIntervals = {};
         let audioElements = {};
         let muteStatus = {};
+        let peerCreationInProgress = {}; // Флаг для предотвращения множественного создания
 
         // Элементы
         const setupDiv = document.getElementById('setup');
@@ -562,8 +563,6 @@
                         }
                     } else if (peer.connected) {
                         statusText = '🔄 Ожидание аудио';
-                    } else if (peer.destroyed) {
-                        statusText = '❌ Ошибка';
                     } else {
                         statusText = '🔄 Соединение...';
                     }
@@ -590,15 +589,20 @@
             
             participantsGrid.innerHTML = html;
             
+            // Подключаем аудиоэлементы
             Object.keys(audioElements).forEach(userId => {
-                const oldAudio = audioElements[userId];
                 const newAudio = document.getElementById(`audio-${userId}`);
-                
-                if (newAudio && oldAudio && oldAudio.srcObject) {
-                    newAudio.srcObject = oldAudio.srcObject;
-                    if (oldAudio.parentNode) oldAudio.parentNode.removeChild(oldAudio);
-                    audioElements[userId] = newAudio;
-                    if (audioUnlocked) newAudio.play().catch(e => log(`Ошибка: ${e.message}`));
+                if (newAudio && audioElements[userId] && audioElements[userId].srcObject) {
+                    if (newAudio !== audioElements[userId]) {
+                        newAudio.srcObject = audioElements[userId].srcObject;
+                        if (audioElements[userId].parentNode) {
+                            audioElements[userId].parentNode.removeChild(audioElements[userId]);
+                        }
+                        audioElements[userId] = newAudio;
+                    }
+                    if (audioUnlocked && !muteStatus[userId]) {
+                        newAudio.play().catch(e => log(`Ошибка: ${e.message}`));
+                    }
                 }
             });
             
@@ -802,8 +806,6 @@
                                 log('✅ Сигнал применен');
                             } catch (e) {
                                 log(`❌ Ошибка применения сигнала: ${e.message}`);
-                                if (!pendingSignals[signal.from]) pendingSignals[signal.from] = [];
-                                pendingSignals[signal.from].push(signal.data);
                             }
                         } else {
                             if (!pendingSignals[signal.from]) pendingSignals[signal.from] = [];
@@ -818,41 +820,57 @@
                     const users = snap.val();
                     if (!users) return;
                     
-                    const newUsers = Object.keys(users).filter(id => id !== currentUser.id && !allUsers[id]);
-                    const leftUsers = Object.keys(allUsers).filter(id => id !== currentUser.id && !users[id]);
-                    
+                    // Сохраняем старый список пользователей
+                    const oldUsers = { ...allUsers };
                     allUsers = users;
                     
+                    // Находим новых пользователей
+                    const newUsers = Object.keys(users).filter(id => 
+                        id !== currentUser.id && !oldUsers[id]
+                    );
+                    
+                    // Находим отключившихся пользователей
+                    const leftUsers = Object.keys(oldUsers).filter(id => 
+                        id !== currentUser.id && !users[id]
+                    );
+                    
+                    // Обрабатываем новых пользователей
                     newUsers.forEach(userId => {
                         playSound('participant-joined');
                         log(`🔔 Новый участник: ${users[userId].name}`);
+                        // Создаем peer для нового пользователя
+                        createPeerWith(userId, users[userId].name);
                     });
                     
+                    // Обрабатываем отключившихся пользователей
                     leftUsers.forEach(userId => {
                         playSound('participant-left');
-                        log(`🔔 Участник отключился: ${allUsers[userId]?.name || userId}`);
-                        delete muteStatus[userId];
-                    });
-                    
-                    Object.keys(users).forEach(userId => {
-                        if (userId !== currentUser.id && !peers[userId]) {
-                            createPeerWith(userId, users[userId].name);
-                        }
-                    });
-                    
-                    Object.keys(peers).forEach(userId => {
-                        if (!users[userId]) {
-                            if (reconnectTimeouts[userId]) clearTimeout(reconnectTimeouts[userId]);
+                        log(`🔔 Участник отключился: ${oldUsers[userId]?.name || userId}`);
+                        
+                        // Очищаем все ресурсы для отключившегося пользователя
+                        if (reconnectTimeouts[userId]) {
+                            clearTimeout(reconnectTimeouts[userId]);
                             delete reconnectTimeouts[userId];
-                            if (peers[userId] && !peers[userId].destroyed) peers[userId].destroy();
-                            delete peers[userId];
-                            if (analyserIntervals[userId]) clearInterval(analyserIntervals[userId]);
-                            delete analyserIntervals[userId];
-                            if (audioElements[userId]) {
-                                audioElements[userId].remove();
-                                delete audioElements[userId];
-                            }
                         }
+                        
+                        if (peers[userId] && !peers[userId].destroyed) {
+                            peers[userId].destroy();
+                        }
+                        delete peers[userId];
+                        
+                        if (analyserIntervals[userId]) {
+                            clearInterval(analyserIntervals[userId]);
+                            delete analyserIntervals[userId];
+                        }
+                        
+                        if (audioElements[userId]) {
+                            audioElements[userId].remove();
+                            delete audioElements[userId];
+                        }
+                        
+                        delete muteStatus[userId];
+                        delete peerCreationInProgress[userId];
+                        delete pendingSignals[userId];
                     });
                     
                     updateParticipantsGrid();
@@ -868,26 +886,31 @@
             }
         }
 
-        // ==================== ИСПРАВЛЕНИЕ ДВУСТОРОННЕГО ЗВУКА ====================
         function createPeerWith(userId, userName) {
+            // Проверяем, не создается ли уже peer для этого пользователя
+            if (peerCreationInProgress[userId]) {
+                log(`⚠️ Создание peer для ${userName} уже в процессе`);
+                return;
+            }
+            
+            // Проверяем, не существует ли уже peer
             if (peers[userId] && !peers[userId].destroyed) {
                 log(`⚠️ Peer с ${userName} уже существует`);
                 return;
             }
             
+            peerCreationInProgress[userId] = true;
             log(`🔧 Создаем peer с ${userName} (${userId})`);
             
             const isInit = currentUser.id < userId;
             
             try {
-                // ВАЖНО: Создаем отдельный поток для отправки с клонированными треками
+                // Создаем отдельный поток для отправки с клонированными треками
                 const sendStream = new MediaStream();
                 localStream.getAudioTracks().forEach(track => {
-                    // Клонируем трек, чтобы гарантировать отправку
                     const newTrack = track.clone();
                     newTrack.enabled = track.enabled;
                     sendStream.addTrack(newTrack);
-                    log(`🎤 Клонирован трек для отправки ${userName}`);
                 });
                 
                 const peer = new SimplePeer({ 
@@ -931,10 +954,9 @@
                         return;
                     }
                     
-                    // ВАЖНО: Принудительно включаем все полученные треки
+                    // Принудительно включаем все полученные треки
                     stream.getAudioTracks().forEach(track => {
                         track.enabled = true;
-                        log(`🔊 Включен полученный трек от ${userName}`);
                     });
                     
                     if (audioElements[userId]) {
@@ -949,13 +971,13 @@
                             });
                         } else if (!audioUnlocked) {
                             unlockAudioDiv.classList.remove('hidden');
-                            log('🔇 Аудио заблокировано, нажмите кнопку');
                         }
                     }
                     
                     updateParticipantsGrid();
                     playSound('connected');
                     
+                    // Анализируем уровень звука
                     try {
                         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                         const analyser = audioContext.createAnalyser();
@@ -989,6 +1011,7 @@
                         log(`Ошибка анализатора: ${e.message}`);
                     }
                     
+                    // Применяем накопленные сигналы
                     if (pendingSignals[userId]?.length) {
                         log(`📦 Применяем ${pendingSignals[userId].length} накопленных сигналов`);
                         pendingSignals[userId].forEach(signalData => {
@@ -996,6 +1019,8 @@
                         });
                         delete pendingSignals[userId];
                     }
+                    
+                    peerCreationInProgress[userId] = false;
                 });
 
                 peer.on('connect', () => {
@@ -1009,42 +1034,35 @@
 
                 peer.on('error', (err) => {
                     log(`❌ Ошибка peer с ${userName}: ${err.message}`);
-                    updateParticipantsGrid();
                     
                     if (!reconnectTimeouts[userId] && allUsers[userId]) {
                         reconnectTimeouts[userId] = setTimeout(() => {
                             log(`🔄 Переподключение к ${userName}...`);
-                            if (peers[userId] && !peers[userId].destroyed) peers[userId].destroy();
-                            delete peers[userId];
-                            if (analyserIntervals[userId]) clearInterval(analyserIntervals[userId]);
-                            delete analyserIntervals[userId];
-                            if (audioElements[userId]) {
-                                audioElements[userId].remove();
-                                delete audioElements[userId];
+                            if (peers[userId] && !peers[userId].destroyed) {
+                                peers[userId].destroy();
                             }
+                            delete peers[userId];
+                            delete peerCreationInProgress[userId];
                             createPeerWith(userId, userName);
                             delete reconnectTimeouts[userId];
                         }, 3000);
                     }
+                    
+                    peerCreationInProgress[userId] = false;
+                    updateParticipantsGrid();
                 });
 
                 peer.on('close', () => {
                     log(`🔒 Peer с ${userName} закрыт`);
-                    if (audioElements[userId]) {
-                        audioElements[userId].remove();
-                        delete audioElements[userId];
-                    }
+                    delete peers[userId];
+                    delete peerCreationInProgress[userId];
                     updateParticipantsGrid();
-                    if (analyserIntervals[userId]) {
-                        clearInterval(analyserIntervals[userId]);
-                        delete analyserIntervals[userId];
-                    }
                 });
 
                 peers[userId] = peer;
                 
+                // Если есть накопленные сигналы, применяем их через некоторое время
                 if (pendingSignals[userId]?.length) {
-                    log(`📦 Есть ${pendingSignals[userId].length} накопленных сигналов для ${userName}`);
                     setTimeout(() => {
                         if (peers[userId] && !peers[userId].destroyed) {
                             pendingSignals[userId].forEach(signalData => {
@@ -1057,6 +1075,7 @@
 
             } catch (err) {
                 log(`❌ Ошибка создания peer с ${userName}: ${err.message}`);
+                peerCreationInProgress[userId] = false;
             }
         }
 
@@ -1092,10 +1111,15 @@
             
             Object.values(reconnectTimeouts).forEach(timeout => clearTimeout(timeout));
             reconnectTimeouts = {};
+            
             Object.values(analyserIntervals).forEach(interval => clearInterval(interval));
             analyserIntervals = {};
-            Object.values(peers).forEach(peer => { if (peer && !peer.destroyed) peer.destroy(); });
+            
+            Object.values(peers).forEach(peer => {
+                if (peer && !peer.destroyed) peer.destroy();
+            });
             peers = {};
+            
             Object.values(audioElements).forEach(audio => audio.remove());
             audioElements = {};
             
@@ -1107,6 +1131,7 @@
             pendingSignals = {};
             allUsers = {};
             muteStatus = {};
+            peerCreationInProgress = {};
             currentRoom = null;
             
             setupDiv.classList.remove('hidden');
