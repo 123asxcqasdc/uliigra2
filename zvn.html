@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kcalls - Групповые звонки</title>
+    <title>Звонкие Улитки - Групповые звонки</title>
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -30,6 +30,15 @@
             color: #8bc34a;
             margin-bottom: 25px;
             text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            font-size: 2.5em;
+        }
+        h1::before {
+            content: "🐌 ";
+            font-size: 1.2em;
+        }
+        h1::after {
+            content: " 🐌";
+            font-size: 1.2em;
         }
         input, button {
             padding: 12px 18px;
@@ -105,10 +114,6 @@
             opacity: 0.8;
             border-color: #7d3e3e;
         }
-        .participant-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0,80,40,0.4);
-        }
         .participant-name {
             font-size: 18px;
             font-weight: bold;
@@ -166,19 +171,6 @@
         }
         .hidden-indicator {
             display: none;
-        }
-        .muted-indicator {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            background: #7d3e3e;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 15px;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
         }
         .log {
             margin-top: 25px;
@@ -279,13 +271,17 @@
             padding: 5px;
             border-radius: 5px;
         }
-        .mic-icon {
-            font-size: 20px;
-            cursor: pointer;
-            transition: transform 0.2s;
+        .snail-icon {
+            font-size: 24px;
+            margin: 0 5px;
+            animation: crawl 3s infinite ease-in-out;
+            display: inline-block;
         }
-        .mic-icon:hover {
-            transform: scale(1.1);
+        @keyframes crawl {
+            0% { transform: translateX(0) rotate(0deg); }
+            25% { transform: translateX(5px) rotate(5deg); }
+            75% { transform: translateX(-5px) rotate(-5deg); }
+            100% { transform: translateX(0) rotate(0deg); }
         }
     </style>
 </head>
@@ -293,7 +289,7 @@
     <div id="unlockAudio" class="unlock-audio hidden">🔊 Нажмите для включения звука</div>
 
     <div class="container">
-        <h1>🌿 Kcalls — Групповые звонки</h1>
+        <h1>Звонкие Улитки</h1>
         
         <div id="setup">
             <div class="link-info" id="linkInfo"></div>
@@ -321,7 +317,7 @@
             <div id="participantsGrid" class="participants-grid"></div>
             
             <div class="controls">
-                <button onclick="toggleMic()" id="micBtn" class="mic-icon">🔇 Выкл микрофон</button>
+                <button onclick="toggleMic()" id="micBtn">🔇 Выкл микрофон</button>
                 <button onclick="testAudioOutput()" id="testAudioBtn" style="background: #1e4a2e;">🔊 Тест звука</button>
                 <button onclick="forceAudioRestart()" style="background: #7d6b3e;">🔄 Перезапустить аудио</button>
                 <button onclick="endCall()" style="background: #7d3e3e;">📞 Завершить</button>
@@ -365,7 +361,7 @@
         let callsRef = null;
         let analyserIntervals = {};
         let audioElements = {};
-        let muteStatus = {}; // Статус микрофона для каждого участника { userId: boolean }
+        let muteStatus = {};
 
         // Элементы
         const setupDiv = document.getElementById('setup');
@@ -497,9 +493,9 @@
             let html = '<strong>Отладка:</strong><br>';
             html += `Локальный поток: ${localStream ? '✅' : '❌'}<br>`;
             html += `Аудио треков: ${localStream?.getAudioTracks().length || 0}<br>`;
+            html += `Микрофон: ${localStream?.getAudioTracks()[0]?.enabled ? '🎤' : '🔇'}<br>`;
             html += `Peer соединений: ${Object.keys(peers).length}<br>`;
             html += `Аудио элементов: ${Object.keys(audioElements).length}<br>`;
-            html += `Микрофон: ${localStream?.getAudioTracks()[0]?.enabled ? '🎤' : '🔇'}<br>`;
             debugPanel.innerHTML = html;
         }
 
@@ -517,10 +513,8 @@
             }
         }
 
-        // Обновление статуса микрофона в Firebase
         function updateMuteStatus(userId, isMuted) {
             if (!roomRef) return;
-            
             muteStatus[userId] = isMuted;
             roomRef.child('mute/' + userId).set({
                 muted: isMuted,
@@ -528,7 +522,6 @@
             });
         }
 
-        // Обновление сетки участников
         function updateParticipantsGrid() {
             if (!allUsers) return;
             
@@ -582,7 +575,7 @@
                             ${user.name}${isMe ? ' (Вы)' : ''}
                             ${muteBadge}
                         </div>
-                        <div class="participant-avatar ${isMuted ? 'muted' : ''}">${isMuted ? '🔇' : '👤'}</div>
+                        <div class="participant-avatar ${isMuted ? 'muted' : ''}">${isMuted ? '🔇' : '🐌'}</div>
                         <div class="participant-status">${statusText}</div>
                         ${!isMe ? `
                             <audio id="audio-${userId}" controls style="width: 100%; margin: 10px 0;" preload="none"></audio>
@@ -597,25 +590,15 @@
             
             participantsGrid.innerHTML = html;
             
-            // Перемещаем существующие аудио элементы в сетку
             Object.keys(audioElements).forEach(userId => {
                 const oldAudio = audioElements[userId];
                 const newAudio = document.getElementById(`audio-${userId}`);
                 
                 if (newAudio && oldAudio && oldAudio.srcObject) {
                     newAudio.srcObject = oldAudio.srcObject;
-                    
-                    if (oldAudio.parentNode) {
-                        oldAudio.parentNode.removeChild(oldAudio);
-                    }
-                    
+                    if (oldAudio.parentNode) oldAudio.parentNode.removeChild(oldAudio);
                     audioElements[userId] = newAudio;
-                    
-                    if (audioUnlocked) {
-                        newAudio.play().catch(e => log(`Ошибка: ${e.message}`));
-                    }
-                    
-                    log(`🔄 Аудио элемент для ${userId} перемещен в сетку`);
+                    if (audioUnlocked) newAudio.play().catch(e => log(`Ошибка: ${e.message}`));
                 }
             });
             
@@ -630,21 +613,15 @@
                 autoJoinAttempted = true;
                 roomIdInput.value = callParam;
                 updateLinkInfo(callParam);
-                
                 autoJoinMessageDiv.textContent = `🔄 Автоматическое подключение к комнате ${callParam}...`;
                 autoJoinMessageDiv.classList.remove('hidden');
-                
                 log('🔗 Обнаружена ссылка на комнату: ' + callParam);
                 log('🔄 Автоматическое подключение...');
-                
-                setTimeout(() => {
-                    joinRoom();
-                }, 1000);
+                setTimeout(() => joinRoom(), 1000);
             }
         }
 
         window.addEventListener('load', autoJoin);
-
         userNameInput.oninput = (e) => currentUser.name = e.target.value || 'Гость';
 
         function copyRoomId() {
@@ -681,15 +658,12 @@
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 log('✅ Микрофон работает');
-                
                 const audioContext = new AudioContext();
                 const analyser = audioContext.createAnalyser();
                 const source = audioContext.createMediaStreamSource(stream);
                 source.connect(analyser);
-                
                 analyser.fftSize = 256;
                 const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                
                 const indicator = document.createElement('div');
                 indicator.style.position = 'fixed';
                 indicator.style.top = '10px';
@@ -699,24 +673,17 @@
                 indicator.style.borderRadius = '5px';
                 indicator.style.zIndex = '1000';
                 document.body.appendChild(indicator);
-                
                 const interval = setInterval(() => {
                     analyser.getByteFrequencyData(dataArray);
                     const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
                     indicator.textContent = `🎤 Уровень: ${Math.round(avg)}`;
-                    if (avg > 10) {
-                        indicator.style.background = '#2e7d5e';
-                    } else {
-                        indicator.style.background = '#7d3e3e';
-                    }
+                    indicator.style.background = avg > 10 ? '#2e7d5e' : '#7d3e3e';
                 }, 100);
-                
                 setTimeout(() => {
                     clearInterval(interval);
                     indicator.remove();
                     stream.getTracks().forEach(t => t.stop());
                 }, 3000);
-                
             } catch (err) {
                 log('❌ Ошибка микрофона: ' + err.message);
                 alert('Ошибка доступа к микрофону: ' + err.message);
@@ -726,21 +693,16 @@
         function testAudioOutput() {
             try {
                 unlockAudio();
-                
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 const oscillator = audioContext.createOscillator();
                 const gainNode = audioContext.createGain();
-                
                 oscillator.connect(gainNode);
                 gainNode.connect(audioContext.destination);
-                
                 oscillator.frequency.value = 440;
                 gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                
                 oscillator.start();
                 oscillator.stop(audioContext.currentTime + 0.5);
-                
                 log('✅ Тестовый звук воспроизведен');
             } catch (err) {
                 log('❌ Ошибка воспроизведения: ' + err.message);
@@ -749,13 +711,9 @@
 
         function forceAudioRestart() {
             log('🔄 Принудительный перезапуск аудио');
-            
             Object.values(audioElements).forEach(audio => {
-                if (audio.srcObject) {
-                    audio.play().catch(e => log(`Ошибка: ${e.message}`));
-                }
+                if (audio.srcObject) audio.play().catch(e => log(`Ошибка: ${e.message}`));
             });
-            
             log('✅ Аудио перезапущено');
         }
 
@@ -767,10 +725,7 @@
                 { urls: 'stun:stun3.l.google.com:19302' },
                 { urls: 'stun:stun4.l.google.com:19302' },
                 {
-                    urls: [
-                        'turn:openrelay.metered.ca:80',
-                        'turn:openrelay.metered.ca:443'
-                    ],
+                    urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443'],
                     username: 'openrelayproject',
                     credential: 'openrelayproject'
                 }
@@ -825,13 +780,10 @@
                 });
                 roomRef.child('users/' + currentUser.id).onDisconnect().remove();
                 
-                // Слушаем статусы микрофона других участников
                 roomRef.child('mute').on('value', (snap) => {
                     const mutes = snap.val() || {};
                     Object.keys(mutes).forEach(userId => {
-                        if (userId !== currentUser.id) {
-                            muteStatus[userId] = mutes[userId].muted;
-                        }
+                        if (userId !== currentUser.id) muteStatus[userId] = mutes[userId].muted;
                     });
                     updateParticipantsGrid();
                 });
@@ -866,13 +818,8 @@
                     const users = snap.val();
                     if (!users) return;
                     
-                    const newUsers = Object.keys(users).filter(id => 
-                        id !== currentUser.id && !allUsers[id]
-                    );
-                    
-                    const leftUsers = Object.keys(allUsers).filter(id => 
-                        id !== currentUser.id && !users[id]
-                    );
+                    const newUsers = Object.keys(users).filter(id => id !== currentUser.id && !allUsers[id]);
+                    const leftUsers = Object.keys(allUsers).filter(id => id !== currentUser.id && !users[id]);
                     
                     allUsers = users;
                     
@@ -889,27 +836,18 @@
                     
                     Object.keys(users).forEach(userId => {
                         if (userId !== currentUser.id && !peers[userId]) {
-                            const newUser = users[userId];
-                            createPeerWith(userId, newUser.name);
+                            createPeerWith(userId, users[userId].name);
                         }
                     });
                     
                     Object.keys(peers).forEach(userId => {
                         if (!users[userId]) {
-                            if (reconnectTimeouts[userId]) {
-                                clearTimeout(reconnectTimeouts[userId]);
-                                delete reconnectTimeouts[userId];
-                            }
-                            if (peers[userId] && !peers[userId].destroyed) {
-                                peers[userId].destroy();
-                            }
+                            if (reconnectTimeouts[userId]) clearTimeout(reconnectTimeouts[userId]);
+                            delete reconnectTimeouts[userId];
+                            if (peers[userId] && !peers[userId].destroyed) peers[userId].destroy();
                             delete peers[userId];
-                            
-                            if (analyserIntervals[userId]) {
-                                clearInterval(analyserIntervals[userId]);
-                                delete analyserIntervals[userId];
-                            }
-                            
+                            if (analyserIntervals[userId]) clearInterval(analyserIntervals[userId]);
+                            delete analyserIntervals[userId];
                             if (audioElements[userId]) {
                                 audioElements[userId].remove();
                                 delete audioElements[userId];
@@ -930,6 +868,7 @@
             }
         }
 
+        // ==================== ИСПРАВЛЕНИЕ ДВУСТОРОННЕГО ЗВУКА ====================
         function createPeerWith(userId, userName) {
             if (peers[userId] && !peers[userId].destroyed) {
                 log(`⚠️ Peer с ${userName} уже существует`);
@@ -941,9 +880,19 @@
             const isInit = currentUser.id < userId;
             
             try {
+                // ВАЖНО: Создаем отдельный поток для отправки с клонированными треками
+                const sendStream = new MediaStream();
+                localStream.getAudioTracks().forEach(track => {
+                    // Клонируем трек, чтобы гарантировать отправку
+                    const newTrack = track.clone();
+                    newTrack.enabled = track.enabled;
+                    sendStream.addTrack(newTrack);
+                    log(`🎤 Клонирован трек для отправки ${userName}`);
+                });
+                
                 const peer = new SimplePeer({ 
                     initiator: isInit, 
-                    stream: localStream,
+                    stream: sendStream,
                     trickle: true,
                     config: { 
                         iceServers: getIceServers(),
@@ -982,6 +931,12 @@
                         return;
                     }
                     
+                    // ВАЖНО: Принудительно включаем все полученные треки
+                    stream.getAudioTracks().forEach(track => {
+                        track.enabled = true;
+                        log(`🔊 Включен полученный трек от ${userName}`);
+                    });
+                    
                     if (audioElements[userId]) {
                         audioElements[userId].srcObject = stream;
                         log(`✅ Аудиопоток подключен к элементу ${userName}`);
@@ -1010,9 +965,7 @@
                         analyser.fftSize = 256;
                         const dataArray = new Uint8Array(analyser.frequencyBinCount);
                         
-                        if (analyserIntervals[userId]) {
-                            clearInterval(analyserIntervals[userId]);
-                        }
+                        if (analyserIntervals[userId]) clearInterval(analyserIntervals[userId]);
                         
                         analyserIntervals[userId] = setInterval(() => {
                             analyser.getByteFrequencyData(dataArray);
@@ -1020,8 +973,7 @@
                             
                             const volumeEl = document.getElementById(`volume-${userId}`);
                             if (volumeEl) {
-                                const percent = Math.min(100, (avg / 128) * 100);
-                                volumeEl.style.width = percent + '%';
+                                volumeEl.style.width = Math.min(100, (avg / 128) * 100) + '%';
                             }
                             
                             const indicator = document.getElementById(`speaking-${userId}`);
@@ -1037,14 +989,10 @@
                         log(`Ошибка анализатора: ${e.message}`);
                     }
                     
-                    if (pendingSignals[userId] && pendingSignals[userId].length > 0) {
+                    if (pendingSignals[userId]?.length) {
                         log(`📦 Применяем ${pendingSignals[userId].length} накопленных сигналов`);
                         pendingSignals[userId].forEach(signalData => {
-                            try {
-                                peer.signal(signalData);
-                            } catch (e) {
-                                log(`Ошибка при накопленном сигнале: ${e.message}`);
-                            }
+                            try { peer.signal(signalData); } catch (e) { log(`Ошибка: ${e.message}`); }
                         });
                         delete pendingSignals[userId];
                     }
@@ -1053,7 +1001,6 @@
                 peer.on('connect', () => {
                     log(`✅ Peer соединение с ${userName} установлено`);
                     updateParticipantsGrid();
-                    
                     if (reconnectTimeouts[userId]) {
                         clearTimeout(reconnectTimeouts[userId]);
                         delete reconnectTimeouts[userId];
@@ -1067,21 +1014,14 @@
                     if (!reconnectTimeouts[userId] && allUsers[userId]) {
                         reconnectTimeouts[userId] = setTimeout(() => {
                             log(`🔄 Переподключение к ${userName}...`);
-                            if (peers[userId] && !peers[userId].destroyed) {
-                                peers[userId].destroy();
-                            }
+                            if (peers[userId] && !peers[userId].destroyed) peers[userId].destroy();
                             delete peers[userId];
-                            
-                            if (analyserIntervals[userId]) {
-                                clearInterval(analyserIntervals[userId]);
-                                delete analyserIntervals[userId];
-                            }
-                            
+                            if (analyserIntervals[userId]) clearInterval(analyserIntervals[userId]);
+                            delete analyserIntervals[userId];
                             if (audioElements[userId]) {
                                 audioElements[userId].remove();
                                 delete audioElements[userId];
                             }
-                            
                             createPeerWith(userId, userName);
                             delete reconnectTimeouts[userId];
                         }, 3000);
@@ -1090,14 +1030,11 @@
 
                 peer.on('close', () => {
                     log(`🔒 Peer с ${userName} закрыт`);
-                    
                     if (audioElements[userId]) {
                         audioElements[userId].remove();
                         delete audioElements[userId];
                     }
-                    
                     updateParticipantsGrid();
-                    
                     if (analyserIntervals[userId]) {
                         clearInterval(analyserIntervals[userId]);
                         delete analyserIntervals[userId];
@@ -1106,16 +1043,12 @@
 
                 peers[userId] = peer;
                 
-                if (pendingSignals[userId] && pendingSignals[userId].length > 0) {
+                if (pendingSignals[userId]?.length) {
                     log(`📦 Есть ${pendingSignals[userId].length} накопленных сигналов для ${userName}`);
                     setTimeout(() => {
                         if (peers[userId] && !peers[userId].destroyed) {
                             pendingSignals[userId].forEach(signalData => {
-                                try {
-                                    peers[userId].signal(signalData);
-                                } catch (e) {
-                                    log(`Ошибка при накопленном сигнале: ${e.message}`);
-                                }
+                                try { peers[userId].signal(signalData); } catch (e) { log(`Ошибка: ${e.message}`); }
                             });
                             delete pendingSignals[userId];
                         }
@@ -1132,14 +1065,9 @@
                 const track = localStream.getAudioTracks()[0];
                 if (track) {
                     track.enabled = !track.enabled;
-                    const isMuted = !track.enabled;
-                    
-                    micBtn.textContent = isMuted ? '🎤 Вкл микрофон' : '🔇 Выкл микрофон';
-                    log('Микрофон ' + (isMuted ? 'выключен' : 'включен'));
-                    
-                    // Обновляем статус в Firebase
-                    updateMuteStatus(currentUser.id, isMuted);
-                    
+                    micBtn.textContent = track.enabled ? '🔇 Выкл микрофон' : '🎤 Вкл микрофон';
+                    log('Микрофон ' + (track.enabled ? 'включен' : 'выключен'));
+                    updateMuteStatus(currentUser.id, !track.enabled);
                     updateParticipantsGrid();
                 }
             }
@@ -1164,15 +1092,10 @@
             
             Object.values(reconnectTimeouts).forEach(timeout => clearTimeout(timeout));
             reconnectTimeouts = {};
-            
             Object.values(analyserIntervals).forEach(interval => clearInterval(interval));
             analyserIntervals = {};
-            
-            Object.values(peers).forEach(peer => {
-                if (peer && !peer.destroyed) peer.destroy();
-            });
+            Object.values(peers).forEach(peer => { if (peer && !peer.destroyed) peer.destroy(); });
             peers = {};
-            
             Object.values(audioElements).forEach(audio => audio.remove());
             audioElements = {};
             
