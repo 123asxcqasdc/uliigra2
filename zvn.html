@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Звонкие Улитки · групповые звонки</title>
-    <!-- Firebase & SimplePeer загружаются из CDN -->
+    <!-- Firebase & SimplePeer -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/simple-peer@9.11.1/simplepeer.min.js"></script>
@@ -76,7 +76,7 @@
         input, button {
             background: #2a4a35;
             border: 1px solid #3e9e7a;
-            border-radius: 60px;
+            border-radius: 24px; /* менее округлые, но всё ещё скруглённые */
             padding: 14px 24px;
             font-size: 1rem;
             color: white;
@@ -251,6 +251,10 @@
             animation: pulse 1.8s infinite;
             border: none;
             font-size: 1.1rem;
+            display: block; /* важно для видимости */
+        }
+        .unlock-audio.hidden {
+            display: none;
         }
         .debug-panel {
             background: #1a3f2a;
@@ -262,6 +266,9 @@
             display: flex;
             flex-wrap: wrap;
             gap: 20px;
+        }
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
@@ -314,7 +321,7 @@
             <div class="debug-panel" id="debugPanel"></div>
         </div>
 
-        <!-- Лог событий (для информации) -->
+        <!-- Лог событий -->
         <div class="log-panel" id="log">
             <div class="log-entry">[Система] Добро пожаловать в Звонкие Улитки 🐌</div>
         </div>
@@ -323,7 +330,7 @@
     <script>
         (function() {
             // --------------------------------------------------------------
-            // 1. НАСТРОЙКА FIREBASE (ваши данные)
+            // 1. НАСТРОЙКА FIREBASE
             // --------------------------------------------------------------
             const firebaseConfig = {
                 apiKey: "AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
@@ -341,24 +348,23 @@
             // 2. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
             // --------------------------------------------------------------
             let localStream = null;
-            let peers = {};                // все активные peer-соединения { userId: peer }
+            let peers = {};
             let currentRoom = null;
             let currentUser = {
                 id: 'user_' + Math.random().toString(36).substring(2, 10),
                 name: 'Гость'
             };
-            let allUsers = {};              // список всех пользователей в комнате
+            let allUsers = {};
             let autoJoinAttempted = false;
             let reconnectTimeouts = {};
-            let pendingSignals = {};        // сигналы, полученные до создания peer
+            let pendingSignals = {};
             let roomRef = null;
             let callsRef = null;
             let analyserIntervals = {};
-            let audioElements = {};          // ссылки на скрытые аудиоэлементы для потоков
-            let muteStatus = {};             // статус микрофона других участников
-            let peerCreationInProgress = {}; // флаг, чтобы не создавать дважды
+            let audioElements = {};
+            let muteStatus = {};
+            let peerCreationInProgress = {};
 
-            // Флаги для разблокировки аудио (политика автовоспроизведения)
             let audioUnlocked = false;
 
             // --------------------------------------------------------------
@@ -412,14 +418,10 @@
                 }
             }
 
-            // Обновление статуса микрофона в Firebase
             function updateMuteStatus(userId, isMuted) {
                 if (!roomRef) return;
                 muteStatus[userId] = isMuted;
-                roomRef.child('mute/' + userId).set({
-                    muted: isMuted,
-                    timestamp: Date.now()
-                });
+                roomRef.child('mute/' + userId).set({ muted: isMuted, timestamp: Date.now() });
             }
 
             // --------------------------------------------------------------
@@ -430,7 +432,6 @@
                 let html = '';
                 const userIds = Object.keys(allUsers);
 
-                // Сортируем: сначала текущий пользователь, потом остальные по имени
                 const sortedIds = userIds.sort((a, b) => {
                     if (a === currentUser.id) return -1;
                     if (b === currentUser.id) return 1;
@@ -488,7 +489,7 @@
 
                 participantsGrid.innerHTML = html;
 
-                // Подключаем существующие аудиоэлементы (если поток уже был)
+                // Подключаем существующие аудиоэлементы
                 Object.keys(audioElements).forEach(userId => {
                     const newAudio = document.getElementById(`audio-${userId}`);
                     if (newAudio && audioElements[userId] && audioElements[userId].srcObject) {
@@ -509,7 +510,7 @@
             }
 
             // --------------------------------------------------------------
-            // 6. РАЗБЛОКИРОВКА АУДИО (браузерная политика)
+            // 6. РАЗБЛОКИРОВКА АУДИО (ИСПРАВЛЕНО)
             // --------------------------------------------------------------
             function unlockAudio() {
                 if (audioUnlocked) return;
@@ -521,12 +522,15 @@
                     Object.values(audioElements).forEach(audio => {
                         if (audio.srcObject) audio.play().catch(e => log(`Ошибка: ${e.message}`));
                     });
-                });
+                }).catch(e => log('Ошибка разблокировки: ' + e.message));
             }
 
+            // Назначаем обработчик (даже если элемент скрыт, он сработает при клике)
             unlockAudioDiv.addEventListener('click', unlockAudio);
+
+            // Дополнительная разблокировка при любом клике на страницу
             document.addEventListener('click', function once() {
-                unlockAudio();
+                if (!audioUnlocked) unlockAudio();
                 document.removeEventListener('click', once);
             }, { once: true });
 
@@ -585,7 +589,7 @@
             }
 
             // --------------------------------------------------------------
-            // 8. ICE СЕРВЕРЫ (STUN + TURN)
+            // 8. ICE СЕРВЕРЫ
             // --------------------------------------------------------------
             function getIceServers() {
                 return [
@@ -603,7 +607,7 @@
             }
 
             // --------------------------------------------------------------
-            // 9. СОЗДАНИЕ PEER-СОЕДИНЕНИЯ (с клонированием треков для каждого)
+            // 9. СОЗДАНИЕ PEER
             // --------------------------------------------------------------
             function createPeerWith(userId, userName) {
                 if (peerCreationInProgress[userId] || (peers[userId] && !peers[userId].destroyed)) {
@@ -616,7 +620,6 @@
                 const isInit = currentUser.id < userId;
 
                 try {
-                    // Для каждого peer создаём свой поток с клонированными треками
                     const sendStream = new MediaStream();
                     localStream.getAudioTracks().forEach(track => {
                         const newTrack = track.clone();
@@ -633,7 +636,6 @@
 
                     peer.remoteName = userName;
 
-                    // Скрытый аудиоэлемент для хранения потока (потом привяжется к видимому)
                     const audioEl = document.createElement('audio');
                     audioEl.id = `audio-${userId}`;
                     audioEl.autoplay = true;
@@ -651,7 +653,6 @@
                         log(`🎵 Получен поток от ${userName}, треков: ${stream.getAudioTracks().length}`);
                         if (stream.getAudioTracks().length === 0) return;
 
-                        // Принудительно включаем полученные треки
                         stream.getAudioTracks().forEach(t => t.enabled = true);
 
                         if (audioElements[userId]) {
@@ -664,7 +665,6 @@
                         }
                         updateParticipantsGrid();
 
-                        // Анализатор уровня звука (индикатор разговора)
                         try {
                             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                             const analyser = audioCtx.createAnalyser();
@@ -686,7 +686,6 @@
                             }, 100);
                         } catch (e) { log(`Ошибка анализатора: ${e.message}`); }
 
-                        // Применяем накопленные сигналы
                         if (pendingSignals[userId]?.length) {
                             log(`📦 Применяем ${pendingSignals[userId].length} накопленных сигналов`);
                             pendingSignals[userId].forEach(signalData => {
@@ -729,7 +728,6 @@
 
                     peers[userId] = peer;
 
-                    // Если есть накопленные сигналы, пробуем позже
                     if (pendingSignals[userId]?.length) {
                         setTimeout(() => {
                             if (peers[userId] && !peers[userId].destroyed) {
@@ -748,7 +746,7 @@
             }
 
             // --------------------------------------------------------------
-            // 10. ВХОД В КОМНАТУ
+            // 10. ВХОД В КОМНАТУ (ИСПРАВЛЕНО: теперь скрывает setup)
             // --------------------------------------------------------------
             async function joinRoom() {
                 const roomId = roomIdInput.value.trim();
@@ -773,6 +771,7 @@
                     currentRoom = roomId;
                     currentRoomDisplay.textContent = roomId;
                     updateLinkInfo(roomId);
+                    // Скрываем экран настроек, показываем экран звонка
                     setupDiv.classList.add('hidden');
                     callDiv.classList.remove('hidden');
 
@@ -780,7 +779,6 @@
                     await roomRef.child('users/' + currentUser.id).set({ name: currentUser.name, timestamp: Date.now() });
                     roomRef.child('users/' + currentUser.id).onDisconnect().remove();
 
-                    // Слушаем статусы mute других
                     roomRef.child('mute').on('value', snap => {
                         const mutes = snap.val() || {};
                         Object.keys(mutes).forEach(uid => { if (uid !== currentUser.id) muteStatus[uid] = mutes[uid].muted; });
@@ -802,7 +800,6 @@
                         }
                     });
 
-                    // Слушаем изменения списка пользователей
                     roomRef.child('users').on('value', snap => {
                         const users = snap.val() || {};
                         const oldUsers = { ...allUsers };
@@ -835,11 +832,14 @@
                 } catch (err) {
                     log('❌ Ошибка: ' + err.message);
                     alert('Ошибка: ' + err.message);
+                    // Если ошибка, возвращаем экран настроек (на всякий случай)
+                    setupDiv.classList.remove('hidden');
+                    callDiv.classList.add('hidden');
                 }
             }
 
             // --------------------------------------------------------------
-            // 11. ФУНКЦИИ УПРАВЛЕНИЯ (вызываются из кнопок)
+            // 11. ФУНКЦИИ УПРАВЛЕНИЯ
             // --------------------------------------------------------------
             window.createRoom = function() {
                 roomIdInput.value = Math.random().toString(36).substring(2, 8);
@@ -873,7 +873,6 @@
                     micBtn.textContent = track.enabled ? '🔇 Выкл микрофон' : '🎤 Вкл микрофон';
                     log('Микрофон ' + (track.enabled ? 'включён' : 'выключен'));
                     updateMuteStatus(currentUser.id, !track.enabled);
-                    // обновляем все клонированные треки
                     Object.values(peers).forEach(p => {
                         if (p && p.streams && p.streams[0]) {
                             p.streams[0].getAudioTracks().forEach(t => t.enabled = track.enabled);
@@ -939,13 +938,7 @@
                 }
             })();
 
-            // При изменении имени в поле ввода
             userNameInput.addEventListener('input', (e) => { currentUser.name = e.target.value || 'Гость'; });
-
-            // Скрыть сообщение автоподключения, если кликнуть мимо
-            window.addEventListener('load', function() {
-                // небольшая инициализация
-            });
         })();
     </script>
 </body>
