@@ -3,155 +3,194 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Звонкие Улитки - Групповые звонки</title>
-    <!-- Firebase -->
+    <title>Звонкие Улитки · групповые звонки</title>
+    <!-- Firebase & SimplePeer загружаются из CDN -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <!-- SimplePeer -->
     <script src="https://cdn.jsdelivr.net/npm/simple-peer@9.11.1/simplepeer.min.js"></script>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
-            text-align: center;
+            font-family: 'Segoe UI', Roboto, sans-serif;
             background: #0a2f1f;
             color: #e0f2e9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 16px;
         }
         .container {
+            max-width: 1100px;
+            width: 100%;
             background: #1a3f2a;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+            border-radius: 32px;
+            padding: 28px 24px;
+            box-shadow: 0 20px 40px rgba(0, 20, 10, 0.8);
             border: 1px solid #2a5a3a;
         }
         h1 {
+            text-align: center;
             color: #8bc34a;
-            margin-bottom: 25px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            font-size: 2.5em;
+            font-size: 2.8rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
         }
-        h1::before {
-            content: "🐌 ";
-            font-size: 1.2em;
+        h1::before, h1::after {
+            content: "🐌";
+            font-size: 2.5rem;
+            margin: 0 12px;
+            display: inline-block;
+            animation: crawl 4s infinite ease-in-out;
         }
         h1::after {
-            content: " 🐌";
-            font-size: 1.2em;
+            animation-delay: 1s;
+        }
+        @keyframes crawl {
+            0%,100% { transform: translateX(0) rotate(0deg); }
+            25% { transform: translateX(6px) rotate(8deg); }
+            75% { transform: translateX(-6px) rotate(-8deg); }
+        }
+        .setup-card, .call-card {
+            background: #1e4a2e;
+            border-radius: 24px;
+            padding: 24px;
+            margin: 20px 0;
+            border: 1px solid #3a7a4a;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05), 0 8px 16px rgba(0,0,0,0.3);
+        }
+        .flex-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            justify-content: center;
         }
         input, button {
-            padding: 12px 18px;
-            margin: 8px;
-            font-size: 16px;
-            border-radius: 8px;
-            border: 1px solid #2a5a3a;
             background: #2a4a35;
-            color: #e0f2e9;
-            transition: all 0.3s;
-        }
-        input {
-            width: 250px;
-            background: #1a3f2a;
-            border: 1px solid #3a6b4a;
+            border: 1px solid #3e9e7a;
+            border-radius: 60px;
+            padding: 14px 24px;
+            font-size: 1rem;
+            color: white;
+            outline: none;
+            transition: 0.2s;
+            font-weight: 500;
         }
         input::placeholder {
             color: #8fbc8f;
+            opacity: 0.8;
+        }
+        input:focus {
+            border-color: #8bc34a;
+            background: #1e4a2e;
+            box-shadow: 0 0 0 3px rgba(139, 195, 74, 0.2);
         }
         button {
             background: #2e7d5e;
-            color: white;
             border: none;
             cursor: pointer;
-            font-weight: bold;
-            border: 1px solid #3e9e7a;
+            font-weight: 600;
+            min-width: 160px;
+            box-shadow: 0 4px 0 #1a4a30;
+            transition: 0.1s ease;
         }
         button:hover {
             background: #3e9e7a;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,100,50,0.4);
+            box-shadow: 0 6px 0 #1a4a30;
         }
-        .hidden { display: none; }
-        .status {
-            padding: 12px;
-            margin: 15px 0;
-            background: #1a4a30;
-            border-radius: 8px;
-            color: #b8e0b8;
-            border-left: 4px solid #8bc34a;
-            font-weight: bold;
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #1a4a30;
         }
         .room-header {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
             background: #1a4a30;
-            padding: 12px;
-            border-radius: 8px;
+            border-radius: 60px;
+            padding: 12px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid #3a7a4a;
+        }
+        .badge {
+            background: #2e7d5e;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #e0f2e9;
         }
         .participants-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
-            margin: 25px 0;
+            margin: 20px 0 30px;
         }
         .participant-card {
             background: linear-gradient(145deg, #1e4a2e, #0e3a1e);
-            color: #e8f5e8;
-            padding: 18px;
-            border-radius: 12px;
-            position: relative;
+            border-radius: 24px;
+            padding: 20px 16px 16px;
             border: 1px solid #3a7a4a;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            transition: transform 0.2s;
-            display: flex;
-            flex-direction: column;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.5);
+            position: relative;
+            transition: 0.2s;
         }
         .participant-card.muted {
             opacity: 0.8;
-            border-color: #7d3e3e;
+            border-color: #b34a4a;
+            background: linear-gradient(145deg, #3a2a2a, #1e2a1e);
         }
         .participant-name {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 8px;
+            font-size: 1.4rem;
+            font-weight: 700;
             color: #a5d6a5;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 10px;
+            margin-bottom: 6px;
         }
         .mute-badge {
-            background: #7d3e3e;
-            color: #ffb8b8;
-            padding: 4px 8px;
-            border-radius: 15px;
-            font-size: 12px;
-            font-weight: normal;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .participant-status {
-            font-size: 13px;
-            background: #1e3a2a;
-            padding: 4px 8px;
-            border-radius: 15px;
-            display: inline-block;
-            color: #b8e0b8;
-            margin-bottom: 10px;
+            background: #b34a4a;
+            color: #ffe0e0;
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 40px;
+            font-weight: 500;
         }
         .participant-avatar {
-            font-size: 45px;
-            margin: 10px 0;
-            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3));
-            transition: opacity 0.3s;
+            font-size: 4rem;
+            line-height: 1;
+            margin: 8px 0;
+            filter: drop-shadow(0 4px 4px black);
         }
-        .participant-avatar.muted {
-            opacity: 0.5;
+        .participant-status {
+            background: #1e3a2a;
+            border-radius: 40px;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            display: inline-block;
+            color: #b8e0b8;
+            margin: 6px 0;
+        }
+        audio {
+            width: 100%;
+            margin: 12px 0 6px;
+            border-radius: 30px;
+            background: #1a3f2a;
+            border: 1px solid #3a7a4a;
+            height: 40px;
         }
         .speaking-indicator {
             width: 14px;
@@ -159,99 +198,20 @@
             border-radius: 50%;
             background: #6eff6e;
             position: absolute;
-            top: 12px;
-            right: 12px;
-            box-shadow: 0 0 10px #00ff00;
-            animation: pulse 1.2s infinite;
+            top: 14px;
+            right: 14px;
+            box-shadow: 0 0 12px #00ff00;
+            animation: pulse 1s infinite;
         }
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.3); opacity: 1; }
-            100% { transform: scale(1); opacity: 0.8; }
-        }
-        .hidden-indicator {
-            display: none;
-        }
-        .log {
-            margin-top: 25px;
-            text-align: left;
-            background: #0e2a1a;
-            color: #a0e0a0;
-            padding: 12px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            max-height: 180px;
-            overflow-y: auto;
-            border: 1px solid #2a5a3a;
-        }
-        .log-entry {
-            margin: 3px 0;
-            border-bottom: 1px solid #1a4a2a;
-            padding-bottom: 2px;
-        }
-        .link-info {
-            background: #1a4a30;
-            padding: 12px;
-            border-radius: 8px;
-            margin: 15px 0;
-            font-size: 14px;
-            border: 1px solid #3a7a4a;
-        }
-        .auto-join-message {
-            background: #2e6b4e;
-            color: #e0ffe0;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-            font-weight: bold;
-            border-left: 4px solid #8bc34a;
-        }
-        .controls {
-            margin-top: 20px;
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        .user-count {
-            background: #1a4a30;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            color: #b8e0b8;
-            border: 1px solid #3a7a4a;
-        }
-        .unlock-audio {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #8bc34a;
-            color: #0a2f1f;
-            padding: 15px 25px;
-            border-radius: 50px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            z-index: 1000;
-            animation: pulse 2s infinite;
-        }
-        .unlock-audio:hover {
-            background: #a5d6a5;
-        }
-        audio {
-            width: 100%;
-            margin: 10px 0;
-            border-radius: 5px;
-            background: #1a3f2a;
-        }
+        @keyframes pulse { 50% { opacity: 0.6; transform: scale(1.2); } }
+        .hidden-indicator { display: none; }
         .volume-indicator {
             width: 100%;
-            height: 4px;
+            height: 5px;
             background: #1e3a2a;
-            border-radius: 2px;
-            margin-top: 5px;
+            border-radius: 10px;
             overflow: hidden;
+            margin-top: 8px;
         }
         .volume-level {
             height: 100%;
@@ -259,29 +219,49 @@
             background: #8bc34a;
             transition: width 0.1s;
         }
-        .volume-level.muted {
-            background: #7d3e3e;
+        .volume-level.muted { background: #b34a4a; }
+        .log-panel {
+            background: #0e2a1a;
+            border-radius: 18px;
+            padding: 16px;
+            margin-top: 24px;
+            border: 1px solid #2a5a3a;
+            color: #a0e0a0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            max-height: 160px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            border-bottom: 1px solid #1a4a2a;
+            padding: 4px 0;
+        }
+        .unlock-audio {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #8bc34a;
+            color: #0a2f1f;
+            padding: 16px 28px;
+            border-radius: 60px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 6px 20px black;
+            z-index: 999;
+            animation: pulse 1.8s infinite;
+            border: none;
+            font-size: 1.1rem;
         }
         .debug-panel {
-            margin-top: 10px;
-            font-size: 11px;
-            color: #a0d0a0;
-            text-align: left;
             background: #1a3f2a;
-            padding: 5px;
-            border-radius: 5px;
-        }
-        .snail-icon {
-            font-size: 24px;
-            margin: 0 5px;
-            animation: crawl 3s infinite ease-in-out;
-            display: inline-block;
-        }
-        @keyframes crawl {
-            0% { transform: translateX(0) rotate(0deg); }
-            25% { transform: translateX(5px) rotate(5deg); }
-            75% { transform: translateX(-5px) rotate(-5deg); }
-            100% { transform: translateX(0) rotate(0deg); }
+            border-radius: 16px;
+            padding: 8px 16px;
+            font-size: 0.75rem;
+            color: #b8e0b8;
+            margin-top: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
         }
     </style>
 </head>
@@ -290,859 +270,683 @@
 
     <div class="container">
         <h1>Звонкие Улитки</h1>
-        
-        <div id="setup">
+
+        <!-- ЭКРАН НАСТРОЙКИ -->
+        <div id="setup" class="setup-card">
             <div class="link-info" id="linkInfo"></div>
-            <div id="autoJoinMessage" class="auto-join-message hidden"></div>
-            <input type="text" id="userName" placeholder="Ваше имя" value="Гость">
-            <br>
-            <input type="text" id="roomId" placeholder="ID комнаты">
-            <br>
-            <button onclick="createRoom()">✨ Создать комнату</button>
-            <button onclick="joinRoom()">🔗 Присоединиться</button>
-            <button onclick="testMicrophone()" style="background: #1e4a2e;">🎤 Тест микрофона</button>
+            <div id="autoJoinMessage" class="flex-row" style="background:#2e6b4e; border-radius:60px; padding:12px; margin-bottom:16px; display:none;">
+                <span>🔄 Автоматическое подключение...</span>
+            </div>
+            <div class="flex-row" style="justify-content: center;">
+                <input type="text" id="userName" placeholder="Ваше имя" value="Гость">
+                <input type="text" id="roomId" placeholder="ID комнаты (например abc123)">
+                <button onclick="createRoom()">✨ Создать</button>
+                <button onclick="joinRoom()">🔗 Присоединиться</button>
+                <button onclick="testMicrophone()" style="background:#1e4a2e;">🎤 Тест микрофона</button>
+            </div>
         </div>
 
-        <div id="call" class="hidden">
+        <!-- ЭКРАН ЗВОНКА (изначально скрыт) -->
+        <div id="call" class="call-card hidden">
             <div class="room-header">
-                <strong>🏠 Комната: <span id="currentRoomDisplay"></span></strong>
-                <button onclick="copyRoomId()" style="padding: 6px 12px;">📋 Копировать ID</button>
-                <button onclick="copyCallLink()" style="padding: 6px 12px;">🔗 Скопировать ссылку</button>
-                <span id="participantCount" class="user-count">0 участников</span>
+                <span><strong>🏠 Комната:</strong> <span id="currentRoomDisplay"></span></span>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="copyRoomId()" style="padding:8px 16px; min-width:auto;">📋 Копировать ID</button>
+                    <button onclick="copyCallLink()" style="padding:8px 16px; min-width:auto;">🔗 Скопировать ссылку</button>
+                </div>
+                <span class="badge" id="participantCount">0 участников</span>
             </div>
-            
-            <div id="status" class="status">Ожидание...</div>
-            
+
+            <div id="status" class="status" style="text-align:center; background:#1a4a30; padding:12px; border-radius:40px; margin-bottom:16px;">⏳ Ожидание...</div>
+
             <!-- Сетка участников -->
             <div id="participantsGrid" class="participants-grid"></div>
-            
-            <div class="controls">
+
+            <!-- Панель управления -->
+            <div class="flex-row" style="justify-content: center; gap: 12px; margin-top: 24px;">
                 <button onclick="toggleMic()" id="micBtn">🔇 Выкл микрофон</button>
-                <button onclick="testAudioOutput()" id="testAudioBtn" style="background: #1e4a2e;">🔊 Тест звука</button>
-                <button onclick="forceAudioRestart()" style="background: #7d6b3e;">🔄 Перезапустить аудио</button>
-                <button onclick="endCall()" style="background: #7d3e3e;">📞 Завершить</button>
+                <button onclick="testAudioOutput()" style="background:#1e4a2e;">🔊 Тест динамиков</button>
+                <button onclick="forceAudioRestart()" style="background:#7d6b3e;">🔄 Перезапустить аудио</button>
+                <button onclick="endCall()" style="background:#7d3e3e;">📞 Завершить</button>
             </div>
-            
+
+            <!-- Панель отладки (информация) -->
             <div class="debug-panel" id="debugPanel"></div>
         </div>
 
-        <!-- Блок логов -->
-        <div id="log" class="log">
-            <div class="log-entry">[Система] Лог загружен</div>
+        <!-- Лог событий (для информации) -->
+        <div class="log-panel" id="log">
+            <div class="log-entry">[Система] Добро пожаловать в Звонкие Улитки 🐌</div>
         </div>
     </div>
 
     <script>
-        // Firebase
-        firebase.initializeApp({
-            apiKey: "AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
-            authDomain: "kcalls.firebaseapp.com",
-            databaseURL: "https://kcalls-default-rtdb.firebaseio.com",
-            projectId: "kcalls",
-            storageBucket: "kcalls.firebasestorage.app",
-            messagingSenderId: "990117089104",
-            appId: "1:990117089104:web:278a42c037e975ebb76655"
-        });
-        const db = firebase.database();
+        (function() {
+            // --------------------------------------------------------------
+            // 1. НАСТРОЙКА FIREBASE (ваши данные)
+            // --------------------------------------------------------------
+            const firebaseConfig = {
+                apiKey: "AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
+                authDomain: "kcalls.firebaseapp.com",
+                databaseURL: "https://kcalls-default-rtdb.firebaseio.com",
+                projectId: "kcalls",
+                storageBucket: "kcalls.firebasestorage.app",
+                messagingSenderId: "990117089104",
+                appId: "1:990117089104:web:278a42c037e975ebb76655"
+            };
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.database();
 
-        // Переменные
-        let localStream = null;
-        let peers = {};
-        let currentRoom = null;
-        let currentUser = {
-            id: 'user_' + Math.random().toString(36).substring(2, 10),
-            name: 'Гость'
-        };
-        let allUsers = {};
-        let autoJoinAttempted = false;
-        let reconnectTimeouts = {};
-        let pendingSignals = {};
-        let roomRef = null;
-        let callsRef = null;
-        let analyserIntervals = {};
-        let audioElements = {};
-        let muteStatus = {};
-        let peerCreationInProgress = {}; // Флаг для предотвращения множественного создания
+            // --------------------------------------------------------------
+            // 2. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+            // --------------------------------------------------------------
+            let localStream = null;
+            let peers = {};                // все активные peer-соединения { userId: peer }
+            let currentRoom = null;
+            let currentUser = {
+                id: 'user_' + Math.random().toString(36).substring(2, 10),
+                name: 'Гость'
+            };
+            let allUsers = {};              // список всех пользователей в комнате
+            let autoJoinAttempted = false;
+            let reconnectTimeouts = {};
+            let pendingSignals = {};        // сигналы, полученные до создания peer
+            let roomRef = null;
+            let callsRef = null;
+            let analyserIntervals = {};
+            let audioElements = {};          // ссылки на скрытые аудиоэлементы для потоков
+            let muteStatus = {};             // статус микрофона других участников
+            let peerCreationInProgress = {}; // флаг, чтобы не создавать дважды
 
-        // Элементы
-        const setupDiv = document.getElementById('setup');
-        const callDiv = document.getElementById('call');
-        const statusDiv = document.getElementById('status');
-        const micBtn = document.getElementById('micBtn');
-        const userNameInput = document.getElementById('userName');
-        const roomIdInput = document.getElementById('roomId');
-        const currentRoomDisplay = document.getElementById('currentRoomDisplay');
-        const logDiv = document.getElementById('log');
-        const linkInfoDiv = document.getElementById('linkInfo');
-        const autoJoinMessageDiv = document.getElementById('autoJoinMessage');
-        const participantsGrid = document.getElementById('participantsGrid');
-        const participantCountSpan = document.getElementById('participantCount');
-        const unlockAudioDiv = document.getElementById('unlockAudio');
-        const debugPanel = document.getElementById('debugPanel');
+            // Флаги для разблокировки аудио (политика автовоспроизведения)
+            let audioUnlocked = false;
 
-        // ==================== РАЗБЛОКИРОВКА АУДИО ====================
-        let audioUnlocked = false;
+            // --------------------------------------------------------------
+            // 3. ЭЛЕМЕНТЫ DOM
+            // --------------------------------------------------------------
+            const setupDiv = document.getElementById('setup');
+            const callDiv = document.getElementById('call');
+            const statusDiv = document.getElementById('status');
+            const micBtn = document.getElementById('micBtn');
+            const userNameInput = document.getElementById('userName');
+            const roomIdInput = document.getElementById('roomId');
+            const currentRoomDisplay = document.getElementById('currentRoomDisplay');
+            const logDiv = document.getElementById('log');
+            const linkInfoDiv = document.getElementById('linkInfo');
+            const autoJoinMessageDiv = document.getElementById('autoJoinMessage');
+            const participantsGrid = document.getElementById('participantsGrid');
+            const participantCountSpan = document.getElementById('participantCount');
+            const unlockAudioDiv = document.getElementById('unlockAudio');
+            const debugPanel = document.getElementById('debugPanel');
 
-        function unlockAudio() {
-            if (audioUnlocked) return;
-            
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            audioContext.resume().then(() => {
-                log('🔊 Аудио разблокировано');
-                audioUnlocked = true;
-                unlockAudioDiv.classList.add('hidden');
-                
-                Object.values(audioElements).forEach(audio => {
-                    if (audio.srcObject) {
-                        audio.play().catch(e => log(`Ошибка воспроизведения: ${e.message}`));
-                    }
-                });
-            });
-        }
+            // --------------------------------------------------------------
+            // 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+            // --------------------------------------------------------------
+            function log(message) {
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                logDiv.appendChild(entry);
+                logDiv.scrollTop = logDiv.scrollHeight;
+            }
 
-        unlockAudioDiv.addEventListener('click', unlockAudio);
+            function updateDebugInfo() {
+                let html = '<span>🔧 Локальный поток: ' + (localStream ? '✅' : '❌') + '</span>';
+                html += '<span> 🎤 Треков: ' + (localStream?.getAudioTracks().length || 0) + '</span>';
+                html += '<span> 👥 Peer: ' + Object.keys(peers).length + '</span>';
+                html += '<span> 🔊 Аудио элементов: ' + Object.keys(audioElements).length + '</span>';
+                debugPanel.innerHTML = html;
+            }
 
-        document.addEventListener('click', function once() {
-            unlockAudio();
-            document.removeEventListener('click', once);
-        }, { once: true });
+            function getUrlParams() {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('call');
+            }
 
-        // ==================== ЗВУКОВЫЕ ЭФФЕКТЫ ====================
-        function playSound(type) {
-            if (!audioUnlocked) return;
-            
-            try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                switch(type) {
-                    case 'join':
-                        oscillator.frequency.value = 880;
-                        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                        oscillator.start();
-                        oscillator.stop(audioContext.currentTime + 0.3);
-                        break;
-                        
-                    case 'participant-joined':
-                        oscillator.frequency.value = 659.25;
-                        gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
-                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-                        oscillator.start();
-                        oscillator.stop(audioContext.currentTime + 0.2);
-                        
-                        setTimeout(() => {
-                            const osc2 = audioContext.createOscillator();
-                            const gain2 = audioContext.createGain();
-                            osc2.connect(gain2);
-                            gain2.connect(audioContext.destination);
-                            osc2.frequency.value = 880;
-                            gain2.gain.setValueAtTime(0.1, audioContext.currentTime);
-                            gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-                            osc2.start();
-                            osc2.stop(audioContext.currentTime + 0.15);
-                        }, 100);
-                        break;
-                        
-                    case 'participant-left':
-                        oscillator.frequency.value = 440;
-                        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.25);
-                        oscillator.start();
-                        oscillator.stop(audioContext.currentTime + 0.25);
-                        break;
-                        
-                    case 'connected':
-                        oscillator.frequency.value = 1046.5;
-                        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
-                        oscillator.start();
-                        oscillator.stop(audioContext.currentTime + 0.4);
-                        
-                        setTimeout(() => {
-                            const osc2 = audioContext.createOscillator();
-                            const gain2 = audioContext.createGain();
-                            osc2.connect(gain2);
-                            gain2.connect(audioContext.destination);
-                            osc2.frequency.value = 1318.5;
-                            gain2.gain.setValueAtTime(0.15, audioContext.currentTime);
-                            gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                            osc2.start();
-                            osc2.stop(audioContext.currentTime + 0.3);
-                        }, 150);
-                        break;
+            function updateLinkInfo(roomId) {
+                if (roomId) {
+                    const link = window.location.origin + window.location.pathname + '?call=' + roomId;
+                    linkInfoDiv.innerHTML = `🔗 Ссылка для приглашения: <br><small style="color:#b8e0b8;">${link}</small>`;
+                } else {
+                    linkInfoDiv.innerHTML = '';
                 }
-            } catch (e) {
-                console.log('Ошибка воспроизведения звука:', e);
             }
-        }
 
-        // Логирование
-        function log(message) {
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            logDiv.appendChild(entry);
-            logDiv.scrollTop = logDiv.scrollHeight;
-        }
-
-        function updateDebugInfo() {
-            let html = '<strong>Отладка:</strong><br>';
-            html += `Локальный поток: ${localStream ? '✅' : '❌'}<br>`;
-            html += `Аудио треков: ${localStream?.getAudioTracks().length || 0}<br>`;
-            html += `Микрофон: ${localStream?.getAudioTracks()[0]?.enabled ? '🎤' : '🔇'}<br>`;
-            html += `Peer соединений: ${Object.keys(peers).length}<br>`;
-            html += `Аудио элементов: ${Object.keys(audioElements).length}<br>`;
-            debugPanel.innerHTML = html;
-        }
-
-        function getUrlParams() {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('call');
-        }
-
-        function updateLinkInfo(roomId) {
-            if (roomId) {
-                const link = window.location.origin + window.location.pathname + '?call=' + roomId;
-                linkInfoDiv.innerHTML = `🔗 Ссылка для приглашения: <br><small style="color: #b8e0b8;">${link}</small>`;
-            } else {
-                linkInfoDiv.innerHTML = '';
+            // Обновление статуса микрофона в Firebase
+            function updateMuteStatus(userId, isMuted) {
+                if (!roomRef) return;
+                muteStatus[userId] = isMuted;
+                roomRef.child('mute/' + userId).set({
+                    muted: isMuted,
+                    timestamp: Date.now()
+                });
             }
-        }
 
-        function updateMuteStatus(userId, isMuted) {
-            if (!roomRef) return;
-            muteStatus[userId] = isMuted;
-            roomRef.child('mute/' + userId).set({
-                muted: isMuted,
-                timestamp: Date.now()
-            });
-        }
+            // --------------------------------------------------------------
+            // 5. ОТОБРАЖЕНИЕ СЕТКИ УЧАСТНИКОВ
+            // --------------------------------------------------------------
+            function updateParticipantsGrid() {
+                if (!allUsers) return;
+                let html = '';
+                const userIds = Object.keys(allUsers);
 
-        function updateParticipantsGrid() {
-            if (!allUsers) return;
-            
-            let html = '';
-            const userIds = Object.keys(allUsers);
-            
-            const sortedIds = userIds.sort((a, b) => {
-                if (a === currentUser.id) return -1;
-                if (b === currentUser.id) return 1;
-                return (allUsers[a].name || '').localeCompare(allUsers[b].name || '');
-            });
-            
-            sortedIds.forEach(userId => {
-                const user = allUsers[userId];
-                if (!user) return;
-                
-                const isMe = userId === currentUser.id;
-                const peer = peers[userId];
-                const hasAudio = audioElements[userId] && audioElements[userId].srcObject;
-                const isMuted = muteStatus[userId] || (isMe && localStream && !localStream.getAudioTracks()[0]?.enabled);
-                
-                let statusText = '⏳ Подключение...';
-                let cardClass = '';
-                let muteBadge = '';
-                
-                if (isMe) {
-                    statusText = localStream?.getAudioTracks()[0]?.enabled ? '🎤 Микрофон включен' : '🔇 Микрофон выключен';
-                    if (!localStream?.getAudioTracks()[0]?.enabled) {
-                        cardClass = 'muted';
-                        muteBadge = '<span class="mute-badge">🔇 Микрофон выкл</span>';
-                    }
-                } else if (peer) {
-                    if (peer.connected && hasAudio) {
-                        statusText = isMuted ? '🔇 Микрофон выключен' : '🎤 Микрофон включен';
-                        if (isMuted) {
+                // Сортируем: сначала текущий пользователь, потом остальные по имени
+                const sortedIds = userIds.sort((a, b) => {
+                    if (a === currentUser.id) return -1;
+                    if (b === currentUser.id) return 1;
+                    return (allUsers[a].name || '').localeCompare(allUsers[b].name || '');
+                });
+
+                sortedIds.forEach(userId => {
+                    const user = allUsers[userId];
+                    if (!user) return;
+                    const isMe = userId === currentUser.id;
+                    const peer = peers[userId];
+                    const hasAudio = audioElements[userId] && audioElements[userId].srcObject;
+                    const isMuted = muteStatus[userId] || (isMe && localStream && !localStream.getAudioTracks()[0]?.enabled);
+
+                    let statusText = '⏳ Подключение...';
+                    let cardClass = '';
+                    let muteBadge = '';
+
+                    if (isMe) {
+                        statusText = localStream?.getAudioTracks()[0]?.enabled ? '🎤 Микрофон включён' : '🔇 Микрофон выключен';
+                        if (!localStream?.getAudioTracks()[0]?.enabled) {
                             cardClass = 'muted';
                             muteBadge = '<span class="mute-badge">🔇 Микрофон выкл</span>';
                         }
-                    } else if (peer.connected) {
-                        statusText = '🔄 Ожидание аудио';
-                    } else {
-                        statusText = '🔄 Соединение...';
-                    }
-                }
-                
-                html += `
-                    <div class="participant-card ${cardClass}" id="participant-${userId}">
-                        <div class="participant-name">
-                            ${user.name}${isMe ? ' (Вы)' : ''}
-                            ${muteBadge}
-                        </div>
-                        <div class="participant-avatar ${isMuted ? 'muted' : ''}">${isMuted ? '🔇' : '🐌'}</div>
-                        <div class="participant-status">${statusText}</div>
-                        ${!isMe ? `
-                            <audio id="audio-${userId}" controls style="width: 100%; margin: 10px 0;" preload="none"></audio>
-                        ` : ''}
-                        <div class="speaking-indicator hidden-indicator" id="speaking-${userId}"></div>
-                        <div class="volume-indicator">
-                            <div class="volume-level ${isMuted ? 'muted' : ''}" id="volume-${userId}" style="width: 0%"></div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            participantsGrid.innerHTML = html;
-            
-            // Подключаем аудиоэлементы
-            Object.keys(audioElements).forEach(userId => {
-                const newAudio = document.getElementById(`audio-${userId}`);
-                if (newAudio && audioElements[userId] && audioElements[userId].srcObject) {
-                    if (newAudio !== audioElements[userId]) {
-                        newAudio.srcObject = audioElements[userId].srcObject;
-                        if (audioElements[userId].parentNode) {
-                            audioElements[userId].parentNode.removeChild(audioElements[userId]);
-                        }
-                        audioElements[userId] = newAudio;
-                    }
-                    if (audioUnlocked && !muteStatus[userId]) {
-                        newAudio.play().catch(e => log(`Ошибка: ${e.message}`));
-                    }
-                }
-            });
-            
-            const count = Object.keys(allUsers).length;
-            participantCountSpan.textContent = `${count} ${count === 1 ? 'участник' : (count < 5 ? 'участника' : 'участников')}`;
-            updateDebugInfo();
-        }
-
-        async function autoJoin() {
-            const callParam = getUrlParams();
-            if (callParam && !autoJoinAttempted) {
-                autoJoinAttempted = true;
-                roomIdInput.value = callParam;
-                updateLinkInfo(callParam);
-                autoJoinMessageDiv.textContent = `🔄 Автоматическое подключение к комнате ${callParam}...`;
-                autoJoinMessageDiv.classList.remove('hidden');
-                log('🔗 Обнаружена ссылка на комнату: ' + callParam);
-                log('🔄 Автоматическое подключение...');
-                setTimeout(() => joinRoom(), 1000);
-            }
-        }
-
-        window.addEventListener('load', autoJoin);
-        userNameInput.oninput = (e) => currentUser.name = e.target.value || 'Гость';
-
-        function copyRoomId() {
-            const roomId = currentRoomDisplay.textContent;
-            navigator.clipboard.writeText(roomId).then(() => {
-                log('ID комнаты скопирован');
-                alert('ID комнаты скопирован');
-            }).catch(() => {
-                log('Ошибка копирования ID');
-                alert('Не удалось скопировать');
-            });
-        }
-
-        function copyCallLink() {
-            const roomId = currentRoomDisplay.textContent;
-            const link = window.location.origin + window.location.pathname + '?call=' + roomId;
-            navigator.clipboard.writeText(link).then(() => {
-                log('Ссылка на звонок скопирована');
-                alert('Ссылка на звонок скопирована');
-            }).catch(() => {
-                log('Ошибка копирования ссылки');
-                alert('Не удалось скопировать ссылку');
-            });
-        }
-
-        function createRoom() {
-            roomIdInput.value = Math.random().toString(36).substring(2, 8);
-            updateLinkInfo(roomIdInput.value);
-            log('Создана новая комната: ' + roomIdInput.value);
-            joinRoom();
-        }
-
-        async function testMicrophone() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                log('✅ Микрофон работает');
-                const audioContext = new AudioContext();
-                const analyser = audioContext.createAnalyser();
-                const source = audioContext.createMediaStreamSource(stream);
-                source.connect(analyser);
-                analyser.fftSize = 256;
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                const indicator = document.createElement('div');
-                indicator.style.position = 'fixed';
-                indicator.style.top = '10px';
-                indicator.style.right = '10px';
-                indicator.style.background = '#1a4a30';
-                indicator.style.padding = '10px';
-                indicator.style.borderRadius = '5px';
-                indicator.style.zIndex = '1000';
-                document.body.appendChild(indicator);
-                const interval = setInterval(() => {
-                    analyser.getByteFrequencyData(dataArray);
-                    const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
-                    indicator.textContent = `🎤 Уровень: ${Math.round(avg)}`;
-                    indicator.style.background = avg > 10 ? '#2e7d5e' : '#7d3e3e';
-                }, 100);
-                setTimeout(() => {
-                    clearInterval(interval);
-                    indicator.remove();
-                    stream.getTracks().forEach(t => t.stop());
-                }, 3000);
-            } catch (err) {
-                log('❌ Ошибка микрофона: ' + err.message);
-                alert('Ошибка доступа к микрофону: ' + err.message);
-            }
-        }
-
-        function testAudioOutput() {
-            try {
-                unlockAudio();
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                oscillator.frequency.value = 440;
-                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                oscillator.start();
-                oscillator.stop(audioContext.currentTime + 0.5);
-                log('✅ Тестовый звук воспроизведен');
-            } catch (err) {
-                log('❌ Ошибка воспроизведения: ' + err.message);
-            }
-        }
-
-        function forceAudioRestart() {
-            log('🔄 Принудительный перезапуск аудио');
-            Object.values(audioElements).forEach(audio => {
-                if (audio.srcObject) audio.play().catch(e => log(`Ошибка: ${e.message}`));
-            });
-            log('✅ Аудио перезапущено');
-        }
-
-        function getIceServers() {
-            return [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' },
-                {
-                    urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443'],
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                }
-            ];
-        }
-
-        async function joinRoom() {
-            const roomId = roomIdInput.value.trim();
-            if (!roomId) {
-                log('Ошибка: не введен ID комнаты');
-                return alert('Введите ID комнаты');
-            }
-
-            autoJoinMessageDiv.classList.add('hidden');
-
-            try {
-                statusDiv.textContent = '🎤 Запрашиваем микрофон...';
-                log('Запрос доступа к микрофону...');
-                
-                localStream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: {
-                        echoCancellation: true,
-                        noiseSuppression: true,
-                        autoGainControl: true,
-                        channelCount: 1,
-                        sampleRate: 48000
-                    }, 
-                    video: false 
-                });
-                
-                log('✅ Микрофон получен');
-                log(`🎵 Аудио треков: ${localStream.getAudioTracks().length}`);
-                
-                localStream.getAudioTracks().forEach(track => {
-                    track.enabled = true;
-                    log(`🎤 Трек: ${track.label}, готов: ${track.readyState}`);
-                });
-                
-                playSound('join');
-                
-                currentRoom = roomId;
-                currentRoomDisplay.textContent = roomId;
-                updateLinkInfo(roomId);
-                setupDiv.classList.add('hidden');
-                callDiv.classList.remove('hidden');
-                
-                roomRef = db.ref('rooms/' + roomId);
-                
-                await roomRef.child('users/' + currentUser.id).set({ 
-                    name: currentUser.name,
-                    timestamp: Date.now()
-                });
-                roomRef.child('users/' + currentUser.id).onDisconnect().remove();
-                
-                roomRef.child('mute').on('value', (snap) => {
-                    const mutes = snap.val() || {};
-                    Object.keys(mutes).forEach(userId => {
-                        if (userId !== currentUser.id) muteStatus[userId] = mutes[userId].muted;
-                    });
-                    updateParticipantsGrid();
-                });
-
-                log('Подключен к комнате ' + roomId);
-
-                callsRef = db.ref('calls/' + roomId);
-                callsRef.on('child_added', (snap) => {
-                    const signal = snap.val();
-                    if (signal.from !== currentUser.id) {
-                        log(`📨 Получен сигнал от ${signal.from}`);
-                        
-                        if (peers[signal.from] && !peers[signal.from].destroyed) {
-                            try {
-                                peers[signal.from].signal(signal.data);
-                                log('✅ Сигнал применен');
-                            } catch (e) {
-                                log(`❌ Ошибка применения сигнала: ${e.message}`);
+                    } else if (peer) {
+                        if (peer.connected && hasAudio) {
+                            statusText = isMuted ? '🔇 Микрофон выключен' : '🎤 Микрофон включён';
+                            if (isMuted) {
+                                cardClass = 'muted';
+                                muteBadge = '<span class="mute-badge">🔇 Микрофон выкл</span>';
                             }
+                        } else if (peer.connected) {
+                            statusText = '🔄 Ожидание аудио';
                         } else {
-                            if (!pendingSignals[signal.from]) pendingSignals[signal.from] = [];
-                            pendingSignals[signal.from].push(signal.data);
-                            log(`📦 Сигнал сохранен в очередь (${pendingSignals[signal.from].length})`);
+                            statusText = '🔄 Соединение...';
                         }
-                        snap.ref.remove();
                     }
+
+                    html += `
+                        <div class="participant-card ${cardClass}" id="participant-${userId}">
+                            <div class="participant-name">
+                                ${user.name}${isMe ? ' (Вы)' : ''}
+                                ${muteBadge}
+                            </div>
+                            <div class="participant-avatar ${isMuted ? 'muted' : ''}">${isMuted ? '🔇' : '🐌'}</div>
+                            <div class="participant-status">${statusText}</div>
+                            ${!isMe ? `<audio id="audio-${userId}" controls style="width:100%; margin:10px 0;" preload="none"></audio>` : ''}
+                            <div class="speaking-indicator hidden-indicator" id="speaking-${userId}"></div>
+                            <div class="volume-indicator">
+                                <div class="volume-level ${isMuted ? 'muted' : ''}" id="volume-${userId}" style="width:0%"></div>
+                            </div>
+                        </div>
+                    `;
                 });
 
-                roomRef.child('users').on('value', (snap) => {
-                    const users = snap.val();
-                    if (!users) return;
-                    
-                    // Сохраняем старый список пользователей
-                    const oldUsers = { ...allUsers };
-                    allUsers = users;
-                    
-                    // Находим новых пользователей
-                    const newUsers = Object.keys(users).filter(id => 
-                        id !== currentUser.id && !oldUsers[id]
-                    );
-                    
-                    // Находим отключившихся пользователей
-                    const leftUsers = Object.keys(oldUsers).filter(id => 
-                        id !== currentUser.id && !users[id]
-                    );
-                    
-                    // Обрабатываем новых пользователей
-                    newUsers.forEach(userId => {
-                        playSound('participant-joined');
-                        log(`🔔 Новый участник: ${users[userId].name}`);
-                        // Создаем peer для нового пользователя
-                        createPeerWith(userId, users[userId].name);
-                    });
-                    
-                    // Обрабатываем отключившихся пользователей
-                    leftUsers.forEach(userId => {
-                        playSound('participant-left');
-                        log(`🔔 Участник отключился: ${oldUsers[userId]?.name || userId}`);
-                        
-                        // Очищаем все ресурсы для отключившегося пользователя
-                        if (reconnectTimeouts[userId]) {
-                            clearTimeout(reconnectTimeouts[userId]);
-                            delete reconnectTimeouts[userId];
+                participantsGrid.innerHTML = html;
+
+                // Подключаем существующие аудиоэлементы (если поток уже был)
+                Object.keys(audioElements).forEach(userId => {
+                    const newAudio = document.getElementById(`audio-${userId}`);
+                    if (newAudio && audioElements[userId] && audioElements[userId].srcObject) {
+                        if (newAudio !== audioElements[userId]) {
+                            newAudio.srcObject = audioElements[userId].srcObject;
+                            if (audioElements[userId].parentNode) audioElements[userId].parentNode.removeChild(audioElements[userId]);
+                            audioElements[userId] = newAudio;
                         }
-                        
-                        if (peers[userId] && !peers[userId].destroyed) {
-                            peers[userId].destroy();
-                        }
-                        delete peers[userId];
-                        
-                        if (analyserIntervals[userId]) {
-                            clearInterval(analyserIntervals[userId]);
-                            delete analyserIntervals[userId];
-                        }
-                        
-                        if (audioElements[userId]) {
-                            audioElements[userId].remove();
-                            delete audioElements[userId];
-                        }
-                        
-                        delete muteStatus[userId];
-                        delete peerCreationInProgress[userId];
-                        delete pendingSignals[userId];
-                    });
-                    
-                    updateParticipantsGrid();
-                    
-                    const count = Object.keys(users).length;
-                    statusDiv.textContent = `👥 В комнате: ${count} ${count === 1 ? 'участник' : (count < 5 ? 'участника' : 'участников')}`;
-                });
-
-            } catch (err) {
-                log('❌ Ошибка: ' + err.message);
-                alert('Ошибка: ' + err.message);
-                autoJoinMessageDiv.classList.add('hidden');
-            }
-        }
-
-        function createPeerWith(userId, userName) {
-            // Проверяем, не создается ли уже peer для этого пользователя
-            if (peerCreationInProgress[userId]) {
-                log(`⚠️ Создание peer для ${userName} уже в процессе`);
-                return;
-            }
-            
-            // Проверяем, не существует ли уже peer
-            if (peers[userId] && !peers[userId].destroyed) {
-                log(`⚠️ Peer с ${userName} уже существует`);
-                return;
-            }
-            
-            peerCreationInProgress[userId] = true;
-            log(`🔧 Создаем peer с ${userName} (${userId})`);
-            
-            const isInit = currentUser.id < userId;
-            
-            try {
-                // Создаем отдельный поток для отправки с клонированными треками
-                const sendStream = new MediaStream();
-                localStream.getAudioTracks().forEach(track => {
-                    const newTrack = track.clone();
-                    newTrack.enabled = track.enabled;
-                    sendStream.addTrack(newTrack);
-                });
-                
-                const peer = new SimplePeer({ 
-                    initiator: isInit, 
-                    stream: sendStream,
-                    trickle: true,
-                    config: { 
-                        iceServers: getIceServers(),
-                        iceTransportPolicy: 'all',
-                        iceCandidatePoolSize: 10
-                    }
-                });
-                
-                peer.remoteName = userName;
-                
-                const audioEl = document.createElement('audio');
-                audioEl.id = `audio-${userId}`;
-                audioEl.autoplay = true;
-                audioEl.controls = true;
-                audioEl.style.width = '100%';
-                audioEl.style.margin = '10px 0';
-                audioEl.style.display = 'none';
-                document.body.appendChild(audioEl);
-                audioElements[userId] = audioEl;
-
-                peer.on('signal', data => {
-                    log(`📤 Отправка сигнала для ${userName}`);
-                    db.ref('calls/' + currentRoom).push({
-                        from: currentUser.id,
-                        to: userId,
-                        data: data
-                    });
-                });
-
-                peer.on('stream', stream => {
-                    log(`🎵 Получен аудиопоток от ${userName}`);
-                    log(`📊 Треков в потоке: ${stream.getAudioTracks().length}`);
-                    
-                    if (stream.getAudioTracks().length === 0) {
-                        log('⚠️ Внимание: получен поток без аудиотреков!');
-                        return;
-                    }
-                    
-                    // Принудительно включаем все полученные треки
-                    stream.getAudioTracks().forEach(track => {
-                        track.enabled = true;
-                    });
-                    
-                    if (audioElements[userId]) {
-                        audioElements[userId].srcObject = stream;
-                        log(`✅ Аудиопоток подключен к элементу ${userName}`);
-                        
                         if (audioUnlocked && !muteStatus[userId]) {
-                            audioElements[userId].play().then(() => {
-                                log(`✅ Аудио от ${userName} воспроизводится`);
-                            }).catch(e => {
-                                log(`❌ Ошибка воспроизведения: ${e.message}`);
-                            });
-                        } else if (!audioUnlocked) {
-                            unlockAudioDiv.classList.remove('hidden');
+                            newAudio.play().catch(e => log(`Ошибка воспроизведения: ${e.message}`));
                         }
                     }
-                    
-                    updateParticipantsGrid();
-                    playSound('connected');
-                    
-                    // Анализируем уровень звука
-                    try {
-                        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                        const analyser = audioContext.createAnalyser();
-                        const source = audioContext.createMediaStreamSource(stream);
-                        source.connect(analyser);
-                        
-                        analyser.fftSize = 256;
-                        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                        
-                        if (analyserIntervals[userId]) clearInterval(analyserIntervals[userId]);
-                        
-                        analyserIntervals[userId] = setInterval(() => {
-                            analyser.getByteFrequencyData(dataArray);
-                            const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
-                            
-                            const volumeEl = document.getElementById(`volume-${userId}`);
-                            if (volumeEl) {
-                                volumeEl.style.width = Math.min(100, (avg / 128) * 100) + '%';
+                });
+
+                const count = Object.keys(allUsers).length;
+                participantCountSpan.textContent = `${count} ${count === 1 ? 'участник' : (count < 5 ? 'участника' : 'участников')}`;
+                updateDebugInfo();
+            }
+
+            // --------------------------------------------------------------
+            // 6. РАЗБЛОКИРОВКА АУДИО (браузерная политика)
+            // --------------------------------------------------------------
+            function unlockAudio() {
+                if (audioUnlocked) return;
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                audioContext.resume().then(() => {
+                    log('🔊 Аудио разблокировано');
+                    audioUnlocked = true;
+                    unlockAudioDiv.classList.add('hidden');
+                    Object.values(audioElements).forEach(audio => {
+                        if (audio.srcObject) audio.play().catch(e => log(`Ошибка: ${e.message}`));
+                    });
+                });
+            }
+
+            unlockAudioDiv.addEventListener('click', unlockAudio);
+            document.addEventListener('click', function once() {
+                unlockAudio();
+                document.removeEventListener('click', once);
+            }, { once: true });
+
+            // --------------------------------------------------------------
+            // 7. ТЕСТОВЫЕ ФУНКЦИИ
+            // --------------------------------------------------------------
+            async function testMicrophone() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    log('✅ Микрофон работает');
+                    const audioCtx = new AudioContext();
+                    const analyser = audioCtx.createAnalyser();
+                    const source = audioCtx.createMediaStreamSource(stream);
+                    source.connect(analyser);
+                    analyser.fftSize = 256;
+                    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                    const indicator = document.createElement('div');
+                    indicator.style.position = 'fixed'; indicator.style.top = '10px'; indicator.style.right = '10px';
+                    indicator.style.background = '#1a4a30'; indicator.style.padding = '10px'; indicator.style.borderRadius = '5px';
+                    indicator.style.zIndex = '1000'; document.body.appendChild(indicator);
+                    const interval = setInterval(() => {
+                        analyser.getByteFrequencyData(dataArray);
+                        const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                        indicator.textContent = `🎤 Уровень: ${Math.round(avg)}`;
+                        indicator.style.background = avg > 10 ? '#2e7d5e' : '#7d3e3e';
+                    }, 100);
+                    setTimeout(() => { clearInterval(interval); indicator.remove(); stream.getTracks().forEach(t => t.stop()); }, 3000);
+                } catch (err) {
+                    log('❌ Ошибка микрофона: ' + err.message);
+                    alert('Ошибка доступа к микрофону');
+                }
+            }
+
+            function testAudioOutput() {
+                try {
+                    unlockAudio();
+                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.frequency.value = 440;
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+                    log('✅ Тестовый звук воспроизведён');
+                } catch (err) {
+                    log('❌ Ошибка воспроизведения: ' + err.message);
+                }
+            }
+
+            function forceAudioRestart() {
+                log('🔄 Принудительный перезапуск аудио');
+                Object.values(audioElements).forEach(audio => {
+                    if (audio.srcObject) audio.play().catch(e => log(`Ошибка: ${e.message}`));
+                });
+            }
+
+            // --------------------------------------------------------------
+            // 8. ICE СЕРВЕРЫ (STUN + TURN)
+            // --------------------------------------------------------------
+            function getIceServers() {
+                return [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' },
+                    {
+                        urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443'],
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    }
+                ];
+            }
+
+            // --------------------------------------------------------------
+            // 9. СОЗДАНИЕ PEER-СОЕДИНЕНИЯ (с клонированием треков для каждого)
+            // --------------------------------------------------------------
+            function createPeerWith(userId, userName) {
+                if (peerCreationInProgress[userId] || (peers[userId] && !peers[userId].destroyed)) {
+                    log(`⚠️ Peer с ${userName} уже создаётся или существует`);
+                    return;
+                }
+                peerCreationInProgress[userId] = true;
+                log(`🔧 Создаём peer с ${userName}`);
+
+                const isInit = currentUser.id < userId;
+
+                try {
+                    // Для каждого peer создаём свой поток с клонированными треками
+                    const sendStream = new MediaStream();
+                    localStream.getAudioTracks().forEach(track => {
+                        const newTrack = track.clone();
+                        newTrack.enabled = track.enabled;
+                        sendStream.addTrack(newTrack);
+                    });
+
+                    const peer = new SimplePeer({
+                        initiator: isInit,
+                        stream: sendStream,
+                        trickle: true,
+                        config: { iceServers: getIceServers() }
+                    });
+
+                    peer.remoteName = userName;
+
+                    // Скрытый аудиоэлемент для хранения потока (потом привяжется к видимому)
+                    const audioEl = document.createElement('audio');
+                    audioEl.id = `audio-${userId}`;
+                    audioEl.autoplay = true;
+                    audioEl.controls = true;
+                    audioEl.style.display = 'none';
+                    document.body.appendChild(audioEl);
+                    audioElements[userId] = audioEl;
+
+                    peer.on('signal', data => {
+                        log(`📤 Сигнал для ${userName}`);
+                        callsRef.push({ from: currentUser.id, to: userId, data });
+                    });
+
+                    peer.on('stream', stream => {
+                        log(`🎵 Получен поток от ${userName}, треков: ${stream.getAudioTracks().length}`);
+                        if (stream.getAudioTracks().length === 0) return;
+
+                        // Принудительно включаем полученные треки
+                        stream.getAudioTracks().forEach(t => t.enabled = true);
+
+                        if (audioElements[userId]) {
+                            audioElements[userId].srcObject = stream;
+                            if (audioUnlocked && !muteStatus[userId]) {
+                                audioElements[userId].play().catch(e => log(`Ошибка: ${e.message}`));
+                            } else if (!audioUnlocked) {
+                                unlockAudioDiv.classList.remove('hidden');
                             }
-                            
-                            const indicator = document.getElementById(`speaking-${userId}`);
-                            if (indicator) {
-                                if (avg > 20 && !muteStatus[userId]) {
-                                    indicator.classList.remove('hidden-indicator');
-                                } else {
-                                    indicator.classList.add('hidden-indicator');
+                        }
+                        updateParticipantsGrid();
+
+                        // Анализатор уровня звука (индикатор разговора)
+                        try {
+                            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                            const analyser = audioCtx.createAnalyser();
+                            const source = audioCtx.createMediaStreamSource(stream);
+                            source.connect(analyser);
+                            analyser.fftSize = 256;
+                            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                            if (analyserIntervals[userId]) clearInterval(analyserIntervals[userId]);
+                            analyserIntervals[userId] = setInterval(() => {
+                                analyser.getByteFrequencyData(dataArray);
+                                const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                                const volumeEl = document.getElementById(`volume-${userId}`);
+                                if (volumeEl) volumeEl.style.width = Math.min(100, (avg / 128) * 100) + '%';
+                                const indicator = document.getElementById(`speaking-${userId}`);
+                                if (indicator) {
+                                    if (avg > 20 && !muteStatus[userId]) indicator.classList.remove('hidden-indicator');
+                                    else indicator.classList.add('hidden-indicator');
                                 }
-                            }
-                        }, 100);
-                    } catch (e) {
-                        log(`Ошибка анализатора: ${e.message}`);
-                    }
-                    
-                    // Применяем накопленные сигналы
-                    if (pendingSignals[userId]?.length) {
-                        log(`📦 Применяем ${pendingSignals[userId].length} накопленных сигналов`);
-                        pendingSignals[userId].forEach(signalData => {
-                            try { peer.signal(signalData); } catch (e) { log(`Ошибка: ${e.message}`); }
-                        });
-                        delete pendingSignals[userId];
-                    }
-                    
-                    peerCreationInProgress[userId] = false;
-                });
+                            }, 100);
+                        } catch (e) { log(`Ошибка анализатора: ${e.message}`); }
 
-                peer.on('connect', () => {
-                    log(`✅ Peer соединение с ${userName} установлено`);
-                    updateParticipantsGrid();
-                    if (reconnectTimeouts[userId]) {
-                        clearTimeout(reconnectTimeouts[userId]);
-                        delete reconnectTimeouts[userId];
-                    }
-                });
-
-                peer.on('error', (err) => {
-                    log(`❌ Ошибка peer с ${userName}: ${err.message}`);
-                    
-                    if (!reconnectTimeouts[userId] && allUsers[userId]) {
-                        reconnectTimeouts[userId] = setTimeout(() => {
-                            log(`🔄 Переподключение к ${userName}...`);
-                            if (peers[userId] && !peers[userId].destroyed) {
-                                peers[userId].destroy();
-                            }
-                            delete peers[userId];
-                            delete peerCreationInProgress[userId];
-                            createPeerWith(userId, userName);
-                            delete reconnectTimeouts[userId];
-                        }, 3000);
-                    }
-                    
-                    peerCreationInProgress[userId] = false;
-                    updateParticipantsGrid();
-                });
-
-                peer.on('close', () => {
-                    log(`🔒 Peer с ${userName} закрыт`);
-                    delete peers[userId];
-                    delete peerCreationInProgress[userId];
-                    updateParticipantsGrid();
-                });
-
-                peers[userId] = peer;
-                
-                // Если есть накопленные сигналы, применяем их через некоторое время
-                if (pendingSignals[userId]?.length) {
-                    setTimeout(() => {
-                        if (peers[userId] && !peers[userId].destroyed) {
+                        // Применяем накопленные сигналы
+                        if (pendingSignals[userId]?.length) {
+                            log(`📦 Применяем ${pendingSignals[userId].length} накопленных сигналов`);
                             pendingSignals[userId].forEach(signalData => {
-                                try { peers[userId].signal(signalData); } catch (e) { log(`Ошибка: ${e.message}`); }
+                                try { peer.signal(signalData); } catch (e) { log(`Ошибка: ${e.message}`); }
                             });
                             delete pendingSignals[userId];
                         }
-                    }, 1000);
+                        peerCreationInProgress[userId] = false;
+                    });
+
+                    peer.on('connect', () => {
+                        log(`✅ Соединение с ${userName} установлено`);
+                        if (reconnectTimeouts[userId]) clearTimeout(reconnectTimeouts[userId]);
+                        delete reconnectTimeouts[userId];
+                        updateParticipantsGrid();
+                    });
+
+                    peer.on('error', err => {
+                        log(`❌ Ошибка peer с ${userName}: ${err.message}`);
+                        if (!reconnectTimeouts[userId] && allUsers[userId]) {
+                            reconnectTimeouts[userId] = setTimeout(() => {
+                                log(`🔄 Переподключение к ${userName}...`);
+                                if (peers[userId] && !peers[userId].destroyed) peers[userId].destroy();
+                                delete peers[userId];
+                                delete peerCreationInProgress[userId];
+                                createPeerWith(userId, userName);
+                                delete reconnectTimeouts[userId];
+                            }, 3000);
+                        }
+                        peerCreationInProgress[userId] = false;
+                        updateParticipantsGrid();
+                    });
+
+                    peer.on('close', () => {
+                        log(`🔒 Peer с ${userName} закрыт`);
+                        delete peers[userId];
+                        delete peerCreationInProgress[userId];
+                        updateParticipantsGrid();
+                    });
+
+                    peers[userId] = peer;
+
+                    // Если есть накопленные сигналы, пробуем позже
+                    if (pendingSignals[userId]?.length) {
+                        setTimeout(() => {
+                            if (peers[userId] && !peers[userId].destroyed) {
+                                pendingSignals[userId].forEach(signalData => {
+                                    try { peers[userId].signal(signalData); } catch (e) { log(`Ошибка: ${e.message}`); }
+                                });
+                                delete pendingSignals[userId];
+                            }
+                        }, 1000);
+                    }
+
+                } catch (err) {
+                    log(`❌ Ошибка создания peer с ${userName}: ${err.message}`);
+                    peerCreationInProgress[userId] = false;
                 }
-
-            } catch (err) {
-                log(`❌ Ошибка создания peer с ${userName}: ${err.message}`);
-                peerCreationInProgress[userId] = false;
             }
-        }
 
-        function toggleMic() {
-            if (localStream) {
-                const track = localStream.getAudioTracks()[0];
-                if (track) {
+            // --------------------------------------------------------------
+            // 10. ВХОД В КОМНАТУ
+            // --------------------------------------------------------------
+            async function joinRoom() {
+                const roomId = roomIdInput.value.trim();
+                if (!roomId) { alert('Введите ID комнаты'); return; }
+
+                autoJoinMessageDiv.style.display = 'none';
+
+                try {
+                    statusDiv.textContent = '🎤 Запрашиваем микрофон...';
+                    log('Запрос микрофона...');
+                    localStream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        },
+                        video: false
+                    });
+                    log('✅ Микрофон получен');
+                    localStream.getAudioTracks().forEach(t => t.enabled = true);
+
+                    currentRoom = roomId;
+                    currentRoomDisplay.textContent = roomId;
+                    updateLinkInfo(roomId);
+                    setupDiv.classList.add('hidden');
+                    callDiv.classList.remove('hidden');
+
+                    roomRef = db.ref('rooms/' + roomId);
+                    await roomRef.child('users/' + currentUser.id).set({ name: currentUser.name, timestamp: Date.now() });
+                    roomRef.child('users/' + currentUser.id).onDisconnect().remove();
+
+                    // Слушаем статусы mute других
+                    roomRef.child('mute').on('value', snap => {
+                        const mutes = snap.val() || {};
+                        Object.keys(mutes).forEach(uid => { if (uid !== currentUser.id) muteStatus[uid] = mutes[uid].muted; });
+                        updateParticipantsGrid();
+                    });
+
+                    callsRef = db.ref('calls/' + roomId);
+                    callsRef.on('child_added', snap => {
+                        const signal = snap.val();
+                        if (signal.from !== currentUser.id) {
+                            log(`📨 Сигнал от ${signal.from}`);
+                            if (peers[signal.from] && !peers[signal.from].destroyed) {
+                                try { peers[signal.from].signal(signal.data); } catch (e) { log(`❌ ${e.message}`); }
+                            } else {
+                                if (!pendingSignals[signal.from]) pendingSignals[signal.from] = [];
+                                pendingSignals[signal.from].push(signal.data);
+                            }
+                            snap.ref.remove();
+                        }
+                    });
+
+                    // Слушаем изменения списка пользователей
+                    roomRef.child('users').on('value', snap => {
+                        const users = snap.val() || {};
+                        const oldUsers = { ...allUsers };
+                        allUsers = users;
+
+                        const newUsers = Object.keys(users).filter(id => id !== currentUser.id && !oldUsers[id]);
+                        const leftUsers = Object.keys(oldUsers).filter(id => id !== currentUser.id && !users[id]);
+
+                        newUsers.forEach(userId => {
+                            log(`🔔 Новый участник: ${users[userId].name}`);
+                            createPeerWith(userId, users[userId].name);
+                        });
+
+                        leftUsers.forEach(userId => {
+                            log(`🔔 Участник отключился: ${oldUsers[userId]?.name || userId}`);
+                            if (reconnectTimeouts[userId]) clearTimeout(reconnectTimeouts[userId]);
+                            if (peers[userId]) { peers[userId].destroy(); delete peers[userId]; }
+                            if (analyserIntervals[userId]) clearInterval(analyserIntervals[userId]);
+                            if (audioElements[userId]) { audioElements[userId].remove(); delete audioElements[userId]; }
+                            delete muteStatus[userId];
+                            delete peerCreationInProgress[userId];
+                            delete pendingSignals[userId];
+                        });
+
+                        updateParticipantsGrid();
+                        const cnt = Object.keys(users).length;
+                        statusDiv.textContent = `👥 В комнате: ${cnt} ${cnt===1?'участник':(cnt<5?'участника':'участников')}`;
+                    });
+
+                } catch (err) {
+                    log('❌ Ошибка: ' + err.message);
+                    alert('Ошибка: ' + err.message);
+                }
+            }
+
+            // --------------------------------------------------------------
+            // 11. ФУНКЦИИ УПРАВЛЕНИЯ (вызываются из кнопок)
+            // --------------------------------------------------------------
+            window.createRoom = function() {
+                roomIdInput.value = Math.random().toString(36).substring(2, 8);
+                updateLinkInfo(roomIdInput.value);
+                log('Создана новая комната: ' + roomIdInput.value);
+                joinRoom();
+            };
+
+            window.joinRoom = joinRoom;
+
+            window.copyRoomId = function() {
+                const id = currentRoomDisplay.textContent;
+                navigator.clipboard.writeText(id).then(() => {
+                    log('ID комнаты скопирован');
+                    alert('ID скопирован');
+                }).catch(() => alert('Не удалось скопировать'));
+            };
+
+            window.copyCallLink = function() {
+                const link = window.location.origin + window.location.pathname + '?call=' + currentRoom;
+                navigator.clipboard.writeText(link).then(() => {
+                    log('Ссылка скопирована');
+                    alert('Ссылка скопирована');
+                });
+            };
+
+            window.toggleMic = function() {
+                if (localStream) {
+                    const track = localStream.getAudioTracks()[0];
                     track.enabled = !track.enabled;
                     micBtn.textContent = track.enabled ? '🔇 Выкл микрофон' : '🎤 Вкл микрофон';
-                    log('Микрофон ' + (track.enabled ? 'включен' : 'выключен'));
+                    log('Микрофон ' + (track.enabled ? 'включён' : 'выключен'));
                     updateMuteStatus(currentUser.id, !track.enabled);
+                    // обновляем все клонированные треки
+                    Object.values(peers).forEach(p => {
+                        if (p && p.streams && p.streams[0]) {
+                            p.streams[0].getAudioTracks().forEach(t => t.enabled = track.enabled);
+                        }
+                    });
                     updateParticipantsGrid();
                 }
-            }
-        }
+            };
 
-        function endCall() {
-            log('Завершение звонка');
-            
-            if (roomRef) {
-                roomRef.child('users').off();
-                roomRef.child('mute').off();
-                roomRef.child('users/' + currentUser.id).remove();
-                roomRef.child('mute/' + currentUser.id).remove();
-                roomRef = null;
-            }
-            
-            if (callsRef) {
-                callsRef.off();
-                callsRef.remove();
-                callsRef = null;
-            }
-            
-            Object.values(reconnectTimeouts).forEach(timeout => clearTimeout(timeout));
-            reconnectTimeouts = {};
-            
-            Object.values(analyserIntervals).forEach(interval => clearInterval(interval));
-            analyserIntervals = {};
-            
-            Object.values(peers).forEach(peer => {
-                if (peer && !peer.destroyed) peer.destroy();
-            });
-            peers = {};
-            
-            Object.values(audioElements).forEach(audio => audio.remove());
-            audioElements = {};
-            
-            if (localStream) {
-                localStream.getTracks().forEach(t => t.stop());
+            window.testMicrophone = testMicrophone;
+            window.testAudioOutput = testAudioOutput;
+            window.forceAudioRestart = forceAudioRestart;
+
+            window.endCall = function() {
+                log('Завершение звонка');
+                if (roomRef) {
+                    roomRef.child('users').off();
+                    roomRef.child('mute').off();
+                    roomRef.child('users/' + currentUser.id).remove();
+                    roomRef.child('mute/' + currentUser.id).remove();
+                }
+                if (callsRef) callsRef.off();
+                Object.values(reconnectTimeouts).forEach(t => clearTimeout(t));
+                Object.values(analyserIntervals).forEach(i => clearInterval(i));
+                Object.values(peers).forEach(p => { if (p && !p.destroyed) p.destroy(); });
+                Object.values(audioElements).forEach(a => a.remove());
+                if (localStream) localStream.getTracks().forEach(t => t.stop());
+
+                peers = {};
+                audioElements = {};
+                analyserIntervals = {};
+                reconnectTimeouts = {};
+                pendingSignals = {};
+                muteStatus = {};
+                peerCreationInProgress = {};
+                allUsers = {};
+                currentRoom = null;
                 localStream = null;
-            }
-            
-            pendingSignals = {};
-            allUsers = {};
-            muteStatus = {};
-            peerCreationInProgress = {};
-            currentRoom = null;
-            
-            setupDiv.classList.remove('hidden');
-            callDiv.classList.add('hidden');
-            updateLinkInfo(roomIdInput.value);
-            autoJoinAttempted = false;
-            unlockAudioDiv.classList.add('hidden');
-            
-            log('✅ Звонок завершен');
-            updateDebugInfo();
-        }
+                roomRef = null;
+                callsRef = null;
+
+                setupDiv.classList.remove('hidden');
+                callDiv.classList.add('hidden');
+                updateLinkInfo(roomIdInput.value);
+                autoJoinAttempted = false;
+                unlockAudioDiv.classList.add('hidden');
+                log('✅ Звонок завершён');
+                updateDebugInfo();
+            };
+
+            // --------------------------------------------------------------
+            // 12. АВТОМАТИЧЕСКИЙ ВХОД ПО ССЫЛКЕ
+            // --------------------------------------------------------------
+            (function autoJoinFromUrl() {
+                const callParam = getUrlParams();
+                if (callParam && !autoJoinAttempted) {
+                    autoJoinAttempted = true;
+                    roomIdInput.value = callParam;
+                    updateLinkInfo(callParam);
+                    autoJoinMessageDiv.style.display = 'flex';
+                    log('🔗 Обнаружена ссылка на комнату: ' + callParam);
+                    setTimeout(() => joinRoom(), 1000);
+                }
+            })();
+
+            // При изменении имени в поле ввода
+            userNameInput.addEventListener('input', (e) => { currentUser.name = e.target.value || 'Гость'; });
+
+            // Скрыть сообщение автоподключения, если кликнуть мимо
+            window.addEventListener('load', function() {
+                // небольшая инициализация
+            });
+        })();
     </script>
 </body>
 </html>
