@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>lottie адаптивный глобус</title>
+    <!-- без стилей, только встроенный адаптив через JS -->
+</head>
+<body style="margin:0; padding:0; background:transparent; width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+    <!-- контейнер, который будет подстраиваться под размер окна -->
+    <div id="lottie-container" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;"></div>
+
+    <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"></script>
+
+    <script>
+        (function() {
+            const container = document.getElementById('lottie-container');
+            
+            // создаём анимацию, но сначала без размера — она сама подстроится через CSS контейнера
+            const anim = lottie.loadAnimation({
+                container: container,
+                renderer: 'svg',
+                loop: true,
+                autoplay: true,
+                path: 'https://uliigra2.c6t.ru/globus.json'
+            });
+
+            // функция для точной подстройки размера lottie под экран
+            function resizeLottie() {
+                // получаем актуальные размеры окна
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                
+                // определяем размер стороны квадрата, который впишется в окно (чтобы круг не обрезало)
+                const size = Math.min(w, h) * 0.9; // 90% от меньшей стороны, с небольшим отступом
+                
+                // применяем размер к контейнеру — svg внутри растянется автоматически
+                container.style.width = size + 'px';
+                container.style.height = size + 'px';
+                
+                // дополнительно убедимся, что внутренний svg занимает всю площадь
+                const svg = container.querySelector('svg');
+                if (svg) {
+                    svg.style.width = '100%';
+                    svg.style.height = '100%';
+                    svg.style.display = 'block'; // убиваем лишние отступы
+                }
+            }
+
+            // ждём загрузки анимации, чтобы можно было править svg
+            anim.addEventListener('DOMLoaded', function() {
+                // первичная подгонка
+                resizeLottie();
+                
+                // подписываемся на изменение размера окна
+                window.addEventListener('resize', () => {
+                    resizeLottie();
+                });
+            });
+
+            // обработчик ошибок — без текста, просто консоль
+            anim.addEventListener('data_failed', () => {
+                console.warn('анимация не загрузилась, но страница остаётся чистой');
+            });
+        })();
+    </script>
+</body>
+</html>
