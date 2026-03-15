@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ули · зелёные улитки</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+            background-color: #1b3b1b;
+            background-image: radial-gradient(circle at 30% 40%, #2b5a2b 0%, #0e2f0e 90%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.5rem;
+            position: relative;
+            color: #f0f7da;
+        }
+
+        /* декоративные улитки (фон) */
+        body::before {
+            content: "🐌🐌🐌";
+            font-size: 8rem;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            opacity: 0.08;
+            white-space: nowrap;
+            transform: rotate(-10deg);
+            pointer-events: none;
+            letter-spacing: 2rem;
+        }
+
+        body::after {
+            content: "🐌🐌🐌";
+            font-size: 12rem;
+            position: absolute;
+            bottom: -20px;
+            right: 0;
+            opacity: 0.05;
+            transform: rotate(15deg);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        /* главный контейнер — прямоугольный со скруглёнными углами */
+        .main-container {
+            max-width: 1000px;
+            width: 100%;
+            background: rgba(30, 50, 30, 0.7);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 3px solid #9bbc7b;
+            border-radius: 30px;
+            box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 2px #6f8c5d inset, 0 0 0 4px #3f6140 inset;
+            padding: 3rem 2rem;
+        }
+
+        /* шапка с названием "Ули" */
+        .header-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem 1.2rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+            font-size: 3.2rem;
+            font-weight: 800;
+            text-shadow: 3px 3px 0 #2d4a2d, 5px 5px 0 #1b331b;
+            color: #e2f0c0;
+            letter-spacing: 2px;
+        }
+
+        .snail-icon-big {
+            font-size: 3.8rem;
+            transform: rotate(15deg);
+            transition: transform 0.2s;
+            filter: drop-shadow(2px 4px 4px #0f2a0f);
+        }
+
+        .snail-icon-big:hover {
+            transform: rotate(25deg) scale(1.1);
+        }
+
+        /* сообщение загрузки / ошибки */
+        .loading-message {
+            text-align: center;
+            font-size: 1.2rem;
+            background: #446644;
+            padding: 1rem;
+            border-radius: 30px;
+            margin: 2rem 0;
+            border: 2px dashed #c7e9a8;
+            color: #fcfae1;
+        }
+
+        /* сетка ссылок */
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.8rem;
+            margin: 2.5rem 0 1rem;
+        }
+
+        /* КАРТОЧКА-УЛИТКА ТЕПЕРЬ ПРЯМОУГОЛЬНАЯ СО СКРУГЛЁННЫМИ УГЛАМИ */
+        .snail-card {
+            background: #2e4d2e;
+            border: 2px solid #7eaf7a;
+            border-radius: 24px;  /* прямоугольник со скруглением */
+            padding: 1.5rem 1.2rem 1.2rem 1.2rem;
+            transition: all 0.25s ease;
+            box-shadow: 0 12px 15px -7px #102310, 0 0 0 2px #a7c8a3 inset;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            backdrop-filter: blur(2px);
+        }
+
+        .snail-card:hover {
+            background: #386d38;
+            border-color: #d8f0b5;
+            transform: translateY(-6px) rotate(0.5deg);
+            box-shadow: 0 20px 25px -8px #091409, 0 0 0 3px #c7f0b1 inset;
+            border-radius: 28px; /* чуть больше при наведении */
+        }
+
+        /* эмодзи-иконка */
+        .card-emoji {
+            font-size: 3.5rem;
+            line-height: 1;
+            margin-bottom: 0.6rem;
+            text-align: center;
+            filter: drop-shadow(2px 4px 4px #1e331e);
+            transform: scale(1);
+            transition: transform 0.2s;
+        }
+
+        .snail-card:hover .card-emoji {
+            transform: scale(1.1) rotate(3deg);
+        }
+
+        /* имя страницы */
+        .card-name {
+            font-size: 1.9rem;
+            font-weight: 800;
+            text-align: center;
+            color: #fcfad6;
+            text-shadow: 0 3px 0 #466b46;
+            margin-bottom: 0.3rem;
+            word-break: break-word;
+            letter-spacing: 1px;
+            border-bottom: 2px dotted #8bb46c;
+            padding-bottom: 0.4rem;
+        }
+
+        /* описание */
+        .card-description {
+            font-size: 1rem;
+            color: #dcedc4;
+            margin: 0.8rem 0 1.2rem 0;
+            line-height: 1.5;
+            text-align: center;
+            background: #385f38;
+            padding: 0.6rem;
+            border-radius: 20px; /* тоже скруглено */
+            border: 1px solid #8ab47a;
+        }
+
+        /* ссылка */
+        .card-link {
+            display: inline-block;
+            background: #a3c4a3;
+            color: #1b3f1b;
+            text-decoration: none;
+            font-weight: 700;
+            padding: 0.6rem 1.2rem;
+            border-radius: 30px; /* скруглённая кнопка */
+            font-size: 1.1rem;
+            border: 2px solid #d6f0be;
+            transition: 0.15s;
+            text-align: center;
+            box-shadow: 0 5px 0 #446d44;
+            margin-top: auto;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .card-link:hover {
+            background: #c3e6b3;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 0 #2f542f;
+            color: #0f300f;
+            border-radius: 30px;
+        }
+
+        .card-link:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #2f542f;
+        }
+
+        /* блок ошибки */
+        .error-fallback {
+            background: #4c3d2e;
+            border: 4px dotted #b1c97b;
+            border-radius: 30px;
+            padding: 2rem;
+            text-align: center;
+            font-size: 1.5rem;
+            margin: 2rem 0;
+            color: #ffefc0;
+        }
+
+        .tiny-snail {
+            font-size: 2.5rem;
+            opacity: 0.7;
+            display: inline-block;
+            margin: 0 0.3rem;
+            animation: float 5s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0); }
+        }
+
+        /* подвал */
+        .footer-snails {
+            margin-top: 3rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem 2rem;
+            flex-wrap: wrap;
+            font-size: 2rem;
+            color: #a2c78d;
+            border-top: 2px dashed #61855e;
+            padding-top: 1.8rem;
+            opacity: 0.8;
+        }
+
+        .footer-snails span {
+            filter: drop-shadow(0 5px 5px #172e17);
+            transition: 0.2s;
+            cursor: default;
+        }
+
+        .footer-snails span:hover {
+            transform: scale(1.2) rotate(5deg);
+            color: #e2ffb3;
+        }
+
+        @media (max-width: 600px) {
+            .main-container { padding: 1.5rem 1rem; }
+            .header-title { font-size: 2.5rem; }
+            .card-name { font-size: 1.6rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="header-title">
+        <span class="snail-icon-big">🐌</span>
+        <span style="background: transparent; filter: none;">УЛИ</span>
+        <span class="snail-icon-big">🐌</span>
+    </div>
+
+    <!-- КОНТЕЙНЕР СПИСКА ССЫЛОК -->
+    <div id="snail-links-container">
+        <div class="loading-message">
+            <span class="tiny-snail">🐌</span> загружаем ракушки... <span class="tiny-snail">🐌</span>
+        </div>
+    </div>
+
+    <!-- подвал с декоративными улитками -->
+    <div class="footer-snails">
+        <span>🐌</span><span>🐌💚</span><span>🐌</span><span>🐚</span><span>🐌</span><span>🍀🐌</span>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const container = document.getElementById('snail-links-container');
+        // ПРАВИЛЬНЫЙ АДРЕС
+        const dataUrl = 'https://uliigra2.c6t.ru/homeconfig.txt';
+
+        function buildSnailCard(item) {
+            const pic = item.pic || '🐌';
+            const link = item.link || '#';
+            const name = item.name || 'без имени';
+            const des = item.des || 'зелёная улитка без описания';
+
+            const card = document.createElement('div');
+            card.className = 'snail-card';
+
+            card.innerHTML = `
+                <div class="card-emoji">${pic}</div>
+                <div class="card-name">${escapeHtml(name)}</div>
+                <div class="card-description">${escapeHtml(des)}</div>
+                <a href="${escapeHtml(link)}" class="card-link" target="_blank" rel="noopener noreferrer">🐌 переползти</a>
+            `;
+            return card;
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        fetch(dataUrl, { cache: "no-store" })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(rawText => {
+                if (!rawText || rawText.trim().length === 0) {
+                    throw new Error('Файл пуст');
+                }
+
+                const items = rawText.split('!').filter(part => part.trim() !== '');
+                const parsedItems = [];
+
+                for (let i = 0; i < items.length; i++) {
+                    const piece = items[i].trim();
+                    if (!piece) continue;
+                    try {
+                        const jsonItem = JSON.parse(piece);
+                        if (jsonItem && typeof jsonItem === 'object') {
+                            parsedItems.push(jsonItem);
+                        }
+                    } catch (e) {
+                        console.warn(`Ошибка парсинга JSON: ${piece}`);
+                    }
+                }
+
+                if (parsedItems.length === 0) {
+                    throw new Error('Нет валидных данных');
+                }
+
+                container.innerHTML = '';
+                const grid = document.createElement('div');
+                grid.className = 'links-grid';
+
+                parsedItems.forEach(item => {
+                    grid.appendChild(buildSnailCard(item));
+                });
+
+                container.appendChild(grid);
+            })
+            .catch(error => {
+                console.error(error);
+                container.innerHTML = `
+                    <div class="error-fallback">
+                        <div style="font-size:3rem;">🐌🍂</div>
+                        <p>не удалось загрузить список страниц</p>
+                        <p style="font-size:1rem;">ошибка: ${escapeHtml(error.message)}</p>
+                        <div style="font-size:2rem; margin-top:1rem;">🐌🐌🐌</div>
+                    </div>
+                `;
+            });
+    })();
+</script>
+</body>
+</html>
