@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сократитель ссылок</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            width: 90%;
+            max-width: 600px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2em;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .result.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .short-url {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .short-url input {
+            flex: 1;
+            background: white;
+        }
+        
+        .copy-btn {
+            width: auto;
+            padding: 12px 20px;
+            background: #28a745;
+        }
+        
+        .copy-btn:hover {
+            background: #218838;
+        }
+        
+        .error {
+            color: #dc3545;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .info {
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 Сократитель ссылок</h1>
+        
+        <div class="input-group">
+            <label for="longUrl">Длинная ссылка</label>
+            <input type="url" id="longUrl" placeholder="https://example.com/very-long-url" required>
+        </div>
+        
+        <div class="input-group">
+            <label for="customCode">Свой код (необязательно)</label>
+            <input type="text" id="customCode" placeholder="например: mylink" maxlength="50">
+        </div>
+        
+        <button onclick="createShortLink()">Создать короткую ссылку</button>
+        
+        <div class="result" id="result">
+            <p>Ваша короткая ссылка:</p>
+            <div class="short-url">
+                <input type="text" id="shortUrl" readonly>
+                <button class="copy-btn" onclick="copyToClipboard()">Копировать</button>
+            </div>
+        </div>
+        
+        <div class="info">
+            <p>Создавайте короткие ссылки легко и быстро!</p>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <script>
+        // Конфигурация Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
+            authDomain: "kcalls.firebaseapp.com",
+            databaseURL: "https://kcalls-default-rtdb.firebaseio.com",
+            projectId: "kcalls",
+            storageBucket: "kcalls.firebasestorage.app",
+            messagingSenderId: "990117089104",
+            appId: "1:990117089104:web:278a42c037e975ebb76655",
+            measurementId: "G-TK6GVEX9G5"
+        };
+
+        // Инициализация Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Функция генерации случайного кода
+        function generateCode(length = 6) {
+            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        // Функция проверки доступности кода
+        async function isCodeAvailable(code) {
+            try {
+                const snapshot = await database.ref('links/' + code).once('value');
+                return !snapshot.exists();
+            } catch (error) {
+                console.error('Ошибка проверки кода:', error);
+                return false;
+            }
+        }
+
+        // Основная функция создания ссылки
+        async function createShortLink() {
+            const longUrl = document.getElementById('longUrl').value.trim();
+            const customCode = document.getElementById('customCode').value.trim();
+            
+            if (!longUrl) {
+                alert('Введите ссылку');
+                return;
+            }
+
+            // Валидация URL
+            try {
+                new URL(longUrl);
+            } catch {
+                alert('Введите корректный URL (начинающийся с http:// или https://)');
+                return;
+            }
+
+            let shortCode = customCode;
+            
+            if (customCode) {
+                // Проверяем доступность пользовательского кода
+                const available = await isCodeAvailable(customCode);
+                if (!available) {
+                    alert('Этот код уже занят. Пожалуйста, выберите другой.');
+                    return;
+                }
+            } else {
+                // Генерируем уникальный код
+                do {
+                    shortCode = generateCode();
+                } while (!(await isCodeAvailable(shortCode)));
+            }
+
+            try {
+                // Сохраняем ссылку в Firebase
+                await database.ref('links/' + shortCode).set({
+                    url: longUrl,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP,
+                    clicks: 0
+                });
+
+                // Показываем результат
+                const shortUrl = window.location.origin + '/' + shortCode;
+                document.getElementById('shortUrl').value = shortUrl;
+                document.getElementById('result').classList.add('show');
+                
+                // Очищаем поле customCode
+                document.getElementById('customCode').value = '';
+                
+            } catch (error) {
+                console.error('Ошибка сохранения:', error);
+                alert('Произошла ошибка при создании ссылки');
+            }
+        }
+
+        // Функция копирования в буфер обмена
+        function copyToClipboard() {
+            const shortUrl = document.getElementById('shortUrl');
+            shortUrl.select();
+            document.execCommand('copy');
+            
+            const copyBtn = document.querySelector('.copy-btn');
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = 'Скопировано!';
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+            }, 2000);
+        }
+
+        // Добавляем обработчик Enter в поля ввода
+        document.getElementById('longUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') createShortLink();
+        });
+        
+        document.getElementById('customCode').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') createShortLink();
+        });
+    </script>
+</body>
+</html>
