@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <link rel="icon" type="image/png" href="/icon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Сократитель ссылок</title>
+    <!-- Фавиконка -->
+    <link rel="icon" type="image/png" href="/icon.png">
     <style>
         * {
             margin: 0;
@@ -151,10 +152,33 @@
             font-size: 14px;
             text-align: center;
         }
+
+        /* Дополнительные стили для фавиконки в интерфейсе */
+        .favicon-preview {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 10px;
+        }
+        
+        .favicon-preview img {
+            width: 32px;
+            height: 32px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Превью фавиконки (опционально) -->
+        <div class="favicon-preview">
+            <img src="/icon.png" alt="favicon" onerror="this.style.display='none'">
+            <span>🔗 Сервис коротких ссылок</span>
+        </div>
+        
         <h1>🔗 Сократитель ссылок</h1>
         
         <div class="input-group">
@@ -180,7 +204,7 @@
         
         <div class="info">
             <p>Создавайте короткие ссылки легко и быстро!</p>
-            <p>Формат: <span id="baseUrl"></span>?go=код</p>
+            <p>Формат: <span id="baseUrl"></span>redirect?код</p>
         </div>
     </div>
 
@@ -205,9 +229,9 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // Получаем базовый URL
+        // Получаем базовый URL (без имени файла)
         const baseUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
-        document.getElementById('baseUrl').textContent = baseUrl + '?go=';
+        document.getElementById('baseUrl').textContent = baseUrl;
 
         // Функция генерации случайного кода
         function generateCode(length = 6) {
@@ -272,10 +296,10 @@
                     clicks: 0
                 });
 
-                // Показываем результат с параметром go
-                const shortUrl = baseUrl + '?go=' + shortCode;
+                // Показываем результат в формате /redirect?код
+                const shortUrl = baseUrl + 'redirect?' + shortCode;
                 document.getElementById('shortUrl').value = shortUrl;
-                document.getElementById('urlExample').innerHTML = `Пример перехода: <span>${baseUrl}?go=${shortCode}</span>`;
+                document.getElementById('urlExample').innerHTML = `Пример перехода: <span>${baseUrl}redirect?${shortCode}</span>`;
                 document.getElementById('result').classList.add('show');
                 
                 // Очищаем поле customCode
