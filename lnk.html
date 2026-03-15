@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <link rel="icon" type="image/png" href="/icon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Сократитель ссылок</title>
@@ -125,6 +124,20 @@
             background: #218838;
         }
         
+        .url-example {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #495057;
+        }
+        
+        .url-example span {
+            font-weight: bold;
+            color: #667eea;
+        }
+        
         .error {
             color: #dc3545;
             margin-top: 10px;
@@ -161,10 +174,12 @@
                 <input type="text" id="shortUrl" readonly>
                 <button class="copy-btn" onclick="copyToClipboard()">Копировать</button>
             </div>
+            <div class="url-example" id="urlExample"></div>
         </div>
         
         <div class="info">
             <p>Создавайте короткие ссылки легко и быстро!</p>
+            <p>Формат: <span id="baseUrl"></span>?go=код</p>
         </div>
     </div>
 
@@ -188,6 +203,10 @@
         // Инициализация Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+
+        // Получаем базовый URL
+        const baseUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
+        document.getElementById('baseUrl').textContent = baseUrl + '?go=';
 
         // Функция генерации случайного кода
         function generateCode(length = 6) {
@@ -252,9 +271,10 @@
                     clicks: 0
                 });
 
-                // Показываем результат
-                const shortUrl = window.location.origin + '/' + shortCode;
+                // Показываем результат с параметром go
+                const shortUrl = baseUrl + '?go=' + shortCode;
                 document.getElementById('shortUrl').value = shortUrl;
+                document.getElementById('urlExample').innerHTML = `Пример перехода: <span>${baseUrl}?go=${shortCode}</span>`;
                 document.getElementById('result').classList.add('show');
                 
                 // Очищаем поле customCode
