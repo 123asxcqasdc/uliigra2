@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Переадресация...</title>
+    <!-- Фавиконка -->
+    <link rel="icon" type="image/png" href="/icon.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            margin: 20px auto;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        p {
+            color: #666;
+            margin: 15px 0;
+        }
+        
+        .error {
+            color: #dc3545;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8d7da;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .error.show {
+            display: block;
+        }
+        
+        .url-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            word-break: break-all;
+        }
+        
+        .code-info {
+            background: #e9ecef;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Стили для отображения фавиконки в интерфейсе */
+        .favicon-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .favicon-header img {
+            width: 32px;
+            height: 32px;
+        }
+    </style>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="favicon-header">
+            <img src="/icon.png" alt="favicon" onerror="this.style.display='none'">
+            <h1>🔄 Переадресация</h1>
+        </div>
+        
+        <div class="code-info" id="codeDisplay"></div>
+        <div class="loader"></div>
+        <p>Пожалуйста, подождите. Вы будете перенаправлены...</p>
+        
+        <div class="error" id="errorMessage">
+            <strong>Ссылка не найдена!</strong>
+            <p>Возможно, она была удалена или никогда не существовала.</p>
+        </div>
+        
+        <div id="urlInfo" class="url-info" style="display: none;"></div>
+        
+        <a href="/" class="button" id="backButton" style="display: none;">Создать ссылку</a>
+    </div>
+
+    <script>
+        // Конфигурация Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
+            authDomain: "kcalls.firebaseapp.com",
+            databaseURL: "https://kcalls-default-rtdb.firebaseio.com",
+            projectId: "kcalls",
+            storageBucket: "kcalls.firebasestorage.app",
+            messagingSenderId: "990117089104",
+            appId: "1:990117089104:web:278a42c037e975ebb76655",
+            measurementId: "G-TK6GVEX9G5"
+        };
+
+        // Инициализация Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Получаем код ссылки из URL (после вопросительного знака)
+        function getShortCode() {
+            // Берем всё что после ? в URL
+            const url = window.location.href;
+            const questionMarkIndex = url.indexOf('?');
+            
+            if (questionMarkIndex !== -1) {
+                return url.substring(questionMarkIndex + 1);
+            }
+            
+            return null;
+        }
+
+        // Основная функция переадресации
+        async function redirectToUrl() {
+            const shortCode = getShortCode();
+            
+            // Показываем код на странице
+            if (shortCode) {
+                document.getElementById('codeDisplay').textContent = 'Код: ' + shortCode;
+            } else {
+                document.getElementById('codeDisplay').textContent = 'Код не указан';
+            }
+            
+            // Если нет кода, показываем ошибку
+            if (!shortCode) {
+                document.querySelector('.loader').style.display = 'none';
+                document.querySelector('p').style.display = 'none';
+                
+                document.getElementById('errorMessage').innerHTML = `
+                    <strong>Код ссылки не указан!</strong>
+                    <p>Используйте формат: ${window.location.origin}/redirect?код</p>
+                `;
+                document.getElementById('errorMessage').classList.add('show');
+                document.getElementById('backButton').style.display = 'inline-block';
+                return;
+            }
+
+            try {
+                // Ищем ссылку в Firebase
+                const snapshot = await database.ref('links/' + shortCode).once('value');
+                const linkData = snapshot.val();
+
+                if (linkData && linkData.url) {
+                    // Обновляем счетчик кликов
+                    await database.ref('links/' + shortCode).update({
+                        clicks: (linkData.clicks || 0) + 1,
+                        lastAccessed: firebase.database.ServerValue.TIMESTAMP
+                    });
+
+                    // Показываем информацию о переадресации
+                    document.querySelector('.url-info').style.display = 'block';
+                    document.querySelector('.url-info').innerHTML = `
+                        <strong>Переход на:</strong><br>
+                        ${linkData.url}
+                    `;
+
+                    // Перенаправляем через небольшую задержку
+                    setTimeout(() => {
+                        window.location.href = linkData.url;
+                    }, 1500);
+                    
+                } else {
+                    // Ссылка не найдена
+                    document.querySelector('.loader').style.display = 'none';
+                    document.querySelector('p').style.display = 'none';
+                    document.getElementById('errorMessage').classList.add('show');
+                    document.getElementById('backButton').style.display = 'inline-block';
+                }
+            } catch (error) {
+                console.error('Ошибка при переадресации:', error);
+                
+                document.querySelector('.loader').style.display = 'none';
+                document.querySelector('p').style.display = 'none';
+                
+                document.getElementById('errorMessage').innerHTML = `
+                    <strong>Ошибка сервера</strong>
+                    <p>Пожалуйста, попробуйте позже</p>
+                `;
+                document.getElementById('errorMessage').classList.add('show');
+                document.getElementById('backButton').style.display = 'inline-block';
+            }
+        }
+
+        // Запускаем при загрузке страницы
+        window.onload = redirectToUrl;
+    </script>
+</body>
+</html>
