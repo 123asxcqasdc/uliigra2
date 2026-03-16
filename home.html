@@ -5,15 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ули · зелёные улитки</title>
     
-    <!-- ФАВИКОНКА (исправьте путь, если icon.png лежит не в корне) -->
+    <!-- ФАВИКОНКА -->
     <link rel="icon" type="image/png" href="/icon.png">
 
-    <!-- META-ТЕГИ ДЛЯ ПРЕВЬЮ (заполняются скриптом) -->
+    <!-- META-ТЕГИ (будут динамически обновляться) -->
     <meta property="og:title" content="Ули · зелёные улитки">
     <meta property="og:description" content="Страница с ссылками на проекты">
     <meta property="og:image" content="/preview-default.png">
     <meta property="og:url" content="https://uliigra2.c6t.ru/">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Ули · зелёные улитки">
+    <meta name="twitter:description" content="Страница с ссылками на проекты">
+    <meta name="twitter:image" content="/preview-default.png">
 
     <style>
         * {
@@ -100,6 +103,41 @@
             transform: rotate(25deg) scale(1.1);
         }
 
+        /* Стили для режима предпросмотра */
+        .preview-mode .links-grid {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+        }
+
+        .preview-mode .snail-card {
+            max-width: 400px;
+            width: 100%;
+            margin: 0 auto;
+            transform: scale(1.05);
+            box-shadow: 0 0 0 4px #f3ffbd, 0 0 30px #c3e88d;
+        }
+
+        .preview-mode .other-cards {
+            display: none;
+        }
+
+        .preview-note {
+            text-align: center;
+            margin: 2rem 0 1rem;
+            padding: 1rem;
+            background: #2f542f;
+            border-radius: 30px;
+            border: 2px dashed #9bbc7b;
+            color: #e2ffb3;
+        }
+
+        .preview-note a {
+            color: #ffefc0;
+            text-decoration: underline wavy #a3d683;
+        }
+
         .loading-message {
             text-align: center;
             font-size: 1.2rem;
@@ -116,9 +154,9 @@
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1.8rem;
             margin: 2.5rem 0 1rem;
+            transition: all 0.3s ease;
         }
 
-        /* карточки — прямоугольные со скруглением */
         .snail-card {
             background: #2e4d2e;
             border: 2px solid #7eaf7a;
@@ -260,17 +298,27 @@
             color: #e2ffb3;
         }
 
+        .back-link {
+            display: inline-block;
+            margin-top: 1rem;
+            color: #a3c4a3;
+            text-decoration: none;
+            border: 2px solid #7eaf7a;
+            padding: 0.5rem 1.5rem;
+            border-radius: 40px;
+            transition: 0.2s;
+        }
+
+        .back-link:hover {
+            background: #2f542f;
+            color: #ffefc0;
+            border-color: #d8f0b5;
+        }
+
         @media (max-width: 600px) {
             .main-container { padding: 1.5rem 1rem; }
             .header-title { font-size: 2.5rem; }
             .card-name { font-size: 1.6rem; }
-        }
-
-        /* Стили для выделения запрошенной карточки */
-        .snail-card.highlight {
-            box-shadow: 0 0 0 4px #f3ffbd, 0 0 20px #c3e88d;
-            transform: scale(1.02);
-            background: #3f6f3f;
         }
     </style>
 </head>
@@ -300,32 +348,31 @@
     (function() {
         const container = document.getElementById('snail-links-container');
         const dataUrl = 'https://uliigra2.c6t.ru/homeconfig.txt';
+        const body = document.body;
 
         // Функция получения параметра ?link= из URL
         function getRequestedLink() {
             const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('link'); // может быть null
+            return urlParams.get('link');
         }
 
         // Функция обновления мета-тегов для превью
-        function updateMetaTags(title, description, imageUrl) {
+        function updateMetaTags(title, description, imageUrl = '/preview-default.png') {
             // OG tags
             document.querySelector('meta[property="og:title"]')?.setAttribute('content', title);
             document.querySelector('meta[property="og:description"]')?.setAttribute('content', description);
-            if (imageUrl) {
-                document.querySelector('meta[property="og:image"]')?.setAttribute('content', imageUrl);
-            }
-            // Twitter card
+            document.querySelector('meta[property="og:image"]')?.setAttribute('content', imageUrl);
+            
+            // Twitter tags
             document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', title);
             document.querySelector('meta[name="twitter:description"]')?.setAttribute('content', description);
-            if (imageUrl) {
-                document.querySelector('meta[name="twitter:image"]')?.setAttribute('content', imageUrl);
-            }
+            document.querySelector('meta[name="twitter:image"]')?.setAttribute('content', imageUrl);
+            
             // Заголовок страницы
             document.title = title;
         }
 
-        function buildSnailCard(item) {
+        function buildSnailCard(item, isPreview = false) {
             const pic = item.pic || '🐌';
             const link = item.link || '#';
             const name = item.name || 'без имени';
@@ -333,8 +380,11 @@
 
             const card = document.createElement('div');
             card.className = 'snail-card';
-            // Сохраняем имя для поиска при highlight
-            card.dataset.cardName = name.toLowerCase().trim();
+            
+            // Добавляем класс для других карточек в режиме превью
+            if (!isPreview) {
+                card.classList.add('other-cards');
+            }
 
             card.innerHTML = `
                 <div class="card-emoji">${pic}</div>
@@ -387,59 +437,76 @@
                     throw new Error('Нет валидных данных');
                 }
 
-                // Строим сетку
-                container.innerHTML = '';
-                const grid = document.createElement('div');
-                grid.className = 'links-grid';
-
-                parsedItems.forEach(item => {
-                    grid.appendChild(buildSnailCard(item));
-                });
-
-                container.appendChild(grid);
-
-                // --- РЕАЛИЗАЦИЯ ПРЕВЬЮ ПО ПАРАМЕТРУ ?link= ---
+                // Получаем запрошенную ссылку
                 const requestedLink = getRequestedLink();
+                
+                // Если есть параметр ?link=, ищем соответствующую карточку
                 if (requestedLink) {
                     const normalizedRequest = requestedLink.toLowerCase().trim();
-                    // Ищем карточку, у которой имя содержит запрошенную строку (или точно совпадает)
-                    const cards = document.querySelectorAll('.snail-card');
-                    let foundCard = null;
                     let foundItem = null;
-
-                    for (let i = 0; i < cards.length; i++) {
-                        const card = cards[i];
-                        const cardName = card.dataset.cardName || '';
-                        if (cardName.includes(normalizedRequest) || normalizedRequest.includes(cardName)) {
-                            foundCard = card;
-                            foundItem = parsedItems[i]; // соответствующий элемент данных
+                    
+                    // Ищем карточку по имени (частичное совпадение)
+                    for (const item of parsedItems) {
+                        const itemName = (item.name || '').toLowerCase().trim();
+                        if (itemName.includes(normalizedRequest) || normalizedRequest.includes(itemName)) {
+                            foundItem = item;
                             break;
                         }
                     }
 
-                    if (foundCard && foundItem) {
-                        // Подсветить карточку
-                        foundCard.classList.add('highlight');
-                        // Плавная прокрутка к ней
-                        foundCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                        // Обновить мета-теги для превью
-                        const previewTitle = `Ули · ${foundItem.name}`;
-                        const previewDesc = foundItem.des || 'зелёная улитка';
-                        // Пытаемся построить URL картинки (если есть иконка-эмодзи — не подойдёт, используем дефолт)
-                        // Можно добавить логику для изображения, но пока оставим заглушку
-                        // В идеале для каждой карточки нужно загружать отдельное изображение.
-                        // Для демо используем /preview-default.png, но вы можете сделать динамические картинки.
+                    if (foundItem) {
+                        // РЕЖИМ ПРЕДПРОСМОТРА - показываем только одну карточку
+                        body.classList.add('preview-mode');
                         
-                        // Просто обновим мета-теги
-                        updateMetaTags(previewTitle, previewDesc, '/preview-default.png');
+                        container.innerHTML = '';
+                        const grid = document.createElement('div');
+                        grid.className = 'links-grid';
+                        
+                        // Добавляем найденную карточку (как основную)
+                        grid.appendChild(buildSnailCard(foundItem, true));
+                        
+                        // Добавляем ссылку "назад ко всем"
+                        const previewNote = document.createElement('div');
+                        previewNote.className = 'preview-note';
+                        previewNote.innerHTML = `
+                            🐌 предпросмотр страницы «${escapeHtml(foundItem.name)}»<br>
+                            <a href="/" class="back-link">← ко всем страницам</a>
+                        `;
+                        
+                        container.appendChild(previewNote);
+                        container.appendChild(grid);
+                        
+                        // Обновляем мета-теги для соцсетей
+                        updateMetaTags(
+                            `Ули · ${foundItem.name}`,
+                            foundItem.des || 'зелёная улитка',
+                            '/preview-default.png'
+                        );
                     } else {
-                        // Если карточка не найдена, показываем общее превью
-                        updateMetaTags('Ули · страница не найдена', 'запрашиваемая страница отсутствует', '/preview-default.png');
+                        // Карточка не найдена - показываем сообщение
+                        container.innerHTML = `
+                            <div class="error-fallback">
+                                <div style="font-size:3rem;">🐌❓</div>
+                                <p>страница «${escapeHtml(requestedLink)}» не найдена</p>
+                                <p style="font-size:1rem;">попробуйте другую ссылку</p>
+                                <a href="/" class="back-link">← ко всем страницам</a>
+                                <div style="font-size:2rem; margin-top:1rem;">🐌🐌🐌</div>
+                            </div>
+                        `;
+                        updateMetaTags('Ули · страница не найдена', 'запрашиваемая страница отсутствует');
                     }
                 } else {
-                    // Если параметра нет — стандартное превью главной
-                    updateMetaTags('Ули · зелёные улитки', 'Страница с ссылками на проекты', '/preview-default.png');
+                    // Обычный режим - показываем все карточки
+                    container.innerHTML = '';
+                    const grid = document.createElement('div');
+                    grid.className = 'links-grid';
+
+                    parsedItems.forEach(item => {
+                        grid.appendChild(buildSnailCard(item));
+                    });
+
+                    container.appendChild(grid);
+                    updateMetaTags('Ули · зелёные улитки', 'Страница с ссылками на проекты');
                 }
 
             })
@@ -453,17 +520,10 @@
                         <div style="font-size:2rem; margin-top:1rem;">🐌🐌🐌</div>
                     </div>
                 `;
-                // При ошибке тоже обновляем мета
-                updateMetaTags('Ули · ошибка', 'не удалось загрузить данные', '/preview-default.png');
+                updateMetaTags('Ули · ошибка', 'не удалось загрузить данные');
             });
 
-        // Вспомогательная функция для обновления мета-тегов (определена ранее)
     })();
 </script>
-
-<!-- Дополнительные twitter meta (если не были заданы) -->
-<meta name="twitter:title" content="Ули · зелёные улитки">
-<meta name="twitter:description" content="Страница с ссылками на проекты">
-<meta name="twitter:image" content="/preview-default.png">
-</head> <!-- закрывающий head был выше, но для порядка оставим -->
+</body>
 </html>
