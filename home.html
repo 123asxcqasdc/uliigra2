@@ -390,7 +390,7 @@
                 <div class="card-emoji">${pic}</div>
                 <div class="card-name">${escapeHtml(name)}</div>
                 <div class="card-description">${escapeHtml(des)}</div>
-                <a href="${escapeHtml(link)}" class="card-link" target="_blank" rel="noopener noreferrer">🐌 переползти</a>
+                <a href="${escapeHtml(link)}" class="card-link" target="_blank" rel="noopener noreferrer">🐌 Перейти</a>
             `;
             return card;
         }
@@ -465,12 +465,12 @@
                         // Добавляем найденную карточку (как основную)
                         grid.appendChild(buildSnailCard(foundItem, true));
                         
-                        // Добавляем ссылку "назад ко всем"
+                        // Добавляем ссылку "назад ко всем" на uliigra2.c6t.ru/home
                         const previewNote = document.createElement('div');
                         previewNote.className = 'preview-note';
                         previewNote.innerHTML = `
                             🐌 предпросмотр страницы «${escapeHtml(foundItem.name)}»<br>
-                            <a href="/" class="back-link">← ко всем страницам</a>
+                            <a href="https://uliigra2.c6t.ru/home" class="back-link">← ко всем страницам</a>
                         `;
                         
                         container.appendChild(previewNote);
@@ -489,7 +489,7 @@
                                 <div style="font-size:3rem;">🐌❓</div>
                                 <p>страница «${escapeHtml(requestedLink)}» не найдена</p>
                                 <p style="font-size:1rem;">попробуйте другую ссылку</p>
-                                <a href="/" class="back-link">← ко всем страницам</a>
+                                <a href="https://uliigra2.c6t.ru/home" class="back-link">← ко всем страницам</a>
                                 <div style="font-size:2rem; margin-top:1rem;">🐌🐌🐌</div>
                             </div>
                         `;
@@ -517,6 +517,7 @@
                         <div style="font-size:3rem;">🐌🍂</div>
                         <p>не удалось загрузить список страниц</p>
                         <p style="font-size:1rem;">ошибка: ${escapeHtml(error.message)}</p>
+                        <a href="https://uliigra2.c6t.ru/home" class="back-link">← ко всем страницам</a>
                         <div style="font-size:2rem; margin-top:1rem;">🐌🐌🐌</div>
                     </div>
                 `;
