@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <link rel="icon" type="image/png" href="/icon.png">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Звонкие Улитки · групповые звонки</title>
+    <link rel="icon" type="image/png" href="/icon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Звонкие Улитки · стабильные звонки</title>
     <!-- Firebase & SimplePeer -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -77,7 +77,7 @@
         input, button {
             background: #2a4a35;
             border: 1px solid #3e9e7a;
-            border-radius: 24px; /* менее округлые, но всё ещё скруглённые */
+            border-radius: 24px;
             padding: 14px 24px;
             font-size: 1rem;
             color: white;
@@ -252,7 +252,7 @@
             animation: pulse 1.8s infinite;
             border: none;
             font-size: 1.1rem;
-            display: block; /* важно для видимости */
+            display: block;
         }
         .unlock-audio.hidden {
             display: none;
@@ -279,7 +279,6 @@
     <div class="container">
         <h1>Звонкие Улитки</h1>
 
-        <!-- ЭКРАН НАСТРОЙКИ -->
         <div id="setup" class="setup-card">
             <div class="link-info" id="linkInfo"></div>
             <div id="autoJoinMessage" class="flex-row" style="background:#2e6b4e; border-radius:60px; padding:12px; margin-bottom:16px; display:none;">
@@ -294,7 +293,6 @@
             </div>
         </div>
 
-        <!-- ЭКРАН ЗВОНКА (изначально скрыт) -->
         <div id="call" class="call-card hidden">
             <div class="room-header">
                 <span><strong>🏠 Комната:</strong> <span id="currentRoomDisplay"></span></span>
@@ -307,10 +305,8 @@
 
             <div id="status" class="status" style="text-align:center; background:#1a4a30; padding:12px; border-radius:40px; margin-bottom:16px;">⏳ Ожидание...</div>
 
-            <!-- Сетка участников -->
             <div id="participantsGrid" class="participants-grid"></div>
 
-            <!-- Панель управления -->
             <div class="flex-row" style="justify-content: center; gap: 12px; margin-top: 24px;">
                 <button onclick="toggleMic()" id="micBtn">🔇 Выкл микрофон</button>
                 <button onclick="testAudioOutput()" style="background:#1e4a2e;">🔊 Тест динамиков</button>
@@ -318,11 +314,9 @@
                 <button onclick="endCall()" style="background:#7d3e3e;">📞 Завершить</button>
             </div>
 
-            <!-- Панель отладки (информация) -->
             <div class="debug-panel" id="debugPanel"></div>
         </div>
 
-        <!-- Лог событий -->
         <div class="log-panel" id="log">
             <div class="log-entry">[Система] Добро пожаловать в Звонкие Улитки 🐌</div>
         </div>
@@ -330,9 +324,7 @@
 
     <script>
         (function() {
-            // --------------------------------------------------------------
-            // 1. НАСТРОЙКА FIREBASE
-            // --------------------------------------------------------------
+            // Firebase
             const firebaseConfig = {
                 apiKey: "AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
                 authDomain: "kcalls.firebaseapp.com",
@@ -345,9 +337,7 @@
             firebase.initializeApp(firebaseConfig);
             const db = firebase.database();
 
-            // --------------------------------------------------------------
-            // 2. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
-            // --------------------------------------------------------------
+            // Переменные
             let localStream = null;
             let peers = {};
             let currentRoom = null;
@@ -368,9 +358,7 @@
 
             let audioUnlocked = false;
 
-            // --------------------------------------------------------------
-            // 3. ЭЛЕМЕНТЫ DOM
-            // --------------------------------------------------------------
+            // DOM элементы
             const setupDiv = document.getElementById('setup');
             const callDiv = document.getElementById('call');
             const statusDiv = document.getElementById('status');
@@ -386,9 +374,6 @@
             const unlockAudioDiv = document.getElementById('unlockAudio');
             const debugPanel = document.getElementById('debugPanel');
 
-            // --------------------------------------------------------------
-            // 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-            // --------------------------------------------------------------
             function log(message) {
                 const entry = document.createElement('div');
                 entry.className = 'log-entry';
@@ -425,9 +410,6 @@
                 roomRef.child('mute/' + userId).set({ muted: isMuted, timestamp: Date.now() });
             }
 
-            // --------------------------------------------------------------
-            // 5. ОТОБРАЖЕНИЕ СЕТКИ УЧАСТНИКОВ
-            // --------------------------------------------------------------
             function updateParticipantsGrid() {
                 if (!allUsers) return;
                 let html = '';
@@ -490,7 +472,6 @@
 
                 participantsGrid.innerHTML = html;
 
-                // Подключаем существующие аудиоэлементы
                 Object.keys(audioElements).forEach(userId => {
                     const newAudio = document.getElementById(`audio-${userId}`);
                     if (newAudio && audioElements[userId] && audioElements[userId].srcObject) {
@@ -510,9 +491,6 @@
                 updateDebugInfo();
             }
 
-            // --------------------------------------------------------------
-            // 6. РАЗБЛОКИРОВКА АУДИО (ИСПРАВЛЕНО)
-            // --------------------------------------------------------------
             function unlockAudio() {
                 if (audioUnlocked) return;
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -526,18 +504,12 @@
                 }).catch(e => log('Ошибка разблокировки: ' + e.message));
             }
 
-            // Назначаем обработчик (даже если элемент скрыт, он сработает при клике)
             unlockAudioDiv.addEventListener('click', unlockAudio);
-
-            // Дополнительная разблокировка при любом клике на страницу
             document.addEventListener('click', function once() {
                 if (!audioUnlocked) unlockAudio();
                 document.removeEventListener('click', once);
             }, { once: true });
 
-            // --------------------------------------------------------------
-            // 7. ТЕСТОВЫЕ ФУНКЦИИ
-            // --------------------------------------------------------------
             async function testMicrophone() {
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -589,9 +561,6 @@
                 });
             }
 
-            // --------------------------------------------------------------
-            // 8. ICE СЕРВЕРЫ
-            // --------------------------------------------------------------
             function getIceServers() {
                 return [
                     { urls: 'stun:stun.l.google.com:19302' },
@@ -599,17 +568,22 @@
                     { urls: 'stun:stun2.l.google.com:19302' },
                     { urls: 'stun:stun3.l.google.com:19302' },
                     { urls: 'stun:stun4.l.google.com:19302' },
+                    { urls: 'stun:stun.voipbuster.com' },
+                    { urls: 'stun:stun.voipstunt.com' },
+                    { urls: 'stun:stun.1und1.de' },
                     {
-                        urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443'],
+                        urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turn:openrelay.metered.ca:443?transport=tcp'],
                         username: 'openrelayproject',
                         credential: 'openrelayproject'
+                    },
+                    {
+                        urls: ['turn:turn.ably.io:443?transport=tcp', 'turn:turn.ably.io:443?transport=udp'],
+                        username: 'ably',
+                        credential: 'ably'
                     }
                 ];
             }
 
-            // --------------------------------------------------------------
-            // 9. СОЗДАНИЕ PEER
-            // --------------------------------------------------------------
             function createPeerWith(userId, userName) {
                 if (peerCreationInProgress[userId] || (peers[userId] && !peers[userId].destroyed)) {
                     log(`⚠️ Peer с ${userName} уже создаётся или существует`);
@@ -628,10 +602,11 @@
                         sendStream.addTrack(newTrack);
                     });
 
+                    // trickle: false — собираем все ICE кандидаты в один пакет
                     const peer = new SimplePeer({
                         initiator: isInit,
                         stream: sendStream,
-                        trickle: true,
+                        trickle: false,   // <--- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ
                         config: { iceServers: getIceServers() }
                     });
 
@@ -646,8 +621,9 @@
                     audioElements[userId] = audioEl;
 
                     peer.on('signal', data => {
-                        log(`📤 Сигнал для ${userName}`);
-                        callsRef.push({ from: currentUser.id, to: userId, data });
+                        log(`📤 Сигнал для ${userName} (один пакет, так как trickle=false)`);
+                        callsRef.push({ from: currentUser.id, to: userId, data })
+                            .catch(e => log(`Ошибка отправки сигнала: ${e.message}`));
                     });
 
                     peer.on('stream', stream => {
@@ -698,7 +674,7 @@
                     });
 
                     peer.on('connect', () => {
-                        log(`✅ Соединение с ${userName} установлено`);
+                        log(`✅ Соединение с ${userName} установлено!`);
                         if (reconnectTimeouts[userId]) clearTimeout(reconnectTimeouts[userId]);
                         delete reconnectTimeouts[userId];
                         updateParticipantsGrid();
@@ -746,9 +722,6 @@
                 }
             }
 
-            // --------------------------------------------------------------
-            // 10. ВХОД В КОМНАТУ (ИСПРАВЛЕНО: теперь скрывает setup)
-            // --------------------------------------------------------------
             async function joinRoom() {
                 const roomId = roomIdInput.value.trim();
                 if (!roomId) { alert('Введите ID комнаты'); return; }
@@ -772,7 +745,6 @@
                     currentRoom = roomId;
                     currentRoomDisplay.textContent = roomId;
                     updateLinkInfo(roomId);
-                    // Скрываем экран настроек, показываем экран звонка
                     setupDiv.classList.add('hidden');
                     callDiv.classList.remove('hidden');
 
@@ -833,53 +805,68 @@
                 } catch (err) {
                     log('❌ Ошибка: ' + err.message);
                     alert('Ошибка: ' + err.message);
-                    // Если ошибка, возвращаем экран настроек (на всякий случай)
                     setupDiv.classList.remove('hidden');
                     callDiv.classList.add('hidden');
                 }
             }
 
-            // --------------------------------------------------------------
-            // 11. ФУНКЦИИ УПРАВЛЕНИЯ
-            // --------------------------------------------------------------
+            // Функции, вызываемые из кнопок
             window.createRoom = function() {
-                roomIdInput.value = Math.random().toString(36).substring(2, 8);
-                updateLinkInfo(roomIdInput.value);
-                log('Создана новая комната: ' + roomIdInput.value);
-                joinRoom();
+                try {
+                    roomIdInput.value = Math.random().toString(36).substring(2, 8);
+                    updateLinkInfo(roomIdInput.value);
+                    log('Создана новая комната: ' + roomIdInput.value);
+                    joinRoom();
+                } catch (e) {
+                    log(`❌ Ошибка createRoom: ${e.message}`);
+                }
             };
 
             window.joinRoom = joinRoom;
 
             window.copyRoomId = function() {
-                const id = currentRoomDisplay.textContent;
-                navigator.clipboard.writeText(id).then(() => {
-                    log('ID комнаты скопирован');
-                    alert('ID скопирован');
-                }).catch(() => alert('Не удалось скопировать'));
+                try {
+                    const id = currentRoomDisplay.textContent;
+                    navigator.clipboard.writeText(id).then(() => {
+                        log('ID комнаты скопирован');
+                        alert('ID скопирован');
+                    }).catch(() => alert('Не удалось скопировать'));
+                } catch (e) {
+                    log(`❌ Ошибка copyRoomId: ${e.message}`);
+                }
             };
 
             window.copyCallLink = function() {
-                const link = window.location.origin + window.location.pathname + '?call=' + currentRoom;
-                navigator.clipboard.writeText(link).then(() => {
-                    log('Ссылка скопирована');
-                    alert('Ссылка скопирована');
-                });
+                try {
+                    const link = window.location.origin + window.location.pathname + '?call=' + currentRoom;
+                    navigator.clipboard.writeText(link).then(() => {
+                        log('Ссылка скопирована');
+                        alert('Ссылка скопирована');
+                    });
+                } catch (e) {
+                    log(`❌ Ошибка copyCallLink: ${e.message}`);
+                }
             };
 
             window.toggleMic = function() {
-                if (localStream) {
+                try {
+                    if (!localStream) return;
                     const track = localStream.getAudioTracks()[0];
+                    if (!track) return;
                     track.enabled = !track.enabled;
                     micBtn.textContent = track.enabled ? '🔇 Выкл микрофон' : '🎤 Вкл микрофон';
                     log('Микрофон ' + (track.enabled ? 'включён' : 'выключен'));
                     updateMuteStatus(currentUser.id, !track.enabled);
                     Object.values(peers).forEach(p => {
-                        if (p && p.streams && p.streams[0]) {
-                            p.streams[0].getAudioTracks().forEach(t => t.enabled = track.enabled);
-                        }
+                        try {
+                            if (p && p.streams && p.streams[0]) {
+                                p.streams[0].getAudioTracks().forEach(t => t.enabled = track.enabled);
+                            }
+                        } catch (e) { /* игнорируем */ }
                     });
                     updateParticipantsGrid();
+                } catch (e) {
+                    log(`❌ Ошибка в toggleMic: ${e.message}`);
                 }
             };
 
@@ -888,54 +875,60 @@
             window.forceAudioRestart = forceAudioRestart;
 
             window.endCall = function() {
-                log('Завершение звонка');
-                if (roomRef) {
-                    roomRef.child('users').off();
-                    roomRef.child('mute').off();
-                    roomRef.child('users/' + currentUser.id).remove();
-                    roomRef.child('mute/' + currentUser.id).remove();
+                try {
+                    log('Завершение звонка');
+                    if (roomRef) {
+                        roomRef.child('users').off();
+                        roomRef.child('mute').off();
+                        roomRef.child('users/' + currentUser.id).remove();
+                        roomRef.child('mute/' + currentUser.id).remove();
+                    }
+                    if (callsRef) callsRef.off();
+                    Object.values(reconnectTimeouts).forEach(t => clearTimeout(t));
+                    Object.values(analyserIntervals).forEach(i => clearInterval(i));
+                    Object.values(peers).forEach(p => { if (p && !p.destroyed) p.destroy(); });
+                    Object.values(audioElements).forEach(a => a.remove());
+                    if (localStream) localStream.getTracks().forEach(t => t.stop());
+
+                    peers = {};
+                    audioElements = {};
+                    analyserIntervals = {};
+                    reconnectTimeouts = {};
+                    pendingSignals = {};
+                    muteStatus = {};
+                    peerCreationInProgress = {};
+                    allUsers = {};
+                    currentRoom = null;
+                    localStream = null;
+                    roomRef = null;
+                    callsRef = null;
+
+                    setupDiv.classList.remove('hidden');
+                    callDiv.classList.add('hidden');
+                    updateLinkInfo(roomIdInput.value);
+                    autoJoinAttempted = false;
+                    unlockAudioDiv.classList.add('hidden');
+                    log('✅ Звонок завершён');
+                    updateDebugInfo();
+                } catch (e) {
+                    log(`❌ Ошибка при завершении: ${e.message}`);
                 }
-                if (callsRef) callsRef.off();
-                Object.values(reconnectTimeouts).forEach(t => clearTimeout(t));
-                Object.values(analyserIntervals).forEach(i => clearInterval(i));
-                Object.values(peers).forEach(p => { if (p && !p.destroyed) p.destroy(); });
-                Object.values(audioElements).forEach(a => a.remove());
-                if (localStream) localStream.getTracks().forEach(t => t.stop());
-
-                peers = {};
-                audioElements = {};
-                analyserIntervals = {};
-                reconnectTimeouts = {};
-                pendingSignals = {};
-                muteStatus = {};
-                peerCreationInProgress = {};
-                allUsers = {};
-                currentRoom = null;
-                localStream = null;
-                roomRef = null;
-                callsRef = null;
-
-                setupDiv.classList.remove('hidden');
-                callDiv.classList.add('hidden');
-                updateLinkInfo(roomIdInput.value);
-                autoJoinAttempted = false;
-                unlockAudioDiv.classList.add('hidden');
-                log('✅ Звонок завершён');
-                updateDebugInfo();
             };
 
-            // --------------------------------------------------------------
-            // 12. АВТОМАТИЧЕСКИЙ ВХОД ПО ССЫЛКЕ
-            // --------------------------------------------------------------
+            // Автоподключение по ссылке
             (function autoJoinFromUrl() {
-                const callParam = getUrlParams();
-                if (callParam && !autoJoinAttempted) {
-                    autoJoinAttempted = true;
-                    roomIdInput.value = callParam;
-                    updateLinkInfo(callParam);
-                    autoJoinMessageDiv.style.display = 'flex';
-                    log('🔗 Обнаружена ссылка на комнату: ' + callParam);
-                    setTimeout(() => joinRoom(), 1000);
+                try {
+                    const callParam = getUrlParams();
+                    if (callParam && !autoJoinAttempted) {
+                        autoJoinAttempted = true;
+                        roomIdInput.value = callParam;
+                        updateLinkInfo(callParam);
+                        autoJoinMessageDiv.style.display = 'flex';
+                        log('🔗 Обнаружена ссылка на комнату: ' + callParam);
+                        setTimeout(() => joinRoom(), 1000);
+                    }
+                } catch (e) {
+                    log(`❌ Ошибка автоподключения: ${e.message}`);
                 }
             })();
 
