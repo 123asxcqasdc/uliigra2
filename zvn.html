@@ -2,9 +2,11 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <link rel="icon" type="image/png" href="/icon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Звонкие Улитки · стабильные звонки</title>
+    <title>Звонкие Улитки · групповые звонки</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/icon.png">
+    <link rel="apple-touch-icon" href="/icon.png">
     <!-- Firebase & SimplePeer -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -568,18 +570,10 @@
                     { urls: 'stun:stun2.l.google.com:19302' },
                     { urls: 'stun:stun3.l.google.com:19302' },
                     { urls: 'stun:stun4.l.google.com:19302' },
-                    { urls: 'stun:stun.voipbuster.com' },
-                    { urls: 'stun:stun.voipstunt.com' },
-                    { urls: 'stun:stun.1und1.de' },
                     {
                         urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turn:openrelay.metered.ca:443?transport=tcp'],
                         username: 'openrelayproject',
                         credential: 'openrelayproject'
-                    },
-                    {
-                        urls: ['turn:turn.ably.io:443?transport=tcp', 'turn:turn.ably.io:443?transport=udp'],
-                        username: 'ably',
-                        credential: 'ably'
                     }
                 ];
             }
@@ -602,11 +596,10 @@
                         sendStream.addTrack(newTrack);
                     });
 
-                    // trickle: false — собираем все ICE кандидаты в один пакет
                     const peer = new SimplePeer({
                         initiator: isInit,
                         stream: sendStream,
-                        trickle: false,   // <--- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ
+                        trickle: true,
                         config: { iceServers: getIceServers() }
                     });
 
@@ -621,7 +614,7 @@
                     audioElements[userId] = audioEl;
 
                     peer.on('signal', data => {
-                        log(`📤 Сигнал для ${userName} (один пакет, так как trickle=false)`);
+                        log(`📤 Отправка сигнала для ${userName}`);
                         callsRef.push({ from: currentUser.id, to: userId, data })
                             .catch(e => log(`Ошибка отправки сигнала: ${e.message}`));
                     });
@@ -810,7 +803,6 @@
                 }
             }
 
-            // Функции, вызываемые из кнопок
             window.createRoom = function() {
                 try {
                     roomIdInput.value = Math.random().toString(36).substring(2, 8);
@@ -915,7 +907,6 @@
                 }
             };
 
-            // Автоподключение по ссылке
             (function autoJoinFromUrl() {
                 try {
                     const callParam = getUrlParams();
