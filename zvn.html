@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Звонкие Улитки · групповые звонки</title>
+    <title>Звонкие Улитки · стабильные звонки</title>
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/icon.png">
     <link rel="apple-touch-icon" href="/icon.png">
@@ -596,10 +596,11 @@
                         sendStream.addTrack(newTrack);
                     });
 
+                    // trickle: false — все ICE кандидаты собираются в один сигнал
                     const peer = new SimplePeer({
                         initiator: isInit,
                         stream: sendStream,
-                        trickle: true,
+                        trickle: false,
                         config: { iceServers: getIceServers() }
                     });
 
@@ -613,12 +614,14 @@
                     document.body.appendChild(audioEl);
                     audioElements[userId] = audioEl;
 
+                    // Отправка сигнала
                     peer.on('signal', data => {
                         log(`📤 Отправка сигнала для ${userName}`);
                         callsRef.push({ from: currentUser.id, to: userId, data })
-                            .catch(e => log(`Ошибка отправки сигнала: ${e.message}`));
+                            .catch(e => log(`Ошибка отправки: ${e.message}`));
                     });
 
+                    // Получение потока
                     peer.on('stream', stream => {
                         log(`🎵 Получен поток от ${userName}, треков: ${stream.getAudioTracks().length}`);
                         if (stream.getAudioTracks().length === 0) return;
@@ -635,6 +638,7 @@
                         }
                         updateParticipantsGrid();
 
+                        // Визуализация
                         try {
                             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                             const analyser = audioCtx.createAnalyser();
@@ -698,6 +702,7 @@
 
                     peers[userId] = peer;
 
+                    // Если есть накопленные сигналы
                     if (pendingSignals[userId]?.length) {
                         setTimeout(() => {
                             if (peers[userId] && !peers[userId].destroyed) {
