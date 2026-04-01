@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Звонкие Улитки · надёжные звонки</title>
+    <title>Звонкие Улитки · простая версия</title>
     <link rel="icon" type="image/png" href="/icon.png">
-    <link rel="apple-touch-icon" href="/icon.png">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/simple-peer@9.11.1/simplepeer.min.js"></script>
@@ -23,166 +22,137 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            margin: 0;
             padding: 16px;
         }
         .container {
-            max-width: 1100px;
+            max-width: 1000px;
             width: 100%;
             background: #1a3f2a;
             border-radius: 32px;
-            padding: 28px 24px;
-            box-shadow: 0 20px 40px rgba(0, 20, 10, 0.8);
+            padding: 24px;
             border: 1px solid #2a5a3a;
         }
         h1 {
             text-align: center;
             color: #8bc34a;
-            font-size: 2.8rem;
-            margin-bottom: 16px;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
         }
         h1::before, h1::after {
             content: "🐌";
-            font-size: 2.5rem;
-            margin: 0 12px;
+            font-size: 2rem;
+            margin: 0 10px;
             display: inline-block;
-            animation: crawl 4s infinite ease-in-out;
-        }
-        @keyframes crawl {
-            0%,100% { transform: translateX(0) rotate(0deg); }
-            25% { transform: translateX(6px) rotate(8deg); }
-            75% { transform: translateX(-6px) rotate(-8deg); }
         }
         .setup-card, .call-card {
             background: #1e4a2e;
             border-radius: 24px;
-            padding: 24px;
+            padding: 20px;
             margin: 20px 0;
             border: 1px solid #3a7a4a;
         }
         .flex-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 16px;
-            align-items: center;
+            gap: 12px;
             justify-content: center;
         }
         input, button {
             background: #2a4a35;
             border: 1px solid #3e9e7a;
-            border-radius: 24px;
-            padding: 14px 24px;
+            border-radius: 40px;
+            padding: 12px 20px;
             font-size: 1rem;
             color: white;
             outline: none;
-            transition: 0.2s;
-            font-weight: 500;
-        }
-        input:focus {
-            border-color: #8bc34a;
-            background: #1e4a2e;
-            box-shadow: 0 0 0 3px rgba(139, 195, 74, 0.2);
         }
         button {
             background: #2e7d5e;
             border: none;
             cursor: pointer;
-            font-weight: 600;
-            min-width: 160px;
-            box-shadow: 0 4px 0 #1a4a30;
+            font-weight: bold;
+            min-width: 140px;
         }
         button:hover {
             background: #3e9e7a;
             transform: translateY(-2px);
-            box-shadow: 0 6px 0 #1a4a30;
         }
         .room-header {
             background: #1a4a30;
-            border-radius: 60px;
-            padding: 12px 24px;
-            margin-bottom: 24px;
+            border-radius: 40px;
+            padding: 10px 20px;
+            margin-bottom: 20px;
             display: flex;
             flex-wrap: wrap;
-            gap: 16px;
-            align-items: center;
             justify-content: space-between;
-        }
-        .badge {
-            background: #2e7d5e;
-            padding: 6px 16px;
-            border-radius: 30px;
-            font-size: 0.9rem;
+            align-items: center;
         }
         .participants-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin: 20px 0 30px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
         }
         .participant-card {
             background: linear-gradient(145deg, #1e4a2e, #0e3a1e);
-            border-radius: 24px;
-            padding: 20px 16px 16px;
-            border: 1px solid #3a7a4a;
+            border-radius: 20px;
+            padding: 16px;
+            text-align: center;
             position: relative;
+            border: 1px solid #3a7a4a;
         }
         .participant-card.muted {
-            opacity: 0.8;
+            opacity: 0.7;
             border-color: #b34a4a;
         }
         .participant-name {
-            font-size: 1.4rem;
-            font-weight: 700;
+            font-size: 1.3rem;
+            font-weight: bold;
             color: #a5d6a5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        .mute-badge {
-            background: #b34a4a;
-            color: #ffe0e0;
-            font-size: 0.75rem;
-            padding: 4px 10px;
-            border-radius: 40px;
         }
         .participant-avatar {
-            font-size: 4rem;
+            font-size: 3rem;
             margin: 8px 0;
         }
         .participant-status {
             background: #1e3a2a;
-            border-radius: 40px;
-            padding: 6px 12px;
-            font-size: 0.85rem;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.8rem;
             display: inline-block;
+        }
+        .mute-badge {
+            background: #b34a4a;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-left: 8px;
         }
         audio {
             width: 100%;
-            margin: 12px 0 6px;
-            border-radius: 30px;
-            background: #1a3f2a;
-            height: 40px;
+            margin: 8px 0;
+            border-radius: 20px;
+            height: 36px;
         }
         .speaking-indicator {
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             background: #6eff6e;
             position: absolute;
-            top: 14px;
-            right: 14px;
+            top: 12px;
+            right: 12px;
             animation: pulse 1s infinite;
         }
-        @keyframes pulse { 50% { opacity: 0.6; transform: scale(1.2); } }
+        @keyframes pulse { 50% { opacity: 0.5; transform: scale(1.2); } }
         .hidden-indicator { display: none; }
         .volume-indicator {
             width: 100%;
-            height: 5px;
+            height: 4px;
             background: #1e3a2a;
-            border-radius: 10px;
-            overflow: hidden;
+            border-radius: 4px;
             margin-top: 8px;
+            overflow: hidden;
         }
         .volume-level {
             height: 100%;
@@ -192,30 +162,29 @@
         }
         .log-panel {
             background: #0e2a1a;
-            border-radius: 18px;
-            padding: 16px;
-            margin-top: 24px;
+            border-radius: 16px;
+            padding: 12px;
+            margin-top: 20px;
             font-family: monospace;
-            font-size: 0.8rem;
-            max-height: 160px;
+            font-size: 0.75rem;
+            max-height: 150px;
             overflow-y: auto;
         }
         .log-entry {
             border-bottom: 1px solid #1a4a2a;
-            padding: 4px 0;
+            padding: 3px 0;
         }
         .unlock-audio {
             position: fixed;
-            bottom: 24px;
-            right: 24px;
+            bottom: 20px;
+            right: 20px;
             background: #8bc34a;
             color: #0a2f1f;
-            padding: 16px 28px;
-            border-radius: 60px;
-            font-weight: 700;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-weight: bold;
             cursor: pointer;
             z-index: 999;
-            animation: pulse 1.8s infinite;
             border: none;
         }
         .unlock-audio.hidden { display: none; }
@@ -230,43 +199,44 @@
 
         <div id="setup" class="setup-card">
             <div class="link-info" id="linkInfo"></div>
-            <div id="autoJoinMessage" class="flex-row" style="background:#2e6b4e; border-radius:60px; padding:12px; margin-bottom:16px; display:none;">
-                <span>🔄 Автоматическое подключение...</span>
+            <div id="autoJoinMessage" style="background:#2e6b4e; border-radius:40px; padding:10px; margin-bottom:12px; display:none;">
+                🔄 Автоматическое подключение...
             </div>
             <div class="flex-row">
                 <input type="text" id="userName" placeholder="Ваше имя" value="Гость">
                 <input type="text" id="roomId" placeholder="ID комнаты">
                 <button onclick="createRoom()">✨ Создать</button>
                 <button onclick="joinRoom()">🔗 Присоединиться</button>
-                <button onclick="testMicrophone()" style="background:#1e4a2e;">🎤 Тест</button>
+                <button onclick="testMic()" style="background:#1e4a2e;">🎤 Тест</button>
             </div>
         </div>
 
         <div id="call" class="call-card hidden">
             <div class="room-header">
-                <span><strong>🏠 Комната:</strong> <span id="currentRoomDisplay"></span></span>
+                <span><strong>🏠 Комната: <span id="currentRoomDisplay"></span></strong></span>
                 <div style="display: flex; gap: 8px;">
-                    <button onclick="copyRoomId()" style="padding:8px 16px; min-width:auto;">📋 Копировать ID</button>
-                    <button onclick="copyCallLink()" style="padding:8px 16px; min-width:auto;">🔗 Ссылка</button>
+                    <button onclick="copyRoomId()" style="padding:6px 12px;">📋 ID</button>
+                    <button onclick="copyCallLink()" style="padding:6px 12px;">🔗 Ссылка</button>
                 </div>
                 <span class="badge" id="participantCount">0 участников</span>
             </div>
-            <div id="status" style="text-align:center; background:#1a4a30; padding:12px; border-radius:40px; margin-bottom:16px;">⏳ Ожидание...</div>
+            <div id="status" style="text-align:center; background:#1a4a30; padding:10px; border-radius:40px;">⏳ Ожидание...</div>
             <div id="participantsGrid" class="participants-grid"></div>
-            <div class="flex-row" style="justify-content: center; gap: 12px; margin-top: 24px;">
+            <div class="flex-row" style="margin-top: 20px;">
                 <button onclick="toggleMic()" id="micBtn">🔇 Выкл микрофон</button>
-                <button onclick="testAudioOutput()" style="background:#1e4a2e;">🔊 Тест звука</button>
+                <button onclick="testSound()" style="background:#1e4a2e;">🔊 Тест звука</button>
                 <button onclick="endCall()" style="background:#7d3e3e;">📞 Завершить</button>
             </div>
         </div>
 
         <div class="log-panel" id="log">
-            <div class="log-entry">[Система] Готов к работе 🐌</div>
+            <div class="log-entry">[Система] Готов 🐌</div>
         </div>
     </div>
 
     <script>
         (function() {
+            // Firebase
             const firebaseConfig = {
                 apiKey: "AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
                 authDomain: "kcalls.firebaseapp.com",
@@ -279,6 +249,7 @@
             firebase.initializeApp(firebaseConfig);
             const db = firebase.database();
 
+            // Состояние
             let localStream = null;
             let peers = {};
             let currentRoom = null;
@@ -287,13 +258,13 @@
                 name: 'Гость'
             };
             let allUsers = {};
-            let pendingSignals = {};
             let roomRef = null;
             let callsRef = null;
             let audioElements = {};
             let muteStatus = {};
             let audioUnlocked = false;
 
+            // DOM
             const setupDiv = document.getElementById('setup');
             const callDiv = document.getElementById('call');
             const micBtn = document.getElementById('micBtn');
@@ -321,55 +292,46 @@
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:stun1.l.google.com:19302' },
                     { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun3.l.google.com:19302' },
-                    { urls: 'stun:stun4.l.google.com:19302' },
-                    {
-                        urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turn:openrelay.metered.ca:443?transport=tcp'],
-                        username: 'openrelayproject',
-                        credential: 'openrelayproject'
-                    }
+                    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+                    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
                 ];
             }
 
             function updateParticipantsGrid() {
                 if (!allUsers) return;
                 let html = '';
-                const sortedIds = Object.keys(allUsers).sort((a, b) => {
-                    if (a === currentUser.id) return -1;
-                    if (b === currentUser.id) return 1;
-                    return (allUsers[a].name || '').localeCompare(allUsers[b].name || '');
-                });
-
-                sortedIds.forEach(userId => {
+                const userIds = Object.keys(allUsers).sort((a,b) => a === currentUser.id ? -1 : b === currentUser.id ? 1 : 0);
+                
+                userIds.forEach(userId => {
                     const user = allUsers[userId];
                     const isMe = userId === currentUser.id;
                     const peer = peers[userId];
                     const hasAudio = audioElements[userId] && audioElements[userId].srcObject;
                     const isMuted = muteStatus[userId] || (isMe && localStream && !localStream.getAudioTracks()[0]?.enabled);
-
+                    
                     let statusText = isMe ? (localStream?.getAudioTracks()[0]?.enabled ? '🎤 Микрофон включён' : '🔇 Микрофон выключен') :
-                                    (peer?.connected ? (isMuted ? '🔇 Микрофон выключен' : '🎤 Микрофон включён') : '🔄 Соединение...');
-                    let muteBadge = (isMe && !localStream?.getAudioTracks()[0]?.enabled) || (!isMe && isMuted) ? '<span class="mute-badge">🔇 Микрофон выкл</span>' : '';
-
+                                    (peer?.connected && hasAudio ? (isMuted ? '🔇 Микрофон выключен' : '🎤 Микрофон включён') : '🔄 Соединение...');
+                    
                     html += `
-                        <div class="participant-card ${isMuted ? 'muted' : ''}" id="participant-${userId}">
-                            <div class="participant-name">${user.name}${isMe ? ' (Вы)' : ''} ${muteBadge}</div>
-                            <div class="participant-avatar ${isMuted ? 'muted' : ''}">${isMuted ? '🔇' : '🐌'}</div>
+                        <div class="participant-card ${isMuted ? 'muted' : ''}">
+                            <div class="participant-name">${user.name}${isMe ? ' (Вы)' : ''} ${isMuted ? '<span class="mute-badge">🔇 выкл</span>' : ''}</div>
+                            <div class="participant-avatar">${isMuted ? '🔇' : '🐌'}</div>
                             <div class="participant-status">${statusText}</div>
-                            ${!isMe ? `<audio id="audio-${userId}" controls style="width:100%; margin:10px 0;"></audio>` : ''}
+                            ${!isMe ? `<audio id="audio-${userId}" controls style="width:100%; margin:8px 0;"></audio>` : ''}
                             <div class="speaking-indicator hidden-indicator" id="speaking-${userId}"></div>
-                            <div class="volume-indicator"><div class="volume-level ${isMuted ? 'muted' : ''}" id="volume-${userId}"></div></div>
+                            <div class="volume-indicator"><div class="volume-level" id="volume-${userId}"></div></div>
                         </div>
                     `;
                 });
                 participantsGrid.innerHTML = html;
-
+                
+                // Подключаем существующие аудио
                 Object.keys(audioElements).forEach(userId => {
-                    const newAudio = document.getElementById(`audio-${userId}`);
-                    if (newAudio && audioElements[userId]?.srcObject) {
-                        newAudio.srcObject = audioElements[userId].srcObject;
-                        audioElements[userId] = newAudio;
-                        if (audioUnlocked && !muteStatus[userId]) newAudio.play().catch(e => {});
+                    const el = document.getElementById(`audio-${userId}`);
+                    if (el && audioElements[userId]?.srcObject) {
+                        el.srcObject = audioElements[userId].srcObject;
+                        audioElements[userId] = el;
+                        if (audioUnlocked) el.play().catch(e => {});
                     }
                 });
                 participantCountSpan.textContent = `${Object.keys(allUsers).length} участников`;
@@ -379,23 +341,23 @@
                 if (audioUnlocked) return;
                 const ac = new (window.AudioContext || window.webkitAudioContext)();
                 ac.resume().then(() => {
-                    log('🔊 Аудио разблокировано');
                     audioUnlocked = true;
                     unlockAudioDiv.classList.add('hidden');
-                    Object.values(audioElements).forEach(a => { if (a.srcObject) a.play().catch(e => {}); });
+                    Object.values(audioElements).forEach(a => a.play().catch(e => {}));
+                    log('🔊 Аудио разблокировано');
                 });
             }
             unlockAudioDiv.onclick = unlockAudio;
             document.addEventListener('click', () => { if (!audioUnlocked) unlockAudio(); }, { once: true });
 
-            async function testMicrophone() {
+            async function testMic() {
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     log('✅ Микрофон работает');
                     stream.getTracks().forEach(t => t.stop());
-                } catch(e) { log('❌ Ошибка микрофона'); alert('Нет доступа к микрофону'); }
+                } catch(e) { alert('Нет доступа к микрофону'); log('❌ Ошибка микрофона'); }
             }
-            function testAudioOutput() {
+            function testSound() {
                 const ac = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = ac.createOscillator();
                 osc.connect(ac.destination);
@@ -407,19 +369,18 @@
 
             function createPeerWith(userId, userName) {
                 if (peers[userId]) return;
-                log(`🔧 Создаём peer с ${userName}`);
+                log(`🔧 Создаём peer для ${userName}`);
+                
                 const isInit = currentUser.id < userId;
-
-                const sendStream = new MediaStream();
-                localStream.getAudioTracks().forEach(t => sendStream.addTrack(t.clone()));
-
+                
+                // Не клонируем, используем исходный поток
                 const peer = new SimplePeer({
                     initiator: isInit,
-                    stream: sendStream,
+                    stream: localStream,
                     trickle: false,
                     config: { iceServers: getIceServers() }
                 });
-
+                
                 const audioEl = document.createElement('audio');
                 audioEl.id = `audio-${userId}`;
                 audioEl.autoplay = true;
@@ -427,37 +388,38 @@
                 audioEl.style.display = 'none';
                 document.body.appendChild(audioEl);
                 audioElements[userId] = audioEl;
-
+                
                 peer.on('signal', data => {
                     log(`📤 Отправка сигнала для ${userName}`);
                     callsRef.push({ from: currentUser.id, to: userId, data });
                 });
-
+                
                 peer.on('stream', stream => {
-                    log(`🎵 Поток от ${userName}`);
+                    log(`🎵 Получен аудиопоток от ${userName}`);
                     audioElements[userId].srcObject = stream;
                     if (audioUnlocked) audioElements[userId].play().catch(e => {});
                     updateParticipantsGrid();
-
-                    let interval = setInterval(() => {
-                        if (!audioElements[userId]?.srcObject) return clearInterval(interval);
-                        const ctx = new AudioContext();
-                        const analyser = ctx.createAnalyser();
-                        const src = ctx.createMediaStreamSource(stream);
-                        src.connect(analyser);
-                        const data = new Uint8Array(analyser.frequencyBinCount);
-                        setInterval(() => {
-                            analyser.getByteFrequencyData(data);
-                            const avg = data.reduce((a,b)=>a+b)/data.length;
-                            const vol = document.getElementById(`volume-${userId}`);
-                            if (vol) vol.style.width = Math.min(100, (avg/128)*100) + '%';
-                            const spk = document.getElementById(`speaking-${userId}`);
-                            if (spk) spk.classList.toggle('hidden-indicator', avg <= 20);
-                        }, 100);
-                        clearInterval(interval);
-                    }, 100);
+                    
+                    // Визуализация
+                    setTimeout(() => {
+                        try {
+                            const ctx = new AudioContext();
+                            const analyser = ctx.createAnalyser();
+                            const src = ctx.createMediaStreamSource(stream);
+                            src.connect(analyser);
+                            const data = new Uint8Array(analyser.frequencyBinCount);
+                            setInterval(() => {
+                                analyser.getByteFrequencyData(data);
+                                const avg = data.reduce((a,b)=>a+b)/data.length;
+                                const vol = document.getElementById(`volume-${userId}`);
+                                if (vol) vol.style.width = Math.min(100, (avg/128)*100) + '%';
+                                const spk = document.getElementById(`speaking-${userId}`);
+                                if (spk) spk.classList.toggle('hidden-indicator', avg <= 20);
+                            }, 100);
+                        } catch(e) {}
+                    }, 500);
                 });
-
+                
                 peer.on('connect', () => log(`✅ Соединение с ${userName} установлено!`));
                 peer.on('error', e => log(`❌ Ошибка: ${e.message}`));
                 peer.on('close', () => {
@@ -466,73 +428,72 @@
                     if (audioElements[userId]) audioElements[userId].remove();
                     delete audioElements[userId];
                 });
-
+                
                 peers[userId] = peer;
-
-                if (pendingSignals[userId]?.length) {
-                    setTimeout(() => {
-                        if (peers[userId]) {
-                            pendingSignals[userId].forEach(s => peers[userId].signal(s));
-                            delete pendingSignals[userId];
-                        }
-                    }, 500);
-                }
             }
 
             async function joinRoom() {
                 const roomId = roomIdInput.value.trim();
                 if (!roomId) return alert('Введите ID комнаты');
                 autoJoinMessageDiv.style.display = 'none';
-
+                
                 try {
                     statusDiv.textContent = '🎤 Запрос микрофона...';
                     localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
                     localStream.getAudioTracks().forEach(t => t.enabled = true);
                     log('✅ Микрофон получен');
-
+                    
                     currentRoom = roomId;
                     currentRoomDisplay.textContent = roomId;
                     setupDiv.classList.add('hidden');
                     callDiv.classList.remove('hidden');
-
+                    
                     roomRef = db.ref('rooms/' + roomId);
                     await roomRef.child('users/' + currentUser.id).set({ name: currentUser.name, timestamp: Date.now() });
                     roomRef.child('users/' + currentUser.id).onDisconnect().remove();
-
+                    
+                    // Статус микрофона
                     roomRef.child('mute').on('value', snap => {
                         const mutes = snap.val() || {};
                         Object.keys(mutes).forEach(uid => { if (uid !== currentUser.id) muteStatus[uid] = mutes[uid].muted; });
                         updateParticipantsGrid();
                     });
-
+                    
+                    // Сигналы
                     callsRef = db.ref('calls/' + roomId);
                     callsRef.on('child_added', snap => {
                         const signal = snap.val();
                         if (signal.from !== currentUser.id) {
-                            log(`📨 Сигнал от ${signal.from}`);
+                            log(`📨 Получен сигнал от ${signal.from}`);
                             if (peers[signal.from]) {
                                 peers[signal.from].signal(signal.data);
                             } else {
-                                if (!pendingSignals[signal.from]) pendingSignals[signal.from] = [];
-                                pendingSignals[signal.from].push(signal.data);
+                                // Если peer ещё не создан, создаём сейчас
+                                if (allUsers[signal.from]) {
+                                    createPeerWith(signal.from, allUsers[signal.from].name);
+                                    setTimeout(() => {
+                                        if (peers[signal.from]) peers[signal.from].signal(signal.data);
+                                    }, 500);
+                                }
                             }
                             snap.ref.remove();
                         }
                     });
-
+                    
+                    // Список участников
                     roomRef.child('users').on('value', snap => {
                         const users = snap.val() || {};
-                        const old = Object.keys(allUsers);
+                        const oldUsers = Object.keys(allUsers);
                         allUsers = users;
-
+                        
                         Object.keys(users).forEach(uid => {
                             if (uid !== currentUser.id && !peers[uid]) {
                                 log(`🔔 Новый участник: ${users[uid].name}`);
                                 createPeerWith(uid, users[uid].name);
                             }
                         });
-
-                        old.forEach(uid => {
+                        
+                        oldUsers.forEach(uid => {
                             if (uid !== currentUser.id && !users[uid]) {
                                 log(`🔔 Участник отключился: ${allUsers[uid]?.name || uid}`);
                                 if (peers[uid]) peers[uid].destroy();
@@ -541,11 +502,11 @@
                                 delete audioElements[uid];
                             }
                         });
-
+                        
                         updateParticipantsGrid();
                         statusDiv.textContent = `👥 В комнате: ${Object.keys(users).length} участников`;
                     });
-
+                    
                 } catch(e) {
                     log('❌ Ошибка: ' + e.message);
                     alert('Ошибка доступа к микрофону');
@@ -553,7 +514,7 @@
                     callDiv.classList.add('hidden');
                 }
             }
-
+            
             window.createRoom = () => {
                 roomIdInput.value = Math.random().toString(36).substring(2, 8);
                 updateLinkInfo(roomIdInput.value);
@@ -581,40 +542,37 @@
                 Object.values(peers).forEach(p => p.destroy());
                 Object.values(audioElements).forEach(a => a.remove());
                 if (localStream) localStream.getTracks().forEach(t => t.stop());
-                peers = {}; audioElements = {}; allUsers = {}; muteStatus = {}; pendingSignals = {};
+                peers = {}; audioElements = {}; allUsers = {}; muteStatus = {};
                 currentRoom = null; localStream = null; roomRef = null; callsRef = null;
                 setupDiv.classList.remove('hidden');
                 callDiv.classList.add('hidden');
                 unlockAudioDiv.classList.add('hidden');
                 log('✅ Звонок завершён');
             };
-            window.copyRoomId = () => {
-                const id = currentRoomDisplay.textContent;
-                navigator.clipboard.writeText(id).then(() => alert('ID скопирован'));
-            };
+            window.copyRoomId = () => navigator.clipboard.writeText(currentRoomDisplay.textContent).then(() => alert('ID скопирован'));
             window.copyCallLink = () => {
                 const link = window.location.origin + window.location.pathname + '?call=' + currentRoom;
                 navigator.clipboard.writeText(link).then(() => alert('Ссылка скопирована'));
             };
-            window.testMicrophone = testMicrophone;
-            window.testAudioOutput = testAudioOutput;
-
+            window.testMic = testMic;
+            window.testSound = testSound;
+            
             function updateLinkInfo(roomId) {
                 if (roomId) linkInfoDiv.innerHTML = `🔗 Ссылка: ${window.location.origin + window.location.pathname}?call=${roomId}`;
                 else linkInfoDiv.innerHTML = '';
             }
             function getUrlParams() { return new URLSearchParams(window.location.search).get('call'); }
-
+            
             (function autoJoin() {
                 const call = getUrlParams();
                 if (call) {
                     roomIdInput.value = call;
                     updateLinkInfo(call);
-                    autoJoinMessageDiv.style.display = 'flex';
+                    autoJoinMessageDiv.style.display = 'block';
                     setTimeout(() => joinRoom(), 1000);
                 }
             })();
-
+            
             userNameInput.oninput = e => currentUser.name = e.target.value || 'Гость';
         })();
     </script>
