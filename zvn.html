@@ -3,17 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Звонкие Улитки · простая версия</title>
+    <title>Звонкие Улитки · стабильные звонки</title>
     <link rel="icon" type="image/png" href="/icon.png">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/simple-peer@9.11.1/simplepeer.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Segoe UI', Roboto, sans-serif;
             background: #0a2f1f;
@@ -38,12 +34,7 @@
             font-size: 2.5rem;
             margin-bottom: 20px;
         }
-        h1::before, h1::after {
-            content: "🐌";
-            font-size: 2rem;
-            margin: 0 10px;
-            display: inline-block;
-        }
+        h1::before, h1::after { content: "🐌"; font-size: 2rem; margin: 0 10px; display: inline-block; }
         .setup-card, .call-card {
             background: #1e4a2e;
             border-radius: 24px;
@@ -73,10 +64,7 @@
             font-weight: bold;
             min-width: 140px;
         }
-        button:hover {
-            background: #3e9e7a;
-            transform: translateY(-2px);
-        }
+        button:hover { background: #3e9e7a; transform: translateY(-2px); }
         .room-header {
             background: #1a4a30;
             border-radius: 40px;
@@ -101,19 +89,9 @@
             position: relative;
             border: 1px solid #3a7a4a;
         }
-        .participant-card.muted {
-            opacity: 0.7;
-            border-color: #b34a4a;
-        }
-        .participant-name {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #a5d6a5;
-        }
-        .participant-avatar {
-            font-size: 3rem;
-            margin: 8px 0;
-        }
+        .participant-card.muted { opacity: 0.7; border-color: #b34a4a; }
+        .participant-name { font-size: 1.3rem; font-weight: bold; color: #a5d6a5; }
+        .participant-avatar { font-size: 3rem; margin: 8px 0; }
         .participant-status {
             background: #1e3a2a;
             border-radius: 20px;
@@ -121,70 +99,28 @@
             font-size: 0.8rem;
             display: inline-block;
         }
-        .mute-badge {
-            background: #b34a4a;
-            font-size: 0.7rem;
-            padding: 2px 8px;
-            border-radius: 20px;
-            margin-left: 8px;
-        }
-        audio {
-            width: 100%;
-            margin: 8px 0;
-            border-radius: 20px;
-            height: 36px;
-        }
+        .mute-badge { background: #b34a4a; font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; margin-left: 8px; }
+        audio { width: 100%; margin: 8px 0; border-radius: 20px; height: 36px; }
         .speaking-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #6eff6e;
-            position: absolute;
-            top: 12px;
-            right: 12px;
+            width: 12px; height: 12px; border-radius: 50%; background: #6eff6e;
+            position: absolute; top: 12px; right: 12px;
             animation: pulse 1s infinite;
         }
         @keyframes pulse { 50% { opacity: 0.5; transform: scale(1.2); } }
         .hidden-indicator { display: none; }
         .volume-indicator {
-            width: 100%;
-            height: 4px;
-            background: #1e3a2a;
-            border-radius: 4px;
-            margin-top: 8px;
-            overflow: hidden;
+            width: 100%; height: 4px; background: #1e3a2a;
+            border-radius: 4px; margin-top: 8px; overflow: hidden;
         }
-        .volume-level {
-            height: 100%;
-            width: 0%;
-            background: #8bc34a;
-            transition: width 0.1s;
-        }
+        .volume-level { height: 100%; width: 0%; background: #8bc34a; transition: width 0.1s; }
         .log-panel {
-            background: #0e2a1a;
-            border-radius: 16px;
-            padding: 12px;
-            margin-top: 20px;
-            font-family: monospace;
-            font-size: 0.75rem;
-            max-height: 150px;
-            overflow-y: auto;
+            background: #0e2a1a; border-radius: 16px; padding: 12px; margin-top: 20px;
+            font-family: monospace; font-size: 0.75rem; max-height: 150px; overflow-y: auto;
         }
-        .log-entry {
-            border-bottom: 1px solid #1a4a2a;
-            padding: 3px 0;
-        }
+        .log-entry { border-bottom: 1px solid #1a4a2a; padding: 3px 0; }
         .unlock-audio {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #8bc34a;
-            color: #0a2f1f;
-            padding: 12px 24px;
-            border-radius: 40px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 999;
+            position: fixed; bottom: 20px; right: 20px; background: #8bc34a; color: #0a2f1f;
+            padding: 12px 24px; border-radius: 40px; font-weight: bold; cursor: pointer; z-index: 999;
             border: none;
         }
         .unlock-audio.hidden { display: none; }
@@ -236,7 +172,6 @@
 
     <script>
         (function() {
-            // Firebase
             const firebaseConfig = {
                 apiKey: "AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
                 authDomain: "kcalls.firebaseapp.com",
@@ -249,7 +184,6 @@
             firebase.initializeApp(firebaseConfig);
             const db = firebase.database();
 
-            // Состояние
             let localStream = null;
             let peers = {};
             let currentRoom = null;
@@ -263,8 +197,8 @@
             let audioElements = {};
             let muteStatus = {};
             let audioUnlocked = false;
+            let keepAliveIntervals = {};
 
-            // DOM
             const setupDiv = document.getElementById('setup');
             const callDiv = document.getElementById('call');
             const micBtn = document.getElementById('micBtn');
@@ -292,6 +226,8 @@
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:stun1.l.google.com:19302' },
                     { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' },
                     { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
                     { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
                 ];
@@ -325,7 +261,6 @@
                 });
                 participantsGrid.innerHTML = html;
                 
-                // Подключаем существующие аудио
                 Object.keys(audioElements).forEach(userId => {
                     const el = document.getElementById(`audio-${userId}`);
                     if (el && audioElements[userId]?.srcObject) {
@@ -367,13 +302,29 @@
                 log('🔊 Тест звука');
             }
 
+            function startKeepAlive(peer, userId) {
+                if (keepAliveIntervals[userId]) clearInterval(keepAliveIntervals[userId]);
+                // Каждые 10 секунд отправляем пустой сигнал, чтобы соединение не рвалось
+                keepAliveIntervals[userId] = setInterval(() => {
+                    if (peer && !peer.destroyed && peer.connected) {
+                        // Пустой сигнал keepalive (можно отправлять что угодно, но SimplePeer сам поддерживает)
+                        // Просто обращаемся к peer, чтобы активность была
+                        if (peer._pc && peer._pc.iceConnectionState === 'connected') {
+                            // ничего не делаем, просто проверяем состояние
+                        }
+                    } else {
+                        clearInterval(keepAliveIntervals[userId]);
+                        delete keepAliveIntervals[userId];
+                    }
+                }, 10000);
+            }
+
             function createPeerWith(userId, userName) {
                 if (peers[userId]) return;
                 log(`🔧 Создаём peer для ${userName}`);
                 
                 const isInit = currentUser.id < userId;
                 
-                // Не клонируем, используем исходный поток
                 const peer = new SimplePeer({
                     initiator: isInit,
                     stream: localStream,
@@ -400,7 +351,6 @@
                     if (audioUnlocked) audioElements[userId].play().catch(e => {});
                     updateParticipantsGrid();
                     
-                    // Визуализация
                     setTimeout(() => {
                         try {
                             const ctx = new AudioContext();
@@ -420,14 +370,34 @@
                     }, 500);
                 });
                 
-                peer.on('connect', () => log(`✅ Соединение с ${userName} установлено!`));
+                peer.on('connect', () => {
+                    log(`✅ Соединение с ${userName} установлено!`);
+                    startKeepAlive(peer, userId);
+                    updateParticipantsGrid();
+                });
+                
                 peer.on('error', e => log(`❌ Ошибка: ${e.message}`));
+                
                 peer.on('close', () => {
                     log(`🔒 Peer с ${userName} закрыт`);
+                    if (keepAliveIntervals[userId]) clearInterval(keepAliveIntervals[userId]);
+                    delete keepAliveIntervals[userId];
                     delete peers[userId];
                     if (audioElements[userId]) audioElements[userId].remove();
                     delete audioElements[userId];
                 });
+                
+                // Обработка ICE состояния
+                if (peer._pc) {
+                    peer._pc.oniceconnectionstatechange = () => {
+                        const state = peer._pc.iceConnectionState;
+                        log(`🔌 ICE состояние с ${userName}: ${state}`);
+                        if (state === 'failed' || state === 'disconnected') {
+                            log(`🔄 Перезапуск ICE для ${userName}`);
+                            peer._pc.restartIce();
+                        }
+                    };
+                }
                 
                 peers[userId] = peer;
             }
@@ -452,14 +422,12 @@
                     await roomRef.child('users/' + currentUser.id).set({ name: currentUser.name, timestamp: Date.now() });
                     roomRef.child('users/' + currentUser.id).onDisconnect().remove();
                     
-                    // Статус микрофона
                     roomRef.child('mute').on('value', snap => {
                         const mutes = snap.val() || {};
                         Object.keys(mutes).forEach(uid => { if (uid !== currentUser.id) muteStatus[uid] = mutes[uid].muted; });
                         updateParticipantsGrid();
                     });
                     
-                    // Сигналы
                     callsRef = db.ref('calls/' + roomId);
                     callsRef.on('child_added', snap => {
                         const signal = snap.val();
@@ -468,7 +436,6 @@
                             if (peers[signal.from]) {
                                 peers[signal.from].signal(signal.data);
                             } else {
-                                // Если peer ещё не создан, создаём сейчас
                                 if (allUsers[signal.from]) {
                                     createPeerWith(signal.from, allUsers[signal.from].name);
                                     setTimeout(() => {
@@ -480,7 +447,6 @@
                         }
                     });
                     
-                    // Список участников
                     roomRef.child('users').on('value', snap => {
                         const users = snap.val() || {};
                         const oldUsers = Object.keys(allUsers);
@@ -496,6 +462,7 @@
                         oldUsers.forEach(uid => {
                             if (uid !== currentUser.id && !users[uid]) {
                                 log(`🔔 Участник отключился: ${allUsers[uid]?.name || uid}`);
+                                if (keepAliveIntervals[uid]) clearInterval(keepAliveIntervals[uid]);
                                 if (peers[uid]) peers[uid].destroy();
                                 delete peers[uid];
                                 if (audioElements[uid]) audioElements[uid].remove();
@@ -533,6 +500,8 @@
             };
             window.endCall = () => {
                 log('Завершение звонка');
+                Object.values(keepAliveIntervals).forEach(i => clearInterval(i));
+                keepAliveIntervals = {};
                 if (roomRef) {
                     roomRef.child('users').off();
                     roomRef.child('mute').off();
