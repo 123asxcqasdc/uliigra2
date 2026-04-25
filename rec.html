@@ -1,217 +1,228 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <link rel="icon" type="image/png" href="/icon.png">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Таблица рекордов</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Ули · Таблица рекордов Ули игры 2</title>
+    <link rel="icon" type="image/png" href="/icon.png">
+    
+    <!-- META-ТЕГИ ДЛЯ ПРЕДПРОСМОТРА (ОБНОВЛЕНЫ) -->
+    <meta property="og:title" content="Ули · Таблица рекордов Ули игры 2">
+    <meta property="og:description" content="Лучшие игроки и их счёт 🐌🏆">
+    <meta property="og:image" content="/preview-default.png">
+    <meta property="og:url" content="https://uliigra2.c6t.ru/records">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Ули · Таблица рекордов Ули игры 2">
+    <meta name="twitter:description" content="Лучшие игроки и их счёт 🐌🏆">
+    
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
+
         body {
-            background: linear-gradient(135deg, #1a237e 0%, #311b92 100%);
-            color: white;
+            font-family: 'Segoe UI', 'Roboto', system-ui, -apple-system, sans-serif;
+            background-color: #1b3b1b;
+            background-image: radial-gradient(circle at 30% 40%, #2b5a2b 0%, #0e2f0e 90%);
             min-height: 100vh;
-            padding: 20px;
-            transition: all 0.3s ease;
-        }
-        
-        body.fullscreen-mode {
-            padding: 10px;
-        }
-        
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-        
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            transition: all 0.3s ease;
-        }
-        
-        body.fullscreen-mode header {
-            margin-bottom: 20px;
-            padding: 10px;
-        }
-        
-        h1 {
-            font-size: 2.8rem;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            background: linear-gradient(45deg, #ffd700, #ffeb3b);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            transition: all 0.3s ease;
-        }
-        
-        body.fullscreen-mode h1 {
-            font-size: 2.2rem;
-            margin-bottom: 5px;
-        }
-        
-        .subtitle {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            margin-bottom: 20px;
-            transition: all 0.3s ease;
-        }
-        
-        body.fullscreen-mode .subtitle {
-            font-size: 1rem;
-            margin-bottom: 10px;
-        }
-        
-        .dashboard {
             display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-bottom: 30px;
-            transition: all 0.3s ease;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            position: relative;
+            color: #f0f7da;
+            transition: all 0.2s ease;
         }
-        
+
+        /* декоративные гигантские улитки на фоне */
+        body::before {
+            content: "🐌🐌🐌";
+            font-size: 8rem;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            opacity: 0.08;
+            white-space: nowrap;
+            transform: rotate(-10deg);
+            pointer-events: none;
+            letter-spacing: 2rem;
+        }
+
+        body::after {
+            content: "🐌🐌🐌";
+            font-size: 12rem;
+            position: absolute;
+            bottom: -20px;
+            right: 0;
+            opacity: 0.05;
+            transform: rotate(15deg);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        /* ПОЛНОЭКРАННЫЙ РЕЖИМ (только таблица) */
+        body.fullscreen-mode {
+            padding: 0.5rem;
+        }
+        body.fullscreen-mode .main-container {
+            padding: 1rem;
+        }
         body.fullscreen-mode .dashboard {
             display: none;
         }
-        
-        .settings-panel {
-            flex: 1;
-            min-width: 300px;
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        body.fullscreen-mode .controls {
+            margin-top: 1rem;
         }
-        
-        .stats-panel {
-            flex: 1;
-            min-width: 300px;
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        body.fullscreen-mode .footer-snails {
+            margin-top: 1rem;
+            padding-top: 0.8rem;
         }
-        
-        .panel-title {
-            font-size: 1.4rem;
-            margin-bottom: 20px;
-            color: #ffeb3b;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        body.fullscreen-mode .record-item {
+            padding: 12px 15px;
         }
-        
-        .panel-title i {
-            font-size: 1.6rem;
+        body.fullscreen-mode .record-score {
+            font-size: 1.5rem;
         }
-        
-        .setting-group {
-            margin-bottom: 25px;
-        }
-        
-        .setting-label {
-            display: block;
-            margin-bottom: 10px;
-            font-size: 1.1rem;
-            color: #e0e0e0;
-        }
-        
-        .timer-controls {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-top: 10px;
-        }
-        
-        .timer-value {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #4caf50;
-            min-width: 60px;
-            text-align: center;
-        }
-        
-        .btn-timer {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: none;
-            background: linear-gradient(45deg, #2196f3, #21cbf3);
-            color: white;
-            font-size: 1.2rem;
-            cursor: pointer;
+
+        /* главный контейнер - стиль как у страницы "УЛИ" */
+        .main-container {
+            max-width: 1100px;
+            width: 100%;
+            background: rgba(30, 50, 30, 0.75);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 3px solid #9bbc7b;
+            border-radius: 30px;
+            box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 2px #6f8c5d inset, 0 0 0 4px #3f6140 inset;
+            padding: 2rem 2rem 1.8rem;
             transition: all 0.3s ease;
+        }
+
+        .header-title {
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+            font-size: 2.8rem;
+            font-weight: 800;
+            text-shadow: 3px 3px 0 #2d4a2d, 5px 5px 0 #1b331b;
+            color: #e2f0c0;
+            letter-spacing: 2px;
         }
-        
-        .btn-timer:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 15px rgba(33, 150, 243, 0.4);
+
+        .snail-icon-big {
+            font-size: 3.5rem;
+            transform: rotate(10deg);
+            transition: transform 0.2s;
+            filter: drop-shadow(2px 4px 4px #0f2a0f);
         }
-        
-        .timer-description {
-            margin-top: 8px;
-            font-size: 0.9rem;
-            opacity: 0.8;
-            color: #b0b0b0;
+
+        .snail-icon-big:hover {
+            transform: rotate(20deg) scale(1.1);
         }
-        
-        .timer-status {
+
+        /* панель настроек + статистика */
+        .dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .settings-panel, .stats-panel {
+            flex: 1;
+            min-width: 260px;
+            background: #2e4d2ecc;
+            backdrop-filter: blur(4px);
+            border-radius: 28px;
+            padding: 1.2rem 1.5rem;
+            border: 2px solid #7eaf7a;
+            box-shadow: 0 8px 15px -7px #102310;
+        }
+
+        .panel-title {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: #ffefaa;
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-top: 15px;
-            padding: 12px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
+            gap: 8px;
+            border-bottom: 2px dotted #8bb46c;
+            padding-bottom: 0.4rem;
         }
-        
-        .status-indicator {
-            width: 12px;
-            height: 12px;
+
+        .setting-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .setting-label {
+            font-size: 0.95rem;
+            color: #dcedc4;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .timer-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 6px;
+        }
+
+        .timer-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: #1c3a1c;
+            padding: 0.2rem 1rem;
+            border-radius: 36px;
+            min-width: 70px;
+            text-align: center;
+            color: #c8f0a5;
+            border: 1px solid #9bbc7b;
+        }
+
+        .btn-timer {
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
-            background: #4caf50;
-            animation: pulse 2s infinite;
+            border: none;
+            background: #5a875a;
+            color: white;
+            font-size: 1.3rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 5px #0f2a0f;
         }
-        
-        .status-indicator.paused {
-            background: #ff9800;
-            animation: none;
+
+        .btn-timer:hover {
+            background: #7caa7c;
+            transform: scale(1.05);
         }
-        
+
         .auto-refresh-toggle {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-top: 10px;
+            margin: 10px 0;
         }
-        
+
         .toggle-switch {
             position: relative;
             display: inline-block;
-            width: 60px;
-            height: 30px;
+            width: 54px;
+            height: 28px;
         }
-        
         .toggle-switch input {
             opacity: 0;
             width: 0;
             height: 0;
         }
-        
         .toggle-slider {
             position: absolute;
             cursor: pointer;
@@ -219,1198 +230,635 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
+            background-color: #5a5a5a;
+            transition: .3s;
             border-radius: 34px;
         }
-        
         .toggle-slider:before {
             position: absolute;
-            content: "";
+            content: "🐌";
             height: 22px;
             width: 22px;
-            left: 4px;
-            bottom: 4px;
+            left: 3px;
+            bottom: 3px;
             background-color: white;
-            transition: .4s;
+            transition: .3s;
             border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
         }
-        
         input:checked + .toggle-slider {
-            background: linear-gradient(45deg, #4caf50, #8bc34a);
+            background: #6f9e6f;
         }
-        
         input:checked + .toggle-slider:before {
-            transform: translateX(30px);
+            transform: translateX(26px);
+            content: "🍃";
         }
-        
+
+        .timer-status {
+            background: #234023;
+            padding: 8px 12px;
+            border-radius: 30px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #9bcd6c;
+            animation: pulse 2s infinite;
+        }
+        .status-indicator.paused {
+            background: #dba644;
+            animation: none;
+        }
+
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
+            grid-template-columns: repeat(2,1fr);
+            gap: 12px;
         }
-        
         .stat-item {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 15px;
-            border-radius: 10px;
+            background: #234823;
+            padding: 10px;
+            border-radius: 20px;
             text-align: center;
         }
-        
         .stat-value {
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: bold;
-            color: #4caf50;
-            margin-bottom: 5px;
+            color: #d9ffa3;
         }
-        
         .stat-label {
-            font-size: 0.9rem;
-            opacity: 0.8;
+            font-size: 0.8rem;
+            opacity: 0.9;
         }
-        
+
+        /* ТАБЛИЦА РЕКОРДОВ */
         .leaderboard {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
+            background: rgba(20, 40, 20, 0.5);
+            border-radius: 28px;
+            padding: 0.8rem;
+            margin: 1.2rem 0 0.8rem;
+            border: 2px solid #7eaf7a;
         }
-        
-        body.fullscreen-mode .leaderboard {
-            padding: 15px;
-            border-radius: 15px;
-        }
-        
+
         .leaderboard-header {
             display: grid;
-            grid-template-columns: 80px 1fr 150px;
-            padding: 15px 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            margin-bottom: 15px;
+            grid-template-columns: 80px 1fr 140px;
+            padding: 12px 20px;
+            background: #3a623a;
+            border-radius: 24px;
+            margin-bottom: 12px;
             font-weight: bold;
-            font-size: 1.2rem;
-            transition: all 0.3s ease;
-        }
-        
-        body.fullscreen-mode .leaderboard-header {
-            padding: 12px 15px;
             font-size: 1.1rem;
-            margin-bottom: 10px;
+            color: #ffe5a3;
         }
-        
+
         .records-list {
             list-style: none;
         }
-        
+
         .record-item {
             display: grid;
-            grid-template-columns: 80px 1fr 150px;
+            grid-template-columns: 80px 1fr 140px;
             align-items: center;
-            padding: 18px 20px;
-            margin-bottom: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            animation: fadeIn 0.5s ease-out;
+            padding: 14px 20px;
+            margin-bottom: 10px;
+            background: #2b462bcc;
+            border-radius: 24px;
+            transition: all 0.2s;
+            animation: fadeIn 0.3s ease;
         }
-        
+
         .record-item.updated {
-            animation: highlightUpdate 1.5s ease-out;
+            animation: snailGlow 1s ease-out;
         }
-        
-        body.fullscreen-mode .record-item {
-            padding: 14px 16px;
-            margin-bottom: 8px;
+        .record-score.changed {
+            animation: scorePulse 0.6s ease-out;
         }
-        
-        .record-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
-        }
-        
+
         .record-rank {
-            text-align: center;
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             font-weight: bold;
+            text-align: center;
         }
-        
-        body.fullscreen-mode .record-rank {
-            font-size: 1.3rem;
-        }
-        
-        .top-1 .record-rank {
-            color: #ffd700;
-        }
-        
-        .top-2 .record-rank {
-            color: #c0c0c0;
-        }
-        
-        .top-3 .record-rank {
-            color: #cd7f32;
-        }
-        
+        .top-1 .record-rank { color: #ffd966; text-shadow: 0 0 5px #b57c1c; }
+        .top-2 .record-rank { color: #c0d0c0; text-shadow: 0 0 3px #8fbc8f; }
+        .top-3 .record-rank { color: #cdb38c; text-shadow: 0 0 2px #aa8a5c; }
+
         .player-name {
             font-size: 1.3rem;
             font-weight: 600;
             padding-left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        
-        body.fullscreen-mode .player-name {
-            font-size: 1.1rem;
-            padding-left: 15px;
-        }
-        
-        .top-1 .player-name {
-            color: #ffd700;
-        }
-        
-        .top-2 .player-name {
-            color: #c0c0c0;
-        }
-        
-        .top-3 .player-name {
-            color: #cd7f32;
-        }
-        
+        .top-1 .player-name { color: #ffea9e; }
+        .top-2 .player-name { color: #e0f0d0; }
+        .top-3 .player-name { color: #f5dbb1; }
+
         .record-score {
             text-align: right;
             font-size: 1.8rem;
             font-weight: bold;
-            color: #4caf50;
+            font-family: monospace;
+            color: #c3f0a8;
+            letter-spacing: 2px;
         }
-        
-        .record-score.changed {
-            animation: scoreChange 1.5s ease-out;
-        }
-        
-        body.fullscreen-mode .record-score {
-            font-size: 1.5rem;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-            font-size: 1.3rem;
-            grid-column: 1 / -1;
-        }
-        
-        .error {
-            text-align: center;
-            padding: 40px;
-            color: #ff5252;
-            font-size: 1.3rem;
-            grid-column: 1 / -1;
-        }
-        
-        .empty {
-            text-align: center;
-            padding: 40px;
-            font-size: 1.3rem;
-            opacity: 0.7;
-            grid-column: 1 / -1;
-        }
-        
-        .update-notification {
+
+        /* уведомление об обновлении */
+        .update-toast {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            background: linear-gradient(45deg, #4caf50, #8bc34a);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            bottom: 25px;
+            right: 25px;
+            background: #3f7540;
+            border-left: 8px solid #f5c542;
+            border-radius: 40px;
+            padding: 10px 20px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            z-index: 1000;
+            gap: 12px;
+            font-weight: bold;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 8px 20px #0f2a0f;
+            z-index: 999;
             transform: translateX(150%);
             transition: transform 0.3s ease;
         }
-        
-        .update-notification.show {
+        .update-toast.show {
             transform: translateX(0);
         }
-        
-        .update-notification.fade-out {
-            opacity: 0;
-            transform: translateX(150%);
-            transition: opacity 0.5s ease, transform 0.5s ease;
-        }
-        
-        .update-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: #ff5722;
-            color: white;
-            font-size: 0.8rem;
-            padding: 3px 8px;
-            border-radius: 10px;
-            animation: badgePulse 1s infinite;
-        }
-        
+        .update-toast span:first-child { font-size: 1.6rem; }
+
         .controls {
             display: flex;
             justify-content: center;
-            gap: 20px;
-            margin-top: 30px;
-            transition: all 0.3s ease;
+            gap: 1rem;
+            margin: 1.8rem 0 0.5rem;
+            flex-wrap: wrap;
         }
-        
-        body.fullscreen-mode .controls {
-            margin-top: 20px;
-            gap: 15px;
-        }
-        
         .btn {
-            padding: 12px 25px;
+            padding: 10px 22px;
             border: none;
             border-radius: 50px;
-            font-size: 1rem;
-            font-weight: 600;
+            font-weight: bold;
+            background: #5f8b5f;
+            color: #faf7da;
             cursor: pointer;
-            transition: all 0.3s ease;
-            background: linear-gradient(45deg, #2196f3, #21cbf3);
-            color: white;
-            display: flex;
+            transition: 0.2s;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
             gap: 8px;
+            font-size: 1rem;
         }
-        
-        body.fullscreen-mode .btn {
-            padding: 10px 20px;
-            font-size: 0.9rem;
-        }
-        
         .btn:hover {
+            background: #7caa7c;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
         }
-        
-        .btn-refresh {
-            background: linear-gradient(45deg, #4caf50, #8bc34a);
-        }
-        
         .btn-fullscreen {
-            background: linear-gradient(45deg, #ff9800, #ff5722);
+            background: #b87c2e;
         }
-        
-        .footer {
-            text-align: center;
-            margin-top: 30px;
+        .btn-refresh {
+            background: #3b6e3b;
+        }
+
+        .footer-snails {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            font-size: 2rem;
             opacity: 0.7;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
+            border-top: 2px dashed #61855e;
+            padding-top: 1rem;
         }
-        
-        body.fullscreen-mode .footer {
-            margin-top: 20px;
-            font-size: 0.8rem;
-        }
-        
+
+        /* полноэкранные кнопки внутри таблицы */
         .fullscreen-controls {
             display: none;
             justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
+            gap: 12px;
+            margin: 15px 0 5px;
             flex-wrap: wrap;
         }
-        
         body.fullscreen-mode .fullscreen-controls {
             display: flex;
         }
-        
         .fullscreen-btn {
-            padding: 8px 16px;
+            background: #417341;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.9rem;
             border: none;
-            border-radius: 50px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.1);
             color: white;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            cursor: pointer;
         }
-        
-        .fullscreen-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-1px);
+
+        @keyframes snailGlow {
+            0% { background: #99cc66; transform: scale(1.01); box-shadow: 0 0 8px #b5ff9b; }
+            100% { background: #2b462bcc; transform: scale(1); box-shadow: none; }
         }
-        
-        .fullscreen-btn i {
-            font-size: 1.1rem;
+        @keyframes scorePulse {
+            0% { color: #ffd966; transform: scale(1.1); text-shadow: 0 0 6px gold; }
+            100% { color: #c3f0a8; transform: scale(1); }
         }
-        
-        .fullscreen-info {
-            text-align: center;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
-            margin-top: 10px;
-            font-size: 0.9rem;
-            opacity: 0.8;
-            width: 100%;
-        }
-        
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        @keyframes highlightUpdate {
-            0% {
-                background: rgba(76, 175, 80, 0.3);
-                transform: scale(1.02);
-            }
-            70% {
-                background: rgba(76, 175, 80, 0.1);
-                transform: scale(1.01);
-            }
-            100% {
-                background: rgba(255, 255, 255, 0.05);
-                transform: scale(1);
-            }
-        }
-        
-        @keyframes scoreChange {
-            0% {
-                color: #4caf50;
-                transform: scale(1.2);
-            }
-            50% {
-                color: #ffeb3b;
-                transform: scale(1.3);
-            }
-            100% {
-                color: #4caf50;
-                transform: scale(1);
-            }
-        }
-        
-        @keyframes pulse {
-            0% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.5;
-            }
-            100% {
-                opacity: 1;
-            }
-        }
-        
-        @keyframes badgePulse {
-            0% {
-                transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(255, 87, 34, 0.7);
-            }
-            70% {
-                transform: scale(1.1);
-                box-shadow: 0 0 0 10px rgba(255, 87, 34, 0);
-            }
-            100% {
-                transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(255, 87, 34, 0);
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .dashboard {
-                flex-direction: column;
-            }
-            
-            .settings-panel, .stats-panel {
-                min-width: 100%;
-            }
-            
+        @keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; } }
+
+        @media (max-width: 680px) {
+            .main-container { padding: 1.2rem; }
             .leaderboard-header, .record-item {
-                grid-template-columns: 60px 1fr 120px;
-                padding: 12px 15px;
-            }
-            
-            .record-rank {
-                font-size: 1.3rem;
-            }
-            
-            .player-name {
-                font-size: 1.1rem;
-                padding-left: 10px;
-            }
-            
-            .record-score {
-                font-size: 1.4rem;
-            }
-            
-            h1 {
-                font-size: 2.2rem;
-            }
-            
-            body.fullscreen-mode h1 {
-                font-size: 1.8rem;
-            }
-            
-            body.fullscreen-mode .record-item {
-                grid-template-columns: 50px 1fr 100px;
+                grid-template-columns: 60px 1fr 100px;
                 padding: 10px 12px;
             }
-            
-            .update-notification {
-                top: 10px;
-                right: 10px;
-                left: 10px;
-                transform: translateY(-100%);
-            }
-            
-            .update-notification.show {
-                transform: translateY(0);
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .leaderboard-header, .record-item {
-                grid-template-columns: 50px 1fr 100px;
-                padding: 10px 12px;
-            }
-            
-            .record-rank {
-                font-size: 1.2rem;
-            }
-            
-            .player-name {
-                font-size: 1rem;
-            }
-            
-            .record-score {
-                font-size: 1.2rem;
-            }
-            
-            .controls {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .btn {
-                width: 100%;
-                max-width: 300px;
-            }
-            
-            body.fullscreen-mode .record-item {
-                grid-template-columns: 40px 1fr 80px;
-                padding: 8px 10px;
-            }
-            
-            body.fullscreen-mode .record-rank {
-                font-size: 1.1rem;
-            }
-            
-            body.fullscreen-mode .player-name {
-                font-size: 0.9rem;
-            }
-            
-            body.fullscreen-mode .record-score {
-                font-size: 1rem;
-            }
+            .record-score { font-size: 1.3rem; }
+            .player-name { font-size: 1rem; padding-left: 8px; }
+            .header-title { font-size: 2rem; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🏆 Таблица рекордов</h1>
-            <p class="subtitle">Лучшие игроки и их достижения | Автообновление каждые <span id="currentTimerValue">10</span> сек</p>
-        </header>
-        
-        <div class="dashboard">
-            <div class="settings-panel">
-                <h2 class="panel-title">⚙️ Настройки обновления</h2>
-                
-                <div class="setting-group">
-                    <label class="setting-label">Интервал автообновления (секунды):</label>
-                    <div class="timer-controls">
-                        <button class="btn-timer" onclick="changeTimer(-5)">-5</button>
-                        <button class="btn-timer" onclick="changeTimer(-1)">-1</button>
-                        <div class="timer-value" id="timerValue">10</div>
-                        <button class="btn-timer" onclick="changeTimer(1)">+1</button>
-                        <button class="btn-timer" onclick="changeTimer(5)">+5</button>
-                    </div>
-                    <div class="timer-description">
-                        Минимально: 5 сек, Максимально: 60 сек
-                    </div>
+
+<div class="main-container">
+    <div class="header-title">
+        <span class="snail-icon-big">🐌</span>
+        <span>ТАБЛИЦА РЕКОРДОВ</span>
+        <span class="snail-icon-big">🐌</span>
+    </div>
+
+    <!-- Панель управления -->
+    <div class="dashboard">
+        <div class="settings-panel">
+            <div class="panel-title">⚙️ улиточные настройки</div>
+            <div class="setting-group">
+                <div class="setting-label">🐚 интервал автообновления</div>
+                <div class="timer-controls">
+                    <button class="btn-timer" id="timerMinus5">-5</button>
+                    <button class="btn-timer" id="timerMinus1">-1</button>
+                    <div class="timer-value" id="timerValue">10</div>
+                    <button class="btn-timer" id="timerPlus1">+1</button>
+                    <button class="btn-timer" id="timerPlus5">+5</button>
                 </div>
-                
-                <div class="setting-group">
-                    <div class="auto-refresh-toggle">
-                        <span class="setting-label">Автоматическое обновление:</span>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="autoRefreshToggle" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    <div class="timer-status">
-                        <div class="status-indicator" id="statusIndicator"></div>
-                        <span id="statusText">Автообновление активно</span>
-                    </div>
+                <div class="auto-refresh-toggle">
+                    <span>🍃 автообновление</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="autoRefreshToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
-                
-                <div class="setting-group">
-                    <label class="setting-label">Последнее обновление:</label>
-                    <div id="lastUpdateTime">—</div>
-                </div>
-                
-                <div class="setting-group">
-                    <label class="setting-label">Статистика изменений:</label>
-                    <div id="changeStats">Нет изменений</div>
+                <div class="timer-status">
+                    <div class="status-indicator" id="statusLed"></div>
+                    <span id="statusText">активно</span>
                 </div>
             </div>
-            
-            <div class="stats-panel">
-                <h2 class="panel-title">📊 Статистика</h2>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-value" id="totalPlayers">0</div>
-                        <div class="stat-label">Всего игроков</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="totalRecords">0</div>
-                        <div class="stat-label">Всего записей</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="topScore">0</div>
-                        <div class="stat-label">Лучший счет</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="avgScore">0</div>
-                        <div class="stat-label">Средний счет</div>
-                    </div>
-                </div>
+            <div class="setting-group">
+                <div class="setting-label">📅 последний вздох улитки</div>
+                <div id="lastUpdateTime">—</div>
             </div>
         </div>
-        
-        <div class="leaderboard">
-            <div class="leaderboard-header">
-                <div class="rank-header">Место</div>
-                <div class="player-header">Игрок</div>
-                <div class="score-header">Счёт</div>
+        <div class="stats-panel">
+            <div class="panel-title">📊 панцирная статистика</div>
+            <div class="stats-grid">
+                <div class="stat-item"><div class="stat-value" id="totalPlayers">0</div><div class="stat-label">уникальных игроков</div></div>
+                <div class="stat-item"><div class="stat-value" id="totalRecords">0</div><div class="stat-label">рекордов</div></div>
+                <div class="stat-item"><div class="stat-value" id="topScore">0</div><div class="stat-label">максимальный счёт</div></div>
+                <div class="stat-item"><div class="stat-value" id="avgScore">0</div><div class="stat-label">средний счёт</div></div>
             </div>
-            
-            <div id="recordsContainer">
-                <div class="loading">Загрузка рекордов...</div>
-            </div>
-            
-            <div class="fullscreen-controls">
-                <button class="fullscreen-btn" onclick="toggleFullscreen()">
-                    <span id="fullscreenIcon">⬜</span>
-                    <span id="fullscreenText">Обычный режим</span>
-                </button>
-                <button class="fullscreen-btn" onclick="manualRefresh()">
-                    <span>🔄</span>
-                    <span>Обновить</span>
-                </button>
-                <button class="fullscreen-btn" onclick="toggleAutoRefresh()">
-                    <span id="autoRefreshIcon">✅</span>
-                    <span id="autoRefreshText">Авто: Вкл</span>
-                </button>
-                <div class="fullscreen-info">
-                    Интервал: <span id="fullscreenTimerValue">10</span> сек | 
-                    Игроков: <span id="fullscreenTotalPlayers">0</span> |
-                    Обновлено: <span id="fullscreenLastUpdate">—</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="controls">
-            <button class="btn btn-refresh" onclick="manualRefresh()">
-                <span>🔄</span>
-                <span id="refreshBtnText">Обновить сейчас</span>
-                <span id="refreshBadge" class="update-badge" style="display: none;">0</span>
-            </button>
-            <button class="btn" onclick="resetSettings()">
-                <span>🔄</span>
-                <span>Сбросить настройки</span>
-            </button>
-            <button class="btn btn-fullscreen" onclick="toggleFullscreen()">
-                <span id="fullscreenToggleIcon">⛶</span>
-                <span id="fullscreenToggleText">Полный экран</span>
-            </button>
-        </div>
-        
-        <div class="footer">
-            Таблица обновляется автоматически. Данные в реальном времени из Firebase
-        </div>
-        
-        <div class="update-notification" id="updateNotification">
-            <span>🔄</span>
-            <span id="notificationText">Данные обновлены</span>
-            <span class="update-badge" id="notificationBadge">0</span>
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- ТАБЛИЦА ЛИДЕРОВ -->
+    <div class="leaderboard">
+        <div class="leaderboard-header">
+            <div>🍀 место</div>
+            <div>🐌 игрок</div>
+            <div>🏆 счёт</div>
+        </div>
+        <div id="recordsContainer">
+            <div style="text-align:center; padding:2rem;">🐌 загружаем ракушки...</div>
+        </div>
+        <!-- полноэкранные быстрые кнопки -->
+        <div class="fullscreen-controls">
+            <button class="fullscreen-btn" id="fsToggleBtn">⛶ обычный режим</button>
+            <button class="fullscreen-btn" id="fsRefreshBtn">🔄 обновить</button>
+            <button class="fullscreen-btn" id="fsAutoToggle">✅ авто: вкл</button>
+            <div class="timer-status" style="background:#3a5e3a; padding:4px 12px;">📡 интервал: <span id="fsTimerSpan">10</span>c</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-refresh" id="refreshBtn">🔄 обновить сейчас</button>
+        <button class="btn" id="resetSettingsBtn">🍃 сбросить настройки</button>
+        <button class="btn btn-fullscreen" id="enterFullscreenBtn">⛶ полный экран</button>
+    </div>
+    <div class="footer-snails">
+        <span>🐌💚</span><span>🐌🐚</span><span>🍀🐌</span><span>🏆🐌</span>
+    </div>
+</div>
+
+<div id="updateToast" class="update-toast">
+    <span>🐌✨</span>
+    <span id="toastText">обновлено</span>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script>
+    // ---------- FIREBASE ----------
+    const firebaseConfig = {
+        apiKey: "AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
+        authDomain: "kcalls.firebaseapp.com",
+        databaseURL: "https://kcalls-default-rtdb.firebaseio.com",
+        projectId: "kcalls",
+        storageBucket: "kcalls.firebasestorage.app",
+        messagingSenderId: "990117089104",
+        appId: "1:990117089104:web:278a42c037e975ebb76655",
+        measurementId: "G-TK6GVEX9G5"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // Глобальные переменные
+    let currentRecords = [];         
+    let lastDataHash = '';
+    let autoInterval = null;
+    let refreshSec = 10;            // секунды
+    let autoEnabled = true;
+    let fullscreen = false;
+    let updateTimeout = null;
+
+    // DOM элементы
+    const container = document.getElementById('recordsContainer');
+    const timerSpan = document.getElementById('timerValue');
+    const fsTimerSpan = document.getElementById('fsTimerSpan');
+    const currentTimerSpan = document.getElementById('currentTimerValue');
+    const lastUpdateSpan = document.getElementById('lastUpdateTime');
+    const autoToggle = document.getElementById('autoRefreshToggle');
+    const statusLed = document.getElementById('statusLed');
+    const statusTextSpan = document.getElementById('statusText');
+    const totalPlayersSpan = document.getElementById('totalPlayers');
+    const totalRecordsSpan = document.getElementById('totalRecords');
+    const topScoreSpan = document.getElementById('topScore');
+    const avgScoreSpan = document.getElementById('avgScore');
+    const toast = document.getElementById('updateToast');
+    const toastText = document.getElementById('toastText');
     
-    <script>
-        // Firebase конфигурация
-        const firebaseConfig = {
-            apiKey: "AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
-            authDomain: "kcalls.firebaseapp.com",
-            databaseURL: "https://kcalls-default-rtdb.firebaseio.com",
-            projectId: "kcalls",
-            storageBucket: "kcalls.firebasestorage.app",
-            messagingSenderId: "990117089104",
-            appId: "1:990117089104:web:278a42c037e975ebb76655",
-            measurementId: "G-TK6GVEX9G5"
-        };
+    // helpers
+    function showToast(message, changes = 0) {
+        toastText.innerHTML = changes ? `🐌 обновлено ${changes} записей` : message;
+        toast.classList.add('show');
+        if (updateTimeout) clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2200);
+    }
 
-        // Инициализация Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+    function getDataHash(data) {
+        if (!data) return 'empty';
+        return btoa(encodeURIComponent(JSON.stringify(data)));
+    }
 
-        // Глобальные переменные
-        let autoRefreshInterval = null;
-        let refreshInterval = 10000; // 10 секунд по умолчанию
-        let isAutoRefreshEnabled = true;
-        let lastUpdateTime = null;
-        let currentRecords = [];
-        let isFullscreenMode = false;
-        let previousDataHash = '';
-        let updateCounter = 0;
-
-        // Хэширование данных для сравнения
-        function getDataHash(data) {
-            if (!data) return 'empty';
-            return btoa(encodeURIComponent(JSON.stringify(data)));
-        }
-
-        // Показать уведомление об обновлении
-        function showUpdateNotification(changeCount) {
-            const notification = document.getElementById('updateNotification');
-            const notificationText = document.getElementById('notificationText');
-            const notificationBadge = document.getElementById('notificationBadge');
-            const refreshBadge = document.getElementById('refreshBadge');
-            
-            if (changeCount > 0) {
-                notificationText.textContent = `Обновлено ${changeCount} записей`;
-                notificationBadge.textContent = changeCount;
-                refreshBadge.textContent = changeCount;
-                refreshBadge.style.display = 'inline-block';
-                
-                // Показываем уведомление
-                notification.classList.add('show');
-                notification.classList.remove('fade-out');
-                
-                // Автоматическое скрытие через 3 секунды
-                setTimeout(() => {
-                    notification.classList.add('fade-out');
-                    setTimeout(() => {
-                        notification.classList.remove('show');
-                        notification.classList.remove('fade-out');
-                    }, 500);
-                }, 3000);
-            } else {
-                refreshBadge.style.display = 'none';
-            }
-        }
-
-        // Скрыть значок обновления на кнопке
-        function hideRefreshBadge() {
-            const refreshBadge = document.getElementById('refreshBadge');
-            refreshBadge.style.display = 'none';
-        }
-
-        // Инициализация настроек из localStorage
-        function initializeSettings() {
-            const savedInterval = localStorage.getItem('refreshInterval');
-            const savedAutoRefresh = localStorage.getItem('autoRefreshEnabled');
-            const savedFullscreen = localStorage.getItem('fullscreenMode');
-            
-            if (savedInterval) {
-                refreshInterval = parseInt(savedInterval);
-            }
-            
-            if (savedAutoRefresh !== null) {
-                isAutoRefreshEnabled = savedAutoRefresh === 'true';
-            }
-            
-            if (savedFullscreen !== null) {
-                isFullscreenMode = savedFullscreen === 'true';
-                if (isFullscreenMode) {
-                    document.body.classList.add('fullscreen-mode');
-                    updateFullscreenControls();
-                }
-            }
-            
-            updateTimerDisplay();
-            updateAutoRefreshToggle();
-            setupAutoRefresh();
-        }
-
-        // Обновление отображения таймера
-        function updateTimerDisplay() {
-            const seconds = refreshInterval / 1000;
-            document.getElementById('timerValue').textContent = seconds;
-            document.getElementById('currentTimerValue').textContent = seconds;
-            document.getElementById('fullscreenTimerValue').textContent = seconds;
-        }
-
-        // Обновление переключателя автообновления
-        function updateAutoRefreshToggle() {
-            const toggle = document.getElementById('autoRefreshToggle');
-            toggle.checked = isAutoRefreshEnabled;
-            updateStatusIndicator();
-            updateFullscreenControls();
-        }
-
-        // Обновление индикатора статуса
-        function updateStatusIndicator() {
-            const indicator = document.getElementById('statusIndicator');
-            const statusText = document.getElementById('statusText');
-            
-            if (isAutoRefreshEnabled) {
-                indicator.classList.remove('paused');
-                statusText.textContent = `Автообновление активно (каждые ${refreshInterval/1000} сек)`;
-            } else {
-                indicator.classList.add('paused');
-                statusText.textContent = 'Автообновление приостановлено';
-            }
-        }
-
-        // Обновление элементов управления в полноэкранном режиме
-        function updateFullscreenControls() {
-            const fullscreenIcon = document.getElementById('fullscreenIcon');
-            const fullscreenText = document.getElementById('fullscreenText');
-            const autoRefreshIcon = document.getElementById('autoRefreshIcon');
-            const autoRefreshText = document.getElementById('autoRefreshText');
-            const fullscreenToggleIcon = document.getElementById('fullscreenToggleIcon');
-            const fullscreenToggleText = document.getElementById('fullscreenToggleText');
-            
-            if (isFullscreenMode) {
-                fullscreenIcon.textContent = '⛶';
-                fullscreenText.textContent = 'Обычный режим';
-                fullscreenToggleIcon.textContent = '⛶';
-                fullscreenToggleText.textContent = 'Обычный режим';
-            } else {
-                fullscreenIcon.textContent = '⬜';
-                fullscreenText.textContent = 'Полный экран';
-                fullscreenToggleIcon.textContent = '⛶';
-                fullscreenToggleText.textContent = 'Полный экран';
-            }
-            
-            autoRefreshIcon.textContent = isAutoRefreshEnabled ? '✅' : '❌';
-            autoRefreshText.textContent = isAutoRefreshEnabled ? 'Авто: Вкл' : 'Авто: Выкл';
-        }
-
-        // Переключение полноэкранного режима
-        function toggleFullscreen() {
-            isFullscreenMode = !isFullscreenMode;
-            
-            if (isFullscreenMode) {
-                document.body.classList.add('fullscreen-mode');
-                document.body.scrollIntoView({ behavior: 'smooth' });
-            } else {
-                document.body.classList.remove('fullscreen-mode');
-            }
-            
-            localStorage.setItem('fullscreenMode', isFullscreenMode.toString());
-            updateFullscreenControls();
-        }
-
-        // Изменение интервала таймера
-        function changeTimer(seconds) {
-            const newInterval = refreshInterval + (seconds * 1000);
-            
-            // Ограничиваем минимальное и максимальное значение
-            if (newInterval < 5000) {
-                refreshInterval = 5000; // 5 секунд минимум
-            } else if (newInterval > 60000) {
-                refreshInterval = 60000; // 60 секунд максимум
-            } else {
-                refreshInterval = newInterval;
-            }
-            
-            localStorage.setItem('refreshInterval', refreshInterval.toString());
-            updateTimerDisplay();
-            updateStatusIndicator();
-            updateFullscreenControls();
-            
-            if (isAutoRefreshEnabled) {
-                restartAutoRefresh();
-            }
-        }
-
-        // Настройка автообновления
-        function setupAutoRefresh() {
-            if (autoRefreshInterval) {
-                clearInterval(autoRefreshInterval);
-            }
-            
-            if (isAutoRefreshEnabled) {
-                autoRefreshInterval = setInterval(() => {
-                    loadRecords();
-                }, refreshInterval);
-            }
-            
-            updateStatusIndicator();
-            updateFullscreenControls();
-        }
-
-        // Перезапуск автообновления
-        function restartAutoRefresh() {
-            if (autoRefreshInterval) {
-                clearInterval(autoRefreshInterval);
-            }
-            
-            if (isAutoRefreshEnabled) {
-                autoRefreshInterval = setInterval(() => {
-                    loadRecords();
-                }, refreshInterval);
-            }
-        }
-
-        // Переключение автообновления
-        function toggleAutoRefresh() {
-            isAutoRefreshEnabled = !isAutoRefreshEnabled;
-            localStorage.setItem('autoRefreshEnabled', isAutoRefreshEnabled.toString());
-            setupAutoRefresh();
-        }
-
-        // Ручное обновление
-        function manualRefresh() {
-            loadRecords();
-            // Визуальная обратная связь
-            const refreshBtn = document.querySelector('.btn-refresh');
-            const originalText = refreshBtn.innerHTML;
-            refreshBtn.innerHTML = '<span>🔄</span><span>Обновление...</span>';
-            
-            setTimeout(() => {
-                refreshBtn.innerHTML = originalText;
-            }, 1000);
-        }
-
-        // Сброс настроек
-        function resetSettings() {
-            if (confirm('Сбросить все настройки к значениям по умолчанию?')) {
-                refreshInterval = 10000;
-                isAutoRefreshEnabled = true;
-                isFullscreenMode = false;
-                
-                localStorage.removeItem('refreshInterval');
-                localStorage.removeItem('autoRefreshEnabled');
-                localStorage.removeItem('fullscreenMode');
-                
-                document.body.classList.remove('fullscreen-mode');
-                updateTimerDisplay();
-                updateAutoRefreshToggle();
-                updateFullscreenControls();
-                setupAutoRefresh();
-            }
-        }
-
-        // Обновление времени последнего обновления
-        function updateLastUpdateTime() {
-            const now = new Date();
-            lastUpdateTime = now;
-            
-            const timeString = now.toLocaleTimeString('ru-RU', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            
-            document.getElementById('lastUpdateTime').textContent = timeString;
-            document.getElementById('fullscreenLastUpdate').textContent = timeString;
-        }
-
-        // Обновление статистики в полноэкранном режиме
-        function updateFullscreenStats(records) {
-            if (!records || records.length === 0) {
-                document.getElementById('fullscreenTotalPlayers').textContent = '0';
-                return;
-            }
-            
-            const uniquePlayers = new Set(records.map(record => record.player || "Аноним"));
-            document.getElementById('fullscreenTotalPlayers').textContent = uniquePlayers.size;
-        }
-
-        // Загрузка рекордов
-        function loadRecords() {
-            const recordsContainer = document.getElementById('recordsContainer');
-            
-            database.ref('records').once('value')
-                .then((snapshot) => {
-                    const data = snapshot.val();
-                    const currentHash = getDataHash(data);
-                    
-                    // Проверяем, изменились ли данные
-                    if (currentHash !== previousDataHash) {
-                        updateCounter++;
-                        const changeCount = calculateChanges(data);
-                        displayRecords(data, changeCount);
-                        showUpdateNotification(changeCount);
-                        previousDataHash = currentHash;
-                    } else {
-                        // Данные не изменились, просто обновляем время
-                        updateLastUpdateTime();
-                    }
-                })
-                .catch((error) => {
-                    console.error("Ошибка загрузки данных:", error);
-                    recordsContainer.innerHTML = '<div class="error">Ошибка загрузки данных. Попробуйте позже.</div>';
-                });
-        }
-
-        // Расчет количества изменений
-        function calculateChanges(newData) {
-            if (!newData || !currentRecords.length) return 0;
-            
+    // парсим строку с разделителем "!"
+    function parseRecordsFromRaw(rawData) {
+        if (!rawData) return [];
+        const parts = rawData.split('!').filter(p => p.trim() !== '');
+        const items = [];
+        for (let p of parts) {
             try {
-                const recordsString = newData.trim();
-                const recordParts = recordsString.split('!').filter(part => part.trim() !== '');
-                
-                if (recordParts.length === 0) return 0;
-                
-                const newRecords = recordParts.map(part => {
-                    try {
-                        const cleanedPart = part.trim();
-                        return JSON.parse(cleanedPart);
-                    } catch (e) {
-                        return null;
-                    }
-                }).filter(record => record !== null);
-                
-                // Создаем хэш-карту текущих записей для быстрого сравнения
-                const currentMap = new Map();
-                currentRecords.forEach(record => {
-                    const key = `${record.player}_${record.value}`;
-                    currentMap.set(key, record);
-                });
-                
-                // Подсчитываем новые или измененные записи
-                let changes = 0;
-                newRecords.forEach(record => {
-                    const key = `${record.player}_${record.value}`;
-                    if (!currentMap.has(key)) {
-                        changes++;
-                    }
-                });
-                
-                // Обновляем статистику изменений
-                document.getElementById('changeStats').textContent = 
-                    changes > 0 ? `Изменений: ${changes}` : 'Нет изменений';
-                
-                return changes;
-            } catch (error) {
-                console.error("Ошибка расчета изменений:", error);
-                return 0;
-            }
+                const obj = JSON.parse(p.trim());
+                if (obj && typeof obj === 'object') items.push(obj);
+            } catch(e) { console.warn("json fail", p); }
+        }
+        return items;
+    }
+
+    // вычисление изменений и обновление UI с анимацией
+    function updateUIWithAnimation(newRecords) {
+        if (!newRecords.length) {
+            container.innerHTML = '<div style="text-align:center; padding:2rem;">🍂 пока нет рекордов, стань первым 🐌</div>';
+            updateStatistics([]);
+            return;
+        }
+        // сортировка по value (число)
+        const sorted = [...newRecords].sort((a,b) => (parseInt(b.value||0) - parseInt(a.value||0)));
+        
+        // сравниваем с текущими записями для анимации
+        const oldMap = new Map();
+        currentRecords.forEach(r => { oldMap.set(r.player, parseInt(r.value||0)); });
+        
+        let html = '<ul class="records-list">';
+        const changedPlayers = new Set();
+        // определим, у кого изменился счёт или позиция
+        for (let i=0; i<sorted.length; i++) {
+            const rec = sorted[i];
+            const oldScore = oldMap.get(rec.player);
+            const newScore = parseInt(rec.value||0);
+            if (oldScore !== undefined && oldScore !== newScore) changedPlayers.add(rec.player);
+            else if (oldScore === undefined) changedPlayers.add(rec.player); // новый игрок
+        }
+        // также проверим изменения ранга (если старый игрок сменил место)
+        const oldOrder = currentRecords.map(r=>r.player);
+        for(let i=0;i<sorted.length && i<oldOrder.length;i++) {
+            if(sorted[i].player !== oldOrder[i]) changedPlayers.add(sorted[i].player);
         }
 
-        // Обновление статистики
-        function updateStatistics(records) {
-            if (!records || records.length === 0) {
-                document.getElementById('totalPlayers').textContent = '0';
-                document.getElementById('totalRecords').textContent = '0';
-                document.getElementById('topScore').textContent = '0';
-                document.getElementById('avgScore').textContent = '0';
-                return;
-            }
-
-            // Подсчет уникальных игроков
-            const uniquePlayers = new Set(records.map(record => record.player || "Аноним"));
-            document.getElementById('totalPlayers').textContent = uniquePlayers.size;
-            
-            // Общее количество записей
-            document.getElementById('totalRecords').textContent = records.length;
-            
-            // Лучший счет
-            const topScore = Math.max(...records.map(record => parseInt(record.value || "0", 10)));
-            document.getElementById('topScore').textContent = topScore.toLocaleString('ru-RU');
-            
-            // Средний счет
-            const totalScore = records.reduce((sum, record) => sum + parseInt(record.value || "0", 10), 0);
-            const avgScore = Math.round(totalScore / records.length);
-            document.getElementById('avgScore').textContent = avgScore.toLocaleString('ru-RU');
-            
-            // Обновление статистики для полноэкранного режима
-            updateFullscreenStats(records);
+        for (let idx=0; idx<sorted.length; idx++) {
+            const rec = sorted[idx];
+            const rank = idx+1;
+            const name = rec.player || "Аноним";
+            const scoreVal = parseInt(rec.value||0);
+            const formatted = scoreVal.toLocaleString('ru-RU');
+            let rankClass = '';
+            if (rank===1) rankClass='top-1';
+            else if (rank===2) rankClass='top-2';
+            else if (rank===3) rankClass='top-3';
+            const isUpdated = changedPlayers.has(rec.player);
+            html += `<li class="record-item ${rankClass} ${isUpdated ? 'updated' : ''}">
+                        <div class="record-rank">${rank}</div>
+                        <div class="player-name">${escapeHtml(name)}</div>
+                        <div class="record-score ${isUpdated ? 'changed' : ''}">${formatted}</div>
+                     </li>`;
         }
+        html += '</ul>';
+        container.innerHTML = html;
+        currentRecords = sorted;
+        updateStatistics(sorted);
+        if (changedPlayers.size > 0) showToast('', changedPlayers.size);
+        else showToast('🍃 данные не изменились', 0);
+    }
 
-        // Отображение рекордов с анимацией изменений
-        function displayRecords(data, changeCount = 0) {
-            const recordsContainer = document.getElementById('recordsContainer');
-            
-            if (!data) {
-                recordsContainer.innerHTML = '<div class="empty">Пока нет рекордов. Будьте первым!</div>';
-                updateStatistics([]);
-                updateLastUpdateTime();
-                return;
-            }
-
-            try {
-                // Разделяем данные по разделителю "!"
-                const recordsString = data.trim();
-                const recordParts = recordsString.split('!').filter(part => part.trim() !== '');
-                
-                if (recordParts.length === 0) {
-                    recordsContainer.innerHTML = '<div class="empty">Пока нет рекордов. Будьте первым!</div>';
-                    updateStatistics([]);
-                    updateLastUpdateTime();
-                    return;
-                }
-
-                // Парсим каждый JSON объект
-                const records = recordParts.map(part => {
-                    try {
-                        const cleanedPart = part.trim();
-                        return JSON.parse(cleanedPart);
-                    } catch (e) {
-                        console.error("Ошибка парсинга записи:", part, e);
-                        return null;
-                    }
-                }).filter(record => record !== null);
-
-                // Сохраняем предыдущие записи для сравнения
-                const previousRecords = [...currentRecords];
-                currentRecords = records;
-
-                // Сортируем по значению счета (по убыванию)
-                records.sort((a, b) => {
-                    const scoreA = parseInt(a.value || "0", 10);
-                    const scoreB = parseInt(b.value || "0", 10);
-                    return scoreB - scoreA;
-                });
-
-                // Отображаем записи
-                if (records.length === 0) {
-                    recordsContainer.innerHTML = '<div class="empty">Пока нет рекордов. Будьте первым!</div>';
-                    updateStatistics([]);
-                    updateLastUpdateTime();
-                    return;
-                }
-
-                let recordsHTML = '<ul class="records-list">';
-                
-                records.forEach((record, index) => {
-                    const rank = index + 1;
-                    const playerName = record.player || "Аноним";
-                    const score = record.value || "0";
-                    
-                    // Форматируем счет
-                    const formattedScore = parseInt(score, 10).toLocaleString('ru-RU');
-                    
-                    // Определяем класс для топ-3
-                    let rankClass = "";
-                    if (rank === 1) rankClass = "top-1";
-                    else if (rank === 2) rankClass = "top-2";
-                    else if (rank === 3) rankClass = "top-3";
-                    
-                    // Проверяем, изменилась ли эта запись
-                    const isUpdated = checkIfRecordChanged(record, previousRecords, rank);
-                    
-                    recordsHTML += `
-                        <li class="record-item ${rankClass} ${isUpdated ? 'updated' : ''}">
-                            <div class="record-rank">${rank}</div>
-                            <div class="player-name">${playerName}</div>
-                            <div class="record-score ${isUpdated ? 'changed' : ''}">${formattedScore}</div>
-                        </li>
-                    `;
-                });
-                
-                recordsHTML += '</ul>';
-                recordsContainer.innerHTML = recordsHTML;
-                
-                // Обновляем статистику
-                updateStatistics(records);
-                updateLastUpdateTime();
-                
-            } catch (error) {
-                console.error("Ошибка обработки данных:", error);
-                recordsContainer.innerHTML = '<div class="error">Ошибка обработки данных. Проверьте формат данных.</div>';
-                updateStatistics([]);
-                updateLastUpdateTime();
-            }
+    function updateStatistics(records) {
+        if (!records.length) {
+            totalPlayersSpan.innerText = '0'; totalRecordsSpan.innerText = '0';
+            topScoreSpan.innerText = '0'; avgScoreSpan.innerText = '0';
+            return;
         }
+        const unique = new Set(records.map(r=>r.player));
+        totalPlayersSpan.innerText = unique.size;
+        totalRecordsSpan.innerText = records.length;
+        const maxScore = Math.max(...records.map(r=>parseInt(r.value||0)));
+        topScoreSpan.innerText = maxScore.toLocaleString();
+        const sum = records.reduce((s,r)=>s+parseInt(r.value||0),0);
+        avgScoreSpan.innerText = Math.round(sum/records.length).toLocaleString();
+    }
 
-        // Проверка, изменилась ли конкретная запись
-        function checkIfRecordChanged(newRecord, previousRecords, newRank) {
-            if (!previousRecords || previousRecords.length === 0) return false;
-            
-            // Ищем запись с таким же игроком в предыдущих данных
-            const previousRecord = previousRecords.find(record => 
-                record.player === newRecord.player
-            );
-            
-            if (!previousRecord) {
-                // Это новая запись
-                return true;
-            }
-            
-            // Проверяем, изменился ли счет
-            if (parseInt(newRecord.value || "0", 10) !== parseInt(previousRecord.value || "0", 10)) {
-                return true;
-            }
-            
-            // Проверяем, изменилось ли место в рейтинге
-            const previousRank = previousRecords.findIndex(record => 
-                record.player === newRecord.player
-            ) + 1;
-            
-            if (previousRank !== newRank) {
-                return true;
-            }
-            
-            return false;
-        }
-
-        // Инициализация при загрузке страницы
-        document.addEventListener('DOMContentLoaded', function() {
-            // Инициализация настроек
-            initializeSettings();
-            
-            // Загрузка данных при старте
-            loadRecords();
-            
-            // Подписка на изменения в Firebase (только реальные изменения)
-            database.ref('records').on('value', (snapshot) => {
-                const data = snapshot.val();
-                const currentHash = getDataHash(data);
-                
-                if (currentHash !== previousDataHash) {
-                    updateCounter++;
-                    const changeCount = calculateChanges(data);
-                    displayRecords(data, changeCount);
-                    showUpdateNotification(changeCount);
-                    previousDataHash = currentHash;
-                }
-            });
-            
-            // Назначение обработчиков событий
-            document.getElementById('autoRefreshToggle').addEventListener('change', toggleAutoRefresh);
-            
-            // Обработка клавиши Escape для выхода из полноэкранного режима
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && isFullscreenMode) {
-                    toggleFullscreen();
-                }
-            });
-            
-            // Скрываем значок обновления при клике на кнопку обновления
-            document.querySelector('.btn-refresh').addEventListener('click', hideRefreshBadge);
+    function escapeHtml(str) { 
+        if(!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
         });
-    </script>
+    }
+
+    // загрузка из firebase (с умным сравнением)
+    function loadRecordsAndUpdate() {
+        database.ref('records').once('value').then(snap => {
+            const raw = snap.val();
+            const newHash = getDataHash(raw);
+            if (newHash === lastDataHash && lastDataHash !== '') {
+                // без изменений, просто обновим время
+                const now = new Date().toLocaleTimeString('ru-RU');
+                lastUpdateSpan.innerText = now;
+                return;
+            }
+            const recordsList = parseRecordsFromRaw(raw);
+            updateUIWithAnimation(recordsList);
+            lastDataHash = newHash;
+            const now = new Date().toLocaleTimeString('ru-RU');
+            lastUpdateSpan.innerText = now;
+        }).catch(err => {
+            console.error(err);
+            container.innerHTML = '<div style="padding:2rem;text-align:center;">🐌 ошибка загрузки ракушек 🍂</div>';
+        });
+    }
+
+    // автоперезапуск интервала
+    function restartAutoRefresh() {
+        if (autoInterval) clearInterval(autoInterval);
+        if (autoEnabled) {
+            autoInterval = setInterval(() => {
+                loadRecordsAndUpdate();
+            }, refreshSec * 1000);
+        }
+    }
+
+    function setRefreshInterval(sec) {
+        if (sec < 5) sec = 5;
+        if (sec > 60) sec = 60;
+        refreshSec = sec;
+        localStorage.setItem('snail_records_interval', refreshSec);
+        timerSpan.innerText = refreshSec;
+        if (fsTimerSpan) fsTimerSpan.innerText = refreshSec;
+        if (currentTimerSpan) currentTimerSpan.innerText = refreshSec;
+        restartAutoRefresh();
+    }
+
+    function toggleAutoMode(enable) {
+        autoEnabled = enable;
+        localStorage.setItem('snail_records_auto', autoEnabled);
+        autoToggle.checked = autoEnabled;
+        if (autoEnabled) {
+            statusLed.classList.remove('paused');
+            statusTextSpan.innerText = 'активно';
+            restartAutoRefresh();
+        } else {
+            if (autoInterval) clearInterval(autoInterval);
+            statusLed.classList.add('paused');
+            statusTextSpan.innerText = 'пауза';
+        }
+        const fsAutoBtn = document.getElementById('fsAutoToggle');
+        if (fsAutoBtn) fsAutoBtn.innerHTML = autoEnabled ? '✅ авто: вкл' : '❌ авто: выкл';
+    }
+
+    function toggleFullscreenMode() {
+        fullscreen = !fullscreen;
+        if (fullscreen) document.body.classList.add('fullscreen-mode');
+        else document.body.classList.remove('fullscreen-mode');
+        localStorage.setItem('snail_records_fullscreen', fullscreen);
+        const fsBtn = document.getElementById('fsToggleBtn');
+        if (fsBtn) fsBtn.innerHTML = fullscreen ? '⛶ обычный режим' : '⬜ полный экран';
+        const enterBtn = document.getElementById('enterFullscreenBtn');
+        if (enterBtn) enterBtn.innerHTML = fullscreen ? '⬜ обычный вид' : '⛶ полный экран';
+    }
+
+    function resetSettings() {
+        if (confirm('🍂 вернуть настройки улитки по умолчанию?')) {
+            refreshSec = 10;
+            autoEnabled = true;
+            fullscreen = false;
+            localStorage.removeItem('snail_records_interval');
+            localStorage.removeItem('snail_records_auto');
+            localStorage.removeItem('snail_records_fullscreen');
+            setRefreshInterval(10);
+            toggleAutoMode(true);
+            if (document.body.classList.contains('fullscreen-mode')) document.body.classList.remove('fullscreen-mode');
+            fullscreen = false;
+            const fsBtn = document.getElementById('fsToggleBtn');
+            if (fsBtn) fsBtn.innerHTML = '⛶ обычный режим';
+            const enterBtn = document.getElementById('enterFullscreenBtn');
+            if (enterBtn) enterBtn.innerHTML = '⛶ полный экран';
+        }
+    }
+
+    // слушатель реального времени firebase (только если данные реально поменялись)
+    database.ref('records').on('value', (snap) => {
+        const raw = snap.val();
+        const newHash = getDataHash(raw);
+        if (newHash !== lastDataHash || lastDataHash === '') {
+            const recordsList = parseRecordsFromRaw(raw);
+            updateUIWithAnimation(recordsList);
+            lastDataHash = newHash;
+            const now = new Date().toLocaleTimeString('ru-RU');
+            lastUpdateSpan.innerText = now;
+        } else {
+            const now = new Date().toLocaleTimeString('ru-RU');
+            lastUpdateSpan.innerText = now;
+        }
+    });
+
+    // ИНИЦИАЛИЗАЦИЯ
+    (function init() {
+        const savedInterval = localStorage.getItem('snail_records_interval');
+        if (savedInterval) refreshSec = parseInt(savedInterval);
+        const savedAuto = localStorage.getItem('snail_records_auto');
+        if (savedAuto !== null) autoEnabled = savedAuto === 'true';
+        const savedFs = localStorage.getItem('snail_records_fullscreen');
+        if (savedFs === 'true') fullscreen = true;
+        
+        timerSpan.innerText = refreshSec;
+        if (fsTimerSpan) fsTimerSpan.innerText = refreshSec;
+        if (currentTimerSpan) currentTimerSpan.innerText = refreshSec;
+        autoToggle.checked = autoEnabled;
+        if (fullscreen) document.body.classList.add('fullscreen-mode');
+        toggleAutoMode(autoEnabled);
+        setRefreshInterval(refreshSec);
+        loadRecordsAndUpdate();
+
+        // обработчики кнопок
+        document.getElementById('timerMinus5').onclick = () => setRefreshInterval(refreshSec-5);
+        document.getElementById('timerMinus1').onclick = () => setRefreshInterval(refreshSec-1);
+        document.getElementById('timerPlus1').onclick = () => setRefreshInterval(refreshSec+1);
+        document.getElementById('timerPlus5').onclick = () => setRefreshInterval(refreshSec+5);
+        autoToggle.addEventListener('change', (e) => toggleAutoMode(e.target.checked));
+        document.getElementById('refreshBtn').onclick = () => loadRecordsAndUpdate();
+        document.getElementById('resetSettingsBtn').onclick = resetSettings;
+        document.getElementById('enterFullscreenBtn').onclick = toggleFullscreenMode;
+        const fsToggle = document.getElementById('fsToggleBtn');
+        if (fsToggle) fsToggle.onclick = toggleFullscreenMode;
+        const fsRefresh = document.getElementById('fsRefreshBtn');
+        if (fsRefresh) fsRefresh.onclick = () => loadRecordsAndUpdate();
+        const fsAutoBtn = document.getElementById('fsAutoToggle');
+        if (fsAutoBtn) fsAutoBtn.onclick = () => toggleAutoMode(!autoEnabled);
+    })();
+</script>
 </body>
 </html>
