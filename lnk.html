@@ -3,97 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Сократитель ссылок</title>
-    <!-- Фавиконка -->
+    <title>Ули · сократитель ссылок</title>
+    
     <link rel="icon" type="image/png" href="/icon.png">
+    
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+            background-color: #1b3b1b;
+            background-image: radial-gradient(circle at 30% 40%, #2b5a2b 0%, #0e2f0e 90%);
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.5rem;
+            position: relative;
+            color: #f0f7da;
+        }
+
+        body::before {
+            content: "🐌🐌🐌";
+            font-size: 8rem;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            opacity: 0.08;
+            white-space: nowrap;
+            transform: rotate(-10deg);
+            pointer-events: none;
+            letter-spacing: 2rem;
+        }
+
+        body::after {
+            content: "🐌🐌🐌";
+            font-size: 12rem;
+            position: absolute;
+            bottom: -20px;
+            right: 0;
+            opacity: 0.05;
+            transform: rotate(15deg);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .main-container {
+            max-width: 700px;
+            width: 100%;
+            background: rgba(30, 50, 30, 0.7);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 3px solid #9bbc7b;
+            border-radius: 30px;
+            box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 2px #6f8c5d inset, 0 0 0 4px #3f6140 inset;
+            padding: 3rem 2rem;
+        }
+
+        .header-title {
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 0.6rem 1.2rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            font-weight: 800;
+            text-shadow: 3px 3px 0 #2d4a2d, 5px 5px 0 #1b331b;
+            color: #e2f0c0;
+            letter-spacing: 2px;
         }
-        
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            padding: 40px;
-            width: 90%;
-            max-width: 600px;
+
+        .snail-icon-big {
+            font-size: 3rem;
+            transform: rotate(15deg);
+            transition: transform 0.2s;
+            filter: drop-shadow(2px 4px 4px #0f2a0f);
         }
-        
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-            text-align: center;
-            font-size: 2em;
+
+        .snail-icon-big:hover {
+            transform: rotate(25deg) scale(1.1);
         }
-        
+
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 1.5rem;
         }
-        
+
         label {
             display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #dcedc4;
+            font-weight: 600;
+            font-size: 1rem;
         }
-        
+
         input {
             width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: border-color 0.3s;
+            padding: 0.9rem 1.2rem;
+            background: #2e4d2e;
+            border: 2px solid #7eaf7a;
+            border-radius: 20px;
+            font-size: 1rem;
+            color: #f0f7da;
+            transition: all 0.2s;
+            font-family: inherit;
         }
-        
+
         input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #c7f0b1;
+            background: #386d38;
+            box-shadow: 0 0 0 3px rgba(167, 200, 163, 0.3);
         }
-        
+
+        input::placeholder {
+            color: #8aaa7a;
+        }
+
         button {
             width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            padding: 0.9rem 1.5rem;
+            background: #a3c4a3;
+            color: #1b3f1b;
             border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            font-weight: 800;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.2s;
+            box-shadow: 0 5px 0 #446d44;
+            font-family: inherit;
+            margin-top: 0.5rem;
         }
-        
+
         button:hover {
+            background: #c3e6b3;
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            box-shadow: 0 7px 0 #2f542f;
         }
-        
+
+        button:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #2f542f;
+        }
+
         .result {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: #2f542f;
+            border-radius: 24px;
+            border: 2px dashed #9bbc7b;
             display: none;
         }
-        
+
         .result.show {
             display: block;
             animation: slideIn 0.3s ease;
         }
-        
+
         @keyframes slideIn {
             from {
                 opacity: 0;
@@ -104,235 +176,229 @@
                 transform: translateY(0);
             }
         }
-        
-        .short-url {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .short-url input {
-            flex: 1;
-            background: white;
-        }
-        
-        .copy-btn {
-            width: auto;
-            padding: 12px 20px;
-            background: #28a745;
-        }
-        
-        .copy-btn:hover {
-            background: #218838;
-        }
-        
-        .url-example {
-            background: #e9ecef;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 10px;
-            font-size: 14px;
-            color: #495057;
-        }
-        
-        .url-example span {
-            font-weight: bold;
-            color: #667eea;
-        }
-        
-        .error {
-            color: #dc3545;
-            margin-top: 10px;
-            font-size: 14px;
-        }
-        
-        .info {
-            margin-top: 20px;
-            color: #666;
-            font-size: 14px;
-            text-align: center;
+
+        .result-title {
+            color: #e2ffb3;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
         }
 
-        /* Дополнительные стили для фавиконки в интерфейсе */
-        .favicon-preview {
+        .short-url-box {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            padding: 10px;
-            background: #f0f0f0;
-            border-radius: 10px;
+            gap: 0.8rem;
+            flex-wrap: wrap;
         }
-        
-        .favicon-preview img {
-            width: 32px;
-            height: 32px;
+
+        .short-url-box input {
+            flex: 1;
+            background: #1b3b1b;
+            border-color: #a3c4a3;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .copy-btn {
+            width: auto;
+            background: #7eaf7a;
+            box-shadow: 0 5px 0 #446d44;
+            margin-top: 0;
+            padding: 0.9rem 1.5rem;
+        }
+
+        .copy-btn:hover {
+            background: #9bcb97;
+        }
+
+        .info-text {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: #b3d49b;
+            text-align: center;
+            word-break: break-all;
+        }
+
+        .info-text a {
+            color: #e2ffb3;
+            text-decoration: underline wavy #a3d683;
+        }
+
+        .footer-snails {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem 2rem;
+            flex-wrap: wrap;
+            font-size: 1.5rem;
+            color: #a2c78d;
+            border-top: 2px dashed #61855e;
+            padding-top: 1.5rem;
+            opacity: 0.8;
+        }
+
+        .footer-snails span {
+            filter: drop-shadow(0 5px 5px #172e17);
+            transition: 0.2s;
+            cursor: default;
+        }
+
+        .footer-snails span:hover {
+            transform: scale(1.2) rotate(5deg);
+            color: #e2ffb3;
+        }
+
+        @media (max-width: 600px) {
+            .main-container { padding: 1.5rem 1rem; }
+            .header-title { font-size: 1.8rem; }
+            .snail-icon-big { font-size: 2.2rem; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Превью фавиконки (опционально) -->
-        <div class="favicon-preview">
-            <img src="/icon.png" alt="favicon" onerror="this.style.display='none'">
-            <span>🔗 Сервис коротких ссылок</span>
-        </div>
-        
-        <h1>🔗 Сократитель ссылок</h1>
-        
-        <div class="input-group">
-            <label for="longUrl">Длинная ссылка</label>
-            <input type="url" id="longUrl" placeholder="https://example.com/very-long-url" required>
-        </div>
-        
-        <div class="input-group">
-            <label for="customCode">Свой код (необязательно)</label>
-            <input type="text" id="customCode" placeholder="например: mylink" maxlength="50">
-        </div>
-        
-        <button onclick="createShortLink()">Создать короткую ссылку</button>
-        
-        <div class="result" id="result">
-            <p>Ваша короткая ссылка:</p>
-            <div class="short-url">
-                <input type="text" id="shortUrl" readonly>
-                <button class="copy-btn" onclick="copyToClipboard()">Копировать</button>
-            </div>
-            <div class="url-example" id="urlExample"></div>
-        </div>
-        
-        <div class="info">
-            <p>Создавайте короткие ссылки легко и быстро!</p>
-            <p>Формат: <span id="baseUrl"></span>redirect?код</p>
-        </div>
+
+<div class="main-container">
+    <div class="header-title">
+        <span class="snail-icon-big">🐌</span>
+        <span>СОКРАТИТЕЛЬ ССЫЛОК</span>
+        <span class="snail-icon-big">🐌</span>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    
-    <script>
-        // Конфигурация Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
-            authDomain: "kcalls.firebaseapp.com",
-            databaseURL: "https://kcalls-default-rtdb.firebaseio.com",
-            projectId: "kcalls",
-            storageBucket: "kcalls.firebasestorage.app",
-            messagingSenderId: "990117089104",
-            appId: "1:990117089104:web:278a42c037e975ebb76655",
-            measurementId: "G-TK6GVEX9G5"
-        };
+    <div class="input-group">
+        <label>длинная ссылка</label>
+        <input type="url" id="longUrl" placeholder="https://example.com/very-long-url">
+    </div>
 
-        // Инициализация Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+    <div class="input-group">
+        <label>свой код (необязательно)</label>
+        <input type="text" id="customCode" placeholder="например: mylink" maxlength="50">
+    </div>
 
-        // Получаем базовый URL (без имени файла)
-        const baseUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
-        document.getElementById('baseUrl').textContent = baseUrl;
+    <button onclick="createShortLink()">создать короткую ссылку</button>
 
-        // Функция генерации случайного кода
-        function generateCode(length = 6) {
-            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let result = '';
-            for (let i = 0; i < length; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return result;
+    <div class="result" id="result">
+        <div class="result-title">ваша короткая ссылка:</div>
+        <div class="short-url-box">
+            <input type="text" id="shortUrl" readonly onclick="this.select()">
+            <button class="copy-btn" onclick="copyToClipboard()">копировать</button>
+        </div>
+        <div class="info-text" id="infoText"></div>
+    </div>
+
+    <div class="footer-snails">
+        <span>🐌</span><span>🐌💚</span><span>🐌</span><span>🐚</span><span>🐌</span><span>🍀🐌</span>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
+        authDomain: "kcalls.firebaseapp.com",
+        databaseURL: "https://kcalls-default-rtdb.firebaseio.com",
+        projectId: "kcalls",
+        storageBucket: "kcalls.firebasestorage.app",
+        messagingSenderId: "990117089104",
+        appId: "1:990117089104:web:278a42c037e975ebb76655",
+        measurementId: "G-TK6GVEX9G5"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    const baseUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
+
+    function generateCode(length = 6) {
+        const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
+    async function isCodeAvailable(code) {
+        try {
+            const snapshot = await database.ref('links/' + code).once('value');
+            return !snapshot.exists();
+        } catch (error) {
+            console.error('Ошибка проверки кода:', error);
+            return false;
+        }
+    }
+
+    async function createShortLink() {
+        const longUrl = document.getElementById('longUrl').value.trim();
+        const customCode = document.getElementById('customCode').value.trim();
+        const resultDiv = document.getElementById('result');
+        const shortUrlInput = document.getElementById('shortUrl');
+        const infoText = document.getElementById('infoText');
+
+        if (!longUrl) {
+            alert('введите ссылку');
+            return;
         }
 
-        // Функция проверки доступности кода
-        async function isCodeAvailable(code) {
-            try {
-                const snapshot = await database.ref('links/' + code).once('value');
-                return !snapshot.exists();
-            } catch (error) {
-                console.error('Ошибка проверки кода:', error);
-                return false;
-            }
+        try {
+            new URL(longUrl);
+        } catch {
+            alert('ссылка должна начинаться с http:// или https://');
+            return;
         }
 
-        // Основная функция создания ссылки
-        async function createShortLink() {
-            const longUrl = document.getElementById('longUrl').value.trim();
-            const customCode = document.getElementById('customCode').value.trim();
-            
-            if (!longUrl) {
-                alert('Введите ссылку');
+        let shortCode = customCode;
+
+        if (customCode) {
+            const available = await isCodeAvailable(customCode);
+            if (!available) {
+                alert('этот код уже занят, выберите другой');
                 return;
             }
-
-            // Валидация URL
-            try {
-                new URL(longUrl);
-            } catch {
-                alert('Введите корректный URL (начинающийся с http:// или https://)');
-                return;
-            }
-
-            let shortCode = customCode;
-            
-            if (customCode) {
-                // Проверяем доступность пользовательского кода
-                const available = await isCodeAvailable(customCode);
-                if (!available) {
-                    alert('Этот код уже занят. Пожалуйста, выберите другой.');
-                    return;
-                }
-            } else {
-                // Генерируем уникальный код
-                do {
-                    shortCode = generateCode();
-                } while (!(await isCodeAvailable(shortCode)));
-            }
-
-            try {
-                // Сохраняем ссылку в Firebase
-                await database.ref('links/' + shortCode).set({
-                    url: longUrl,
-                    createdAt: firebase.database.ServerValue.TIMESTAMP,
-                    clicks: 0
-                });
-
-                // Показываем результат в формате /redirect?код
-                const shortUrl = baseUrl + 'redirect?' + shortCode;
-                document.getElementById('shortUrl').value = shortUrl;
-                document.getElementById('urlExample').innerHTML = `Пример перехода: <span>${baseUrl}redirect?${shortCode}</span>`;
-                document.getElementById('result').classList.add('show');
-                
-                // Очищаем поле customCode
-                document.getElementById('customCode').value = '';
-                
-            } catch (error) {
-                console.error('Ошибка сохранения:', error);
-                alert('Произошла ошибка при создании ссылки');
-            }
+        } else {
+            do {
+                shortCode = generateCode();
+            } while (!(await isCodeAvailable(shortCode)));
         }
 
-        // Функция копирования в буфер обмена
-        function copyToClipboard() {
-            const shortUrl = document.getElementById('shortUrl');
-            shortUrl.select();
-            document.execCommand('copy');
-            
-            const copyBtn = document.querySelector('.copy-btn');
-            const originalText = copyBtn.textContent;
-            copyBtn.textContent = 'Скопировано!';
-            setTimeout(() => {
-                copyBtn.textContent = originalText;
-            }, 2000);
-        }
+        try {
+            await database.ref('links/' + shortCode).set({
+                url: longUrl,
+                createdAt: firebase.database.ServerValue.TIMESTAMP,
+                clicks: 0
+            });
 
-        // Добавляем обработчик Enter в поля ввода
-        document.getElementById('longUrl').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') createShortLink();
-        });
-        
-        document.getElementById('customCode').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') createShortLink();
-        });
-    </script>
+            const shortUrl = baseUrl + 'redirect?' + shortCode;
+            shortUrlInput.value = shortUrl;
+            infoText.innerHTML = `пример перехода: <a href="${shortUrl}" target="_blank">${baseUrl}redirect?${shortCode}</a>`;
+            resultDiv.classList.add('show');
+
+            document.getElementById('customCode').value = '';
+
+        } catch (error) {
+            console.error(error);
+            alert('произошла ошибка при создании ссылки');
+        }
+    }
+
+    function copyToClipboard() {
+        const shortUrl = document.getElementById('shortUrl');
+        shortUrl.select();
+        document.execCommand('copy');
+
+        const copyBtn = document.querySelector('.copy-btn');
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = 'скопировано!';
+        setTimeout(() => {
+            copyBtn.textContent = originalText;
+        }, 2000);
+    }
+
+    document.getElementById('longUrl').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') createShortLink();
+    });
+    document.getElementById('customCode').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') createShortLink();
+    });
+</script>
 </body>
 </html>
