@@ -1,460 +1,571 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <link rel="icon" type="image/png" href="/icon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Узнать username Telegram бота</title>
+    <title>Ули · Узнать имя бота по токену</title>
+    
+    <!-- ФАВИКОНКА -->
+    <link rel="icon" type="image/png" href="/icon.png">
+
+    <!-- META-ТЕГИ -->
+    <meta property="og:title" content="Ули · Узнать имя бота по токену">
+    <meta property="og:description" content="Введи токен Telegram бота — улитка покажет его имя и username">
+    <meta property="og:image" content="/preview-default.png">
+    <meta property="og:url" content="https://uliigra2.c6t.ru/botusidname">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Ули · Узнать имя бота по токену">
+    <meta name="twitter:description" content="Введи токен Telegram бота — улитка покажет его имя и username">
+    <meta name="twitter:image" content="/preview-default.png">
+
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
-        
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+            background-color: #1b3b1b;
+            background-image: radial-gradient(circle at 30% 40%, #2b5a2b 0%, #0e2f0e 90%);
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
+            align-items: center;
             justify-content: center;
-            align-items: center;
-            padding: 20px;
+            padding: 2rem 1.5rem;
+            position: relative;
+            color: #f0f7da;
         }
-        
-        .container {
-            background-color: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 40px;
+
+        /* декоративные улитки (фон) */
+        body::before {
+            content: "🐌🐌🐌";
+            font-size: 8rem;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            opacity: 0.08;
+            white-space: nowrap;
+            transform: rotate(-10deg);
+            pointer-events: none;
+            letter-spacing: 2rem;
+        }
+
+        body::after {
+            content: "🤖🐌🤖";
+            font-size: 10rem;
+            position: absolute;
+            bottom: -20px;
+            right: 0;
+            opacity: 0.05;
+            transform: rotate(15deg);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        /* главный контейнер */
+        .main-container {
+            max-width: 600px;
             width: 100%;
-            max-width: 500px;
+            background: rgba(30, 50, 30, 0.7);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 3px solid #9bbc7b;
+            border-radius: 30px;
+            box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 2px #6f8c5d inset, 0 0 0 4px #3f6140 inset;
+            padding: 2.5rem 2rem;
         }
-        
-        h1 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
-        
-        .description {
-            color: #666;
-            text-align: center;
-            margin-bottom: 30px;
-            line-height: 1.5;
-        }
-        
-        .token-input-group {
-            margin-bottom: 25px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 600;
-        }
-        
-        input[type="password"] {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-        
-        input[type="password"]:focus {
-            border-color: #667eea;
-            outline: none;
-        }
-        
-        button {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-        
-        button:active {
-            transform: translateY(0);
-        }
-        
-        .result-container {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: #f9f9f9;
-            border-radius: 10px;
-            display: none;
-        }
-        
-        .result-title {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 20px;
-        }
-        
-        .bot-info {
-            display: grid;
-            grid-template-columns: 80px 1fr;
-            gap: 15px;
-            align-items: center;
-        }
-        
-        .bot-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background-color: #e0e0e0;
+
+        .header-title {
             display: flex;
-            justify-content: center;
             align-items: center;
-            font-size: 30px;
-            overflow: hidden;
+            justify-content: center;
+            gap: 0.6rem 1.2rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+            font-size: 2.5rem;
+            font-weight: 800;
+            text-shadow: 3px 3px 0 #2d4a2d, 5px 5px 0 #1b331b;
+            color: #e2f0c0;
+            letter-spacing: 2px;
         }
-        
-        .bot-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+
+        .snail-icon-big {
+            font-size: 3rem;
+            transform: rotate(10deg);
+            transition: transform 0.2s;
+            filter: drop-shadow(2px 4px 4px #0f2a0f);
         }
-        
-        .bot-details h3 {
-            color: #333;
-            margin-bottom: 5px;
-            font-size: 22px;
+
+        .snail-icon-big:hover {
+            transform: rotate(20deg) scale(1.1);
         }
-        
-        .bot-details p {
-            color: #666;
-            margin-bottom: 3px;
+
+        .subtitle {
+            text-align: center;
+            color: #c7e2a8;
+            margin-bottom: 2rem;
+            font-size: 1rem;
+            border-bottom: 1px dashed #7eaf7a;
+            padding-bottom: 0.8rem;
         }
-        
-        .bot-username {
-            color: #667eea !important;
+
+        /* форма ввода */
+        .token-form {
+            margin-bottom: 2rem;
+        }
+
+        .token-label {
+            display: block;
+            margin-bottom: 0.8rem;
             font-weight: 600;
+            color: #d4edb3;
+            font-size: 1.1rem;
         }
-        
-        .error-message {
-            background-color: #ffebee;
-            color: #c62828;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 20px;
-            display: none;
+
+        .token-input-wrapper {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.8rem;
         }
-        
+
+        .token-input {
+            flex: 1;
+            padding: 1rem 1.2rem;
+            background: #2e4d2e;
+            border: 2px solid #7eaf7a;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            color: #f0f7da;
+            font-family: monospace;
+            transition: all 0.2s;
+        }
+
+        .token-input:focus {
+            outline: none;
+            border-color: #d8f0b5;
+            background: #386d38;
+            box-shadow: 0 0 0 3px rgba(168, 200, 130, 0.3);
+        }
+
+        .token-input::placeholder {
+            color: #8aaa7a;
+            font-family: 'Segoe UI', monospace;
+        }
+
+        .show-token-btn {
+            background: #4a6e4a;
+            color: #d4edb3;
+            border: 2px solid #7eaf7a;
+            padding: 0 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .show-token-btn:hover {
+            background: #5d865d;
+            border-color: #d8f0b5;
+            color: #fff5cc;
+        }
+
+        .get-info-btn {
+            width: 100%;
+            padding: 1rem;
+            background: #a3c4a3;
+            color: #1b3f1b;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid #d6f0be;
+            box-shadow: 0 5px 0 #446d44;
+            margin-top: 0.5rem;
+        }
+
+        .get-info-btn:hover {
+            background: #c3e6b3;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 0 #2f542f;
+        }
+
+        .get-info-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #2f542f;
+        }
+
+        /* загрузка */
         .loading {
             text-align: center;
-            margin-top: 20px;
+            padding: 2rem;
             display: none;
         }
-        
+
         .loading-spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
+            width: 50px;
+            height: 50px;
+            border: 4px solid #4a6e4a;
+            border-top: 4px solid #d8f0b5;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
+            margin: 0 auto 1rem;
         }
-        
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
-        .example {
-            font-size: 14px;
-            color: #888;
-            margin-top: 5px;
+
+        /* результат */
+        .result-container {
+            background: #2e4d2e;
+            border: 2px solid #7eaf7a;
+            border-radius: 24px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            display: none;
         }
-        
+
+        .result-title {
+            font-size: 1.3rem;
+            text-align: center;
+            margin-bottom: 1.2rem;
+            color: #e2f0c0;
+            border-bottom: 2px dotted #8bb46c;
+            padding-bottom: 0.5rem;
+        }
+
+        .bot-info {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .bot-avatar {
+            width: 80px;
+            height: 80px;
+            background: #4a6e4a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            border: 3px solid #d8f0b5;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .bot-details {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .bot-details p {
+            margin: 0.5rem 0;
+            padding: 0.4rem 0.8rem;
+            background: #386d38;
+            border-radius: 30px;
+            border: 1px solid #8ab47a;
+        }
+
+        .bot-name {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #fcfad6;
+        }
+
+        .bot-username {
+            color: #d8f0b5;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .bot-id {
+            font-family: monospace;
+            color: #c7e2a8;
+        }
+
+        .error-message {
+            background: #5a3a2a;
+            border: 2px solid #c97b5a;
+            border-radius: 20px;
+            padding: 1rem;
+            margin-top: 1rem;
+            text-align: center;
+            color: #ffcfb3;
+            display: none;
+        }
+
         .warning {
-            background-color: #fff3cd;
-            color: #856404;
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: 20px;
-            font-size: 14px;
-            line-height: 1.5;
+            background: #3a553a;
+            border-radius: 20px;
+            padding: 0.8rem;
+            margin-top: 1.5rem;
+            font-size: 0.8rem;
+            text-align: center;
+            color: #c7e2a8;
+            border: 1px dashed #9bbc7b;
         }
-        
+
+        .warning strong {
+            color: #ffefb0;
+        }
+
+        .footer-snails {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem 2rem;
+            flex-wrap: wrap;
+            font-size: 1.5rem;
+            color: #a2c78d;
+            border-top: 2px dashed #61855e;
+            padding-top: 1.5rem;
+            opacity: 0.8;
+        }
+
+        .footer-snails span {
+            filter: drop-shadow(0 5px 5px #172e17);
+            transition: 0.2s;
+            cursor: default;
+        }
+
+        .footer-snails span:hover {
+            transform: scale(1.2) rotate(5deg);
+            color: #e2ffb3;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 1rem;
+            color: #a3c4a3;
+            text-decoration: none;
+            border: 2px solid #7eaf7a;
+            padding: 0.4rem 1.2rem;
+            border-radius: 40px;
+            transition: 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .back-link:hover {
+            background: #2f542f;
+            color: #ffefc0;
+            border-color: #d8f0b5;
+        }
+
         .token-display {
             font-family: monospace;
-            background-color: #f5f5f5;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
+            background: #1b331b;
+            padding: 0.6rem;
+            border-radius: 30px;
+            margin-top: 0.5rem;
             word-break: break-all;
-            font-size: 14px;
-            color: #333;
+            font-size: 0.8rem;
+            display: none;
+            border: 1px solid #6f8c5d;
         }
-        
-        .show-token-btn {
-            background: none;
-            color: #667eea;
-            border: none;
-            padding: 5px 10px;
-            font-size: 14px;
-            cursor: pointer;
-            margin-top: 5px;
-            width: auto;
-        }
-        
-        .show-token-btn:hover {
-            text-decoration: underline;
-            transform: none;
-            box-shadow: none;
+
+        @media (max-width: 550px) {
+            .main-container { padding: 1.5rem; }
+            .header-title { font-size: 1.8rem; }
+            .token-input-wrapper { flex-direction: column; }
+            .show-token-btn { padding: 0.8rem; }
+            .bot-info { flex-direction: column; text-align: center; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Узнать username Telegram бота</h1>
-        <p class="description">Введите токен вашего Telegram бота, чтобы получить информацию о нем, включая username</p>
-        
-        <div class="token-input-group">
-            <label for="botToken">Токен бота</label>
-            <input type="password" id="botToken" placeholder="Введите токен бота, например: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
-            <div class="example">Пример: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz</div>
-            
-            <button class="show-token-btn" id="showTokenBtn">Показать токен</button>
-            <div class="token-display" id="tokenDisplay" style="display: none;"></div>
+
+<div class="main-container">
+    <div class="header-title">
+        <span class="snail-icon-big">🐌</span>
+        <span>Ули · Узнать имя бота по токену</span>
+        <span class="snail-icon-big">🤖</span>
+    </div>
+    
+    <div class="subtitle">
+        введи токен — улитка покажет имя и username твоего бота
+    </div>
+
+    <div class="token-form">
+        <div class="token-label">🔑 Токен бота</div>
+        <div class="token-input-wrapper">
+            <input type="password" id="botToken" class="token-input" placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz">
+            <button id="showTokenBtn" class="show-token-btn">👁️ показать</button>
         </div>
-        
-        <button id="getInfoBtn">Получить информацию о боте</button>
-        
-        <div class="loading" id="loading">
-            <div class="loading-spinner"></div>
-            <p>Получаем информацию о боте...</p>
-        </div>
-        
-        <div class="result-container" id="resultContainer">
-            <h2 class="result-title">Информация о боте</h2>
-            <div class="bot-info">
-                <div class="bot-avatar" id="botAvatar">
-                    🤖
-                </div>
-                <div class="bot-details">
-                    <h3 id="botName"></h3>
-                    <p>Username: <span class="bot-username" id="botUsername"></span></p>
-                    <p>ID: <span id="botId"></span></p>
-                    <p>Может присоединяться к группам: <span id="canJoinGroups"></span></p>
-                    <p>Может читать все сообщения: <span id="canReadAllMessages"></span></p>
-                </div>
+        <div id="tokenDisplay" class="token-display"></div>
+        <button id="getInfoBtn" class="get-info-btn">🐌 узнать имя бота</button>
+    </div>
+
+    <div id="loading" class="loading">
+        <div class="loading-spinner"></div>
+        <p>🐌 улитка ползёт к Telegram API... 🐌</p>
+    </div>
+
+    <div id="resultContainer" class="result-container">
+        <div class="result-title">🐌 информация о боте 🐌</div>
+        <div class="bot-info">
+            <div class="bot-avatar" id="botAvatar">🤖</div>
+            <div class="bot-details">
+                <p><strong>📝 Имя:</strong> <span id="botName" class="bot-name"></span></p>
+                <p><strong>🔗 Username:</strong> <span id="botUsername" class="bot-username"></span></p>
+                <p><strong>🆔 ID:</strong> <span id="botId" class="bot-id"></span></p>
+                <p><strong>👥 может в группы:</strong> <span id="canJoinGroups"></span></p>
+                <p><strong>📖 читает все сообщения:</strong> <span id="canReadMessages"></span></p>
             </div>
         </div>
-        
-        <div class="error-message" id="errorMessage"></div>
-        
-        <div class="warning">
-            <strong>⚠️ Важно:</strong> Токен бота — это конфиденциальная информация, как пароль. Не делитесь им с посторонними и не вводите на подозрительных сайтах. Этот инструмент работает полностью на вашем устройстве и не отправляет токен на сервер.
+        <div style="text-align: center; margin-top: 1rem;">
+            <a href="https://uliigra2.c6t.ru/" class="back-link">← ко всем страницам</a>
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Получаем все элементы
-            const botTokenInput = document.getElementById('botToken');
-            const getInfoBtn = document.getElementById('getInfoBtn');
-            const resultContainer = document.getElementById('resultContainer');
-            const loading = document.getElementById('loading');
-            const errorMessage = document.getElementById('errorMessage');
-            const showTokenBtn = document.getElementById('showTokenBtn');
-            const tokenDisplay = document.getElementById('tokenDisplay');
-            
-            // Элементы для отображения информации о боте
-            const botName = document.getElementById('botName');
-            const botUsername = document.getElementById('botUsername');
-            const botId = document.getElementById('botId');
-            const canJoinGroups = document.getElementById('canJoinGroups');
-            const canReadAllMessages = document.getElementById('canReadAllMessages');
-            const botAvatar = document.getElementById('botAvatar');
-            
-            let tokenVisible = false;
-            
-            // Функция для показа/скрытия токена
-            showTokenBtn.addEventListener('click', function() {
-                const token = botTokenInput.value.trim();
-                
-                if (!token) {
-                    alert('Сначала введите токен');
-                    return;
-                }
-                
-                tokenVisible = !tokenVisible;
-                
-                if (tokenVisible) {
-                    tokenDisplay.textContent = token;
-                    tokenDisplay.style.display = 'block';
-                    showTokenBtn.textContent = 'Скрыть токен';
-                    botTokenInput.type = 'text';
-                } else {
-                    tokenDisplay.style.display = 'none';
-                    showTokenBtn.textContent = 'Показать токен';
-                    botTokenInput.type = 'password';
-                }
-            });
-            
-            // Функция для получения информации о боте
-            getInfoBtn.addEventListener('click', async function() {
-                const token = botTokenInput.value.trim();
-                
-                if (!token) {
-                    showError('Пожалуйста, введите токен бота');
-                    return;
-                }
-                
-                // Проверка формата токена (должен содержать двоеточие)
-                if (!token.includes(':')) {
-                    showError('Токен должен быть в формате "число:строка", например: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz');
-                    return;
-                }
-                
-                // Показать загрузку
-                loading.style.display = 'block';
-                if (resultContainer) resultContainer.style.display = 'none';
-                if (errorMessage) errorMessage.style.display = 'none';
-                
-                try {
-                    console.log('Пытаемся получить информацию о боте...');
-                    
-                    // Используем Telegram Bot API метод getMe
-                    const response = await fetch(`https://api.telegram.org/bot${token}/getMe`);
-                    
-                    console.log('Ответ получен:', response.status);
-                    
-                    if (!response.ok) {
-                        throw new Error(`Ошибка HTTP: ${response.status}`);
-                    }
-                    
-                    const data = await response.json();
-                    console.log('Данные получены:', data);
-                    
-                    if (!data.ok) {
-                        throw new Error(data.description || 'Неизвестная ошибка API');
-                    }
-                    
-                    // Отображаем результат
-                    displayBotInfo(data.result);
-                    
-                } catch (error) {
-                    console.error('Ошибка:', error);
-                    showError(`Не удалось получить информацию о боте: ${error.message}. Проверьте правильность токена.`);
-                } finally {
-                    loading.style.display = 'none';
-                }
-            });
-            
-            // Функция для отображения информации о боте
-            function displayBotInfo(botInfo) {
-                console.log('Отображаем информацию о боте:', botInfo);
-                
-                if (botName) botName.textContent = botInfo.first_name || 'Без имени';
-                if (botUsername) botUsername.textContent = `@${botInfo.username}`;
-                if (botId) botId.textContent = botInfo.id;
-                if (canJoinGroups) canJoinGroups.textContent = botInfo.can_join_groups ? 'Да' : 'Нет';
-                if (canReadAllMessages) canReadAllMessages.textContent = botInfo.can_read_all_group_messages ? 'Да' : 'Нет';
-                
-                // Если у бота есть фото, загружаем его
-                if (botInfo.username && botAvatar) {
-                    loadBotAvatar(botInfo.username);
-                }
-                
-                if (resultContainer) {
-                    resultContainer.style.display = 'block';
-                    // Прокручиваем к результатам
-                    resultContainer.scrollIntoView({ behavior: 'smooth' });
-                }
+    <div id="errorMessage" class="error-message"></div>
+
+    <div class="warning">
+        <strong>⚠️ улитка предупреждает:</strong> токен — это как пароль от бота. Никому его не показывай!<br>
+        Этот инструмент работает прямо в браузере и не отправляет токен на сторонние сервера.
+    </div>
+
+    <div class="footer-snails">
+        <span>🐌</span><span>🤖🐌</span><span>🐌</span><span>🐚</span><span>🐌🤖</span><span>🍀🐌</span>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const botTokenInput = document.getElementById('botToken');
+        const getInfoBtn = document.getElementById('getInfoBtn');
+        const resultContainer = document.getElementById('resultContainer');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const showTokenBtn = document.getElementById('showTokenBtn');
+        const tokenDisplay = document.getElementById('tokenDisplay');
+        
+        const botName = document.getElementById('botName');
+        const botUsername = document.getElementById('botUsername');
+        const botId = document.getElementById('botId');
+        const canJoinGroups = document.getElementById('canJoinGroups');
+        const canReadMessages = document.getElementById('canReadMessages');
+        const botAvatar = document.getElementById('botAvatar');
+        
+        let tokenVisible = false;
+        
+        // Показать/скрыть токен
+        showTokenBtn.addEventListener('click', function() {
+            const token = botTokenInput.value.trim();
+            if (!token) {
+                alert('🐌 сначала введи токен, улитка!');
+                return;
             }
             
-            // Функция для загрузки аватарки бота
-            async function loadBotAvatar(username) {
-                try {
-                    const token = botTokenInput.value.trim();
-                    
-                    // Сначала получаем ID бота через уже имеющуюся информацию
-                    const response = await fetch(`https://api.telegram.org/bot${token}/getUserProfilePhotos?user_id=${username}&limit=1`);
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        
-                        if (data.ok && data.result.total_count > 0 && data.result.photos.length > 0) {
-                            // Получаем file_id первого фото
-                            const fileId = data.result.photos[0][0].file_id;
-                            
-                            // Получаем путь к файлу
-                            const fileResponse = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
-                            const fileData = await fileResponse.json();
-                            
-                            if (fileData.ok) {
-                                const filePath = fileData.result.file_path;
-                                const avatarUrl = `https://api.telegram.org/file/bot${token}/${filePath}`;
-                                
-                                // Создаем элемент изображения
-                                const img = document.createElement('img');
-                                img.src = avatarUrl;
-                                img.alt = `Аватар ${username}`;
-                                img.onload = () => {
-                                    if (botAvatar) {
-                                        botAvatar.innerHTML = '';
-                                        botAvatar.appendChild(img);
-                                    }
-                                };
-                                img.onerror = () => {
-                                    // Если не удалось загрузить изображение, оставляем эмодзи
-                                    if (botAvatar) botAvatar.innerHTML = '🤖';
-                                };
-                                return;
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.log('Не удалось загрузить аватарку:', error);
-                }
-                
-                // Если не удалось получить фото, используем эмодзи
-                if (botAvatar) botAvatar.innerHTML = '🤖';
+            tokenVisible = !tokenVisible;
+            
+            if (tokenVisible) {
+                tokenDisplay.textContent = token;
+                tokenDisplay.style.display = 'block';
+                showTokenBtn.innerHTML = '🙈 скрыть';
+                botTokenInput.type = 'text';
+            } else {
+                tokenDisplay.style.display = 'none';
+                showTokenBtn.innerHTML = '👁️ показать';
+                botTokenInput.type = 'password';
             }
-            
-            // Функция для отображения ошибки
-            function showError(message) {
-                if (errorMessage) {
-                    errorMessage.textContent = message;
-                    errorMessage.style.display = 'block';
-                    if (resultContainer) resultContainer.style.display = 'none';
-                    
-                    // Прокручиваем к ошибке
-                    errorMessage.scrollIntoView({ behavior: 'smooth' });
-                } else {
-                    alert(message);
-                }
-            }
-            
-            // Обработка нажатия Enter в поле ввода
-            botTokenInput.addEventListener('keypress', function(event) {
-                if (event.key === 'Enter') {
-                    getInfoBtn.click();
-                }
-            });
-            
-            // Для тестирования можно использовать демо-токен (не настоящий)
-            // botTokenInput.value = '123456789:ABCdefGHIjklMNOpqrsTUVwxyz';
         });
-    </script>
+        
+        // Функция показа ошибки
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            resultContainer.style.display = 'none';
+            loading.style.display = 'none';
+        }
+        
+        // Функция отображения информации
+        function displayBotInfo(info) {
+            botName.textContent = info.first_name || 'Без имени';
+            botUsername.textContent = info.username ? `@${info.username}` : 'нет username';
+            botId.textContent = info.id;
+            canJoinGroups.textContent = info.can_join_groups ? '✅ да' : '❌ нет';
+            canReadMessages.textContent = info.can_read_all_group_messages ? '✅ да' : '❌ нет';
+            
+            // Эмодзи-аватарка по имени бота
+            const firstChar = (info.first_name || 'Бот').charAt(0).toUpperCase();
+            if (info.username && info.username.toLowerCase().includes('bot')) {
+                botAvatar.innerHTML = '🤖';
+            } else {
+                botAvatar.innerHTML = '🐌';
+            }
+            
+            resultContainer.style.display = 'block';
+            resultContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Основная функция получения информации
+        getInfoBtn.addEventListener('click', async function() {
+            const token = botTokenInput.value.trim();
+            
+            if (!token) {
+                showError('🐌 введи токен бота!');
+                return;
+            }
+            
+            if (!token.includes(':')) {
+                showError('🐌 токен должен быть в формате: число:строка (например, 123456:ABCdef)');
+                return;
+            }
+            
+            // Скрываем старые результаты
+            resultContainer.style.display = 'none';
+            errorMessage.style.display = 'none';
+            loading.style.display = 'block';
+            
+            try {
+                const response = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.ok) {
+                    throw new Error(data.description || 'Неизвестная ошибка');
+                }
+                
+                displayBotInfo(data.result);
+                
+            } catch (err) {
+                console.error(err);
+                let errorText = '🐌 не удалось найти бота. Проверь токен!';
+                if (err.message.includes('HTTP 404')) {
+                    errorText = '🐌 бот не найден! Возможно, токен неверный или бот удалён.';
+                } else if (err.message.includes('network') || err.message.includes('fetch')) {
+                    errorText = '🐌 проблема с интернетом. Улитка не может достучаться до Telegram.';
+                }
+                showError(errorText);
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+        
+        // Enter в поле ввода
+        botTokenInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                getInfoBtn.click();
+            }
+        });
+        
+        // Пример для теста (закомментировано)
+        // botTokenInput.value = '1234567890:ABCdefGHIjklMNOpqrsTUVwxyz';
+    })();
+</script>
 </body>
 </html>
