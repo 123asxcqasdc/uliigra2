@@ -5,348 +5,156 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Ули · звонкие улитки</title>
     <link rel="icon" type="image/png" href="/icon.png">
-    
-    <!-- Open Graph -->
-    <meta property="og:title" content="Ули · звонкие улитки">
-    <meta property="og:description" content="Групповые аудиозвонки для компании до 6 человек 🐌🎙️">
-    <meta property="og:image" content="/preview-default.png">
-    <meta property="og:url" content="https://uliigra2.c6t.ru/zvn">
-    <meta name="twitter:card" content="summary_large_image">
-
-    <!-- Firebase + SimplePeer -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/simple-peer@9.11.1/simplepeer.min.js"></script>
-    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{
+            font-family:'Segoe UI',Roboto,sans-serif;
+            background:#1b3b1b radial-gradient(circle at 30% 40%,#2b5a2b,#0e2f0e);
+            min-height:100vh;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            padding:1.5rem;
+            color:#f0f7da;
+            position:relative;
         }
-
-        body {
-            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
-            background-color: #1b3b1b;
-            background-image: radial-gradient(circle at 30% 40%, #2b5a2b 0%, #0e2f0e 90%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 1.5rem;
-            position: relative;
-            color: #f0f7da;
+        body::before{content:"🐌🐌🐌";font-size:8rem;position:absolute;top:10px;left:10px;opacity:0.08;pointer-events:none;letter-spacing:2rem;transform:rotate(-10deg);}
+        body::after{content:"🐌🐌🐌";font-size:12rem;position:absolute;bottom:-20px;right:0;opacity:0.05;transform:rotate(15deg);pointer-events:none;}
+        .main-container{
+            max-width:700px;
+            width:100%;
+            background:rgba(30,50,30,0.75);
+            backdrop-filter:blur(6px);
+            border:3px solid #9bbc7b;
+            border-radius:30px;
+            box-shadow:0 25px 40px -10px rgba(0,0,0,0.6),0 0 0 2px #6f8c5d inset,0 0 0 4px #3f6140 inset;
+            padding:2rem;
         }
-
-        /* улитки на фоне */
-        body::before {
-            content: "🐌🐌🐌";
-            font-size: 8rem;
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            opacity: 0.08;
-            white-space: nowrap;
-            transform: rotate(-10deg);
-            pointer-events: none;
-            letter-spacing: 2rem;
+        .header-title{
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            gap:1rem;
+            font-size:2.4rem;
+            font-weight:800;
+            text-shadow:3px 3px 0 #2d4a2d;
+            color:#e2f0c0;
+            margin-bottom:1.5rem;
         }
-
-        body::after {
-            content: "🐌🐌🐌";
-            font-size: 12rem;
-            position: absolute;
-            bottom: -20px;
-            right: 0;
-            opacity: 0.05;
-            transform: rotate(15deg);
-            pointer-events: none;
-            white-space: nowrap;
+        .snail-icon-big{font-size:3rem;filter:drop-shadow(2px 4px 4px #0f2a0f);transition:0.2s;}
+        .snail-icon-big:hover{transform:rotate(10deg) scale(1.1);}
+        .setup-card,.call-card{
+            background:rgba(46,77,46,0.8);
+            border-radius:28px;
+            padding:1.5rem;
+            margin-bottom:1.5rem;
+            border:2px solid #7eaf7a;
         }
-
-        .main-container {
-            max-width: 1100px;
-            width: 100%;
-            background: rgba(30, 50, 30, 0.75);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            border: 3px solid #9bbc7b;
-            border-radius: 30px;
-            box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 2px #6f8c5d inset, 0 0 0 4px #3f6140 inset;
-            padding: 2rem 2rem 1.8rem;
-            transition: all 0.3s ease;
+        .flex-row{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;}
+        input,button{
+            background:#2e4d2e;
+            border:2px solid #7eaf7a;
+            border-radius:40px;
+            padding:12px 20px;
+            font-size:1rem;
+            color:#f0f7da;
+            outline:none;
         }
-
-        .header-title {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.8rem;
-            flex-wrap: wrap;
-            margin-bottom: 1.5rem;
-            font-size: 2.4rem;
-            font-weight: 800;
-            text-shadow: 3px 3px 0 #2d4a2d, 5px 5px 0 #1b331b;
-            color: #e2f0c0;
-            letter-spacing: 2px;
+        input:focus{border-color:#c7f0b1;background:#386d38;box-shadow:0 0 0 3px rgba(167,200,163,0.3);}
+        button{
+            background:#5f8b5f;
+            border:none;
+            cursor:pointer;
+            font-weight:bold;
+            min-width:140px;
+            box-shadow:0 4px 0 #2f542f;
+            transition:0.1s;
         }
-
-        .snail-icon-big {
-            font-size: 3rem;
-            transform: rotate(10deg);
-            transition: transform 0.2s;
-            filter: drop-shadow(2px 4px 4px #0f2a0f);
+        button:hover{background:#7caa7c;transform:translateY(-2px);box-shadow:0 6px 0 #2f542f;}
+        .link-info{
+            background:#2f542f;
+            padding:8px 16px;
+            border-radius:40px;
+            margin-bottom:1rem;
+            text-align:center;
+            font-size:0.9rem;
+            border:1px solid #9bbc7b;
         }
-
-        .snail-icon-big:hover {
-            transform: rotate(20deg) scale(1.1);
+        .room-header{
+            background:#2f542f;
+            border-radius:60px;
+            padding:10px 20px;
+            margin-bottom:1.5rem;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            flex-wrap:wrap;
+            gap:0.5rem;
         }
-
-        /* панель входа */
-        .setup-card {
-            background: rgba(46, 77, 46, 0.8);
-            border-radius: 28px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            border: 2px solid #7eaf7a;
+        .badge{background:#5f8b5f;padding:5px 15px;border-radius:40px;font-weight:bold;}
+        .participants-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+            gap:1.2rem;
+            margin:1.5rem 0;
         }
-
-        .flex-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            align-items: center;
-            justify-content: center;
+        .participant-card{
+            background:linear-gradient(145deg,#2a4a2a,#1a3a1a);
+            border-radius:24px;
+            padding:1rem;
+            border:2px solid #7eaf7a;
+            text-align:center;
+            position:relative;
         }
-
-        input, button {
-            background: #2e4d2e;
-            border: 2px solid #7eaf7a;
-            border-radius: 40px;
-            padding: 12px 20px;
-            font-size: 1rem;
-            color: #f0f7da;
-            outline: none;
-            transition: all 0.2s;
-            font-family: inherit;
+        .participant-card.muted{opacity:0.7;border-color:#b87c2e;}
+        .participant-name{font-size:1.3rem;font-weight:bold;color:#e2f0c0;display:flex;justify-content:center;align-items:center;gap:8px;}
+        .mute-badge{background:#b87c2e;font-size:0.7rem;padding:2px 8px;border-radius:40px;}
+        .participant-avatar{font-size:3rem;margin:8px 0;}
+        .participant-status{background:#1e3a1e;border-radius:40px;padding:4px 12px;font-size:0.8rem;display:inline-block;}
+        audio{width:100%;margin:8px 0;border-radius:20px;height:36px;}
+        .speaking-indicator{width:12px;height:12px;border-radius:50%;background:#8bc34a;position:absolute;top:12px;right:12px;animation:pulse 1s infinite;}
+        @keyframes pulse{50%{opacity:0.5;transform:scale(1.2);}}
+        .hidden-indicator{display:none;}
+        .volume-indicator{width:100%;height:4px;background:#1e3a1e;border-radius:4px;margin-top:8px;overflow:hidden;}
+        .volume-level{height:100%;width:0%;background:#c7f0b1;transition:width 0.1s;}
+        .log-panel{
+            background:#1a3a1a;
+            border-radius:24px;
+            padding:12px;
+            margin-top:1.5rem;
+            font-family:monospace;
+            font-size:0.75rem;
+            max-height:140px;
+            overflow-y:auto;
+            border:1px solid #7eaf7a;
         }
-
-        input:focus {
-            border-color: #c7f0b1;
-            background: #386d38;
-            box-shadow: 0 0 0 3px rgba(167, 200, 163, 0.3);
+        .log-entry{border-bottom:1px solid #3a5a3a;padding:4px 0;color:#c7e3aa;}
+        .unlock-audio{
+            position:fixed;bottom:20px;right:20px;
+            background:#8bc34a;color:#1b3f1b;
+            padding:12px 24px;border-radius:40px;
+            font-weight:bold;cursor:pointer;z-index:999;
         }
-
-        input::placeholder {
-            color: #8aaa7a;
+        .unlock-audio.hidden,.hidden{display:none;}
+        .footer-snails{
+            margin-top:2rem;
+            display:flex;justify-content:center;gap:1rem;
+            font-size:1.8rem;opacity:0.7;
+            border-top:2px dashed #61855e;
+            padding-top:1rem;
         }
-
-        button {
-            background: #5f8b5f;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            min-width: 140px;
-            box-shadow: 0 4px 0 #2f542f;
-            transition: 0.1s ease;
-        }
-
-        button:hover {
-            background: #7caa7c;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 0 #2f542f;
-        }
-
-        button:active {
-            transform: translateY(2px);
-            box-shadow: 0 2px 0 #2f542f;
-        }
-
-        .link-info {
-            background: #2f542f;
-            padding: 12px;
-            border-radius: 40px;
-            margin-bottom: 1rem;
-            text-align: center;
-            font-size: 0.9rem;
-            border: 1px solid #9bbc7b;
-        }
-
-        .call-card {
-            background: rgba(46, 77, 46, 0.8);
-            border-radius: 28px;
-            padding: 1.5rem;
-            border: 2px solid #7eaf7a;
-            margin-bottom: 1rem;
-        }
-
-        .room-header {
-            background: #2f542f;
-            border-radius: 60px;
-            padding: 10px 20px;
-            margin-bottom: 1.5rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            align-items: center;
-            justify-content: space-between;
-            border: 1px solid #9bbc7b;
-        }
-
-        .badge {
-            background: #5f8b5f;
-            padding: 5px 15px;
-            border-radius: 40px;
-            font-weight: bold;
-        }
-
-        .participants-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 1.2rem;
-            margin: 1.5rem 0;
-        }
-
-        .participant-card {
-            background: linear-gradient(145deg, #2a4a2a, #1a3a1a);
-            border-radius: 24px;
-            padding: 1rem;
-            border: 2px solid #7eaf7a;
-            position: relative;
-            transition: 0.2s;
-            text-align: center;
-        }
-
-        .participant-card.muted {
-            opacity: 0.7;
-            border-color: #b87c2e;
-        }
-
-        .participant-name {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #e2f0c0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .mute-badge {
-            background: #b87c2e;
-            font-size: 0.7rem;
-            padding: 2px 8px;
-            border-radius: 40px;
-        }
-
-        .participant-avatar {
-            font-size: 3rem;
-            margin: 8px 0;
-        }
-
-        .participant-status {
-            background: #1e3a1e;
-            border-radius: 40px;
-            padding: 4px 12px;
-            font-size: 0.8rem;
-            display: inline-block;
-        }
-
-        audio {
-            width: 100%;
-            margin: 8px 0;
-            border-radius: 20px;
-            height: 36px;
-        }
-
-        .speaking-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #8bc34a;
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse { 50% { opacity: 0.5; transform: scale(1.2); } }
-        .hidden-indicator { display: none; }
-
-        .volume-indicator {
-            width: 100%;
-            height: 4px;
-            background: #1e3a1e;
-            border-radius: 4px;
-            margin-top: 8px;
-            overflow: hidden;
-        }
-
-        .volume-level {
-            height: 100%;
-            width: 0%;
-            background: #c7f0b1;
-            transition: width 0.1s;
-        }
-
-        .log-panel {
-            background: #1a3a1a;
-            border-radius: 24px;
-            padding: 12px;
-            margin-top: 1.5rem;
-            font-family: monospace;
-            font-size: 0.75rem;
-            max-height: 150px;
-            overflow-y: auto;
-            border: 1px solid #7eaf7a;
-        }
-
-        .log-entry {
-            border-bottom: 1px solid #3a5a3a;
-            padding: 4px 0;
-            color: #c7e3aa;
-        }
-
-        .unlock-audio {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #8bc34a;
-            color: #1b3f1b;
-            padding: 12px 24px;
-            border-radius: 40px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 999;
-            border: none;
-            font-size: 1rem;
-        }
-
-        .unlock-audio.hidden { display: none; }
-        .hidden { display: none !important; }
-
-        .footer-snails {
-            margin-top: 2rem;
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            font-size: 1.8rem;
-            opacity: 0.7;
-            border-top: 2px dashed #61855e;
-            padding-top: 1rem;
-        }
-
-        @media (max-width: 680px) {
-            .main-container { padding: 1rem; }
-            .header-title { font-size: 1.6rem; }
-            .snail-icon-big { font-size: 2.2rem; }
-            .participants-grid { grid-template-columns: 1fr; }
+        @media(max-width:680px){
+            .main-container{padding:1rem;}
+            .header-title{font-size:1.6rem;}
+            .snail-icon-big{font-size:2.2rem;}
+            .participants-grid{grid-template-columns:1fr;}
         }
     </style>
 </head>
 <body>
-
 <div class="main-container">
     <div class="header-title">
         <span class="snail-icon-big">🐌</span>
@@ -354,55 +162,42 @@
         <span class="snail-icon-big">🐌</span>
     </div>
 
-    <!-- ЭКРАН НАСТРОЙКИ -->
+    <!-- Экран входа -->
     <div id="setup" class="setup-card">
         <div class="link-info" id="linkInfo"></div>
-        <div id="autoJoinMessage" style="background:#2e6b4e; border-radius:40px; padding:8px; margin-bottom:12px; display:none;">
-            🔄 Автоматическое подключение...
-        </div>
+        <div id="autoJoinMessage" style="background:#2e6b4e;border-radius:40px;padding:8px;margin-bottom:12px;display:none">🔄 Автоматическое подключение...</div>
         <div class="flex-row">
             <input type="text" id="userName" placeholder="Ваше имя" value="Гость">
             <input type="text" id="roomId" placeholder="ID комнаты">
             <button onclick="createRoom()">✨ Создать</button>
             <button onclick="joinRoom()">🔗 Присоединиться</button>
-            <button onclick="testMic()" style="background:#3a6a3a;">🎤 Тест</button>
+            <button onclick="testMic()" style="background:#3a6a3a">🎤 Тест</button>
         </div>
     </div>
 
-    <!-- ЭКРАН ЗВОНКА -->
+    <!-- Экран звонка -->
     <div id="call" class="call-card hidden">
         <div class="room-header">
             <span><strong>🏠 Комната:</strong> <span id="currentRoomDisplay"></span></span>
-            <div style="display: flex; gap: 8px;">
-                <button onclick="copyRoomId()" style="padding:6px 12px;">📋 Копировать ID</button>
-                <button onclick="copyCallLink()" style="padding:6px 12px;">🔗 Ссылка</button>
-            </div>
+            <div><button onclick="copyRoomId()" style="padding:6px 12px">📋 ID</button><button onclick="copyCallLink()" style="padding:6px 12px">🔗 Ссылка</button></div>
             <span class="badge" id="participantCount">0 участников</span>
         </div>
-        <div id="status" style="text-align:center; background:#2f542f; padding:10px; border-radius:40px;">⏳ Ожидание...</div>
+        <div id="status" style="text-align:center;background:#2f542f;padding:10px;border-radius:40px">⏳ Ожидание собеседника...</div>
         <div id="participantsGrid" class="participants-grid"></div>
-        <div class="flex-row" style="margin-top: 20px;">
+        <div class="flex-row">
             <button onclick="toggleMic()" id="micBtn">🔇 Выкл микрофон</button>
-            <button onclick="testSound()" style="background:#3a6a3a;">🔊 Тест звука</button>
-            <button onclick="endCall()" style="background:#7d3e3e;">📞 Завершить</button>
+            <button onclick="testSound()" style="background:#3a6a3a">🔊 Тест звука</button>
+            <button onclick="endCall()" style="background:#7d3e3e">📞 Завершить</button>
         </div>
     </div>
 
-    <!-- Лог событий -->
-    <div class="log-panel" id="log">
-        <div class="log-entry">[Система] Звонкие Улитки готовы 🐌</div>
-    </div>
-
-    <div class="footer-snails">
-        <span>🐌💚</span><span>🐌🐚</span><span>🍀🐌</span><span>🎙️🐌</span>
-    </div>
+    <div class="log-panel" id="log"><div class="log-entry">[Система] Звонкие Улитки готовы 🐌</div></div>
+    <div class="footer-snails"><span>🐌💚</span><span>🐌🐚</span><span>🍀🐌</span><span>🎙️🐌</span></div>
 </div>
-
 <div id="unlockAudio" class="unlock-audio hidden">🔊 Нажмите для включения звука</div>
 
 <script>
-(function() {
-    // ---------- FIREBASE ----------
+(function(){
     const firebaseConfig = {
         apiKey: "AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
         authDomain: "kcalls.firebaseapp.com",
@@ -415,37 +210,24 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ---------- ПЕРЕМЕННЫЕ ----------
     let localStream = null;
-    let peers = {};
+    let peer = null;
     let currentRoom = null;
     let currentUser = {
         id: 'u_' + Math.random().toString(36).substring(2, 10),
         name: 'Гость'
     };
-    let allUsers = {};
+    let remoteUser = null;
     let roomRef = null;
     let callsRef = null;
-    let audioElements = {};
-    let muteStatus = {};
     let audioUnlocked = false;
-    let keepAliveIntervals = {};
-    let reconnectAttempts = {};
 
-    // DOM элементы
     const setupDiv = document.getElementById('setup');
     const callDiv = document.getElementById('call');
-    const micBtn = document.getElementById('micBtn');
-    const userNameInput = document.getElementById('userName');
-    const roomIdInput = document.getElementById('roomId');
-    const currentRoomDisplay = document.getElementById('currentRoomDisplay');
     const logDiv = document.getElementById('log');
-    const linkInfoDiv = document.getElementById('linkInfo');
-    const autoJoinMessageDiv = document.getElementById('autoJoinMessage');
     const participantsGrid = document.getElementById('participantsGrid');
-    const participantCountSpan = document.getElementById('participantCount');
-    const unlockAudioDiv = document.getElementById('unlockAudio');
     const statusDiv = document.getElementById('status');
+    const unlockDiv = document.getElementById('unlockAudio');
 
     function log(msg) {
         const entry = document.createElement('div');
@@ -453,6 +235,55 @@
         entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
         logDiv.appendChild(entry);
         logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function updateUI() {
+        if (!remoteUser) {
+            participantsGrid.innerHTML = '<div class="participant-card"><div class="participant-name">👤 Ожидание...</div><div class="participant-avatar">🐌</div><div class="participant-status">⏳ Подключение...</div></div>';
+            document.getElementById('participantCount').innerText = '1 участник';
+            return;
+        }
+        const isMuted = false;
+        participantsGrid.innerHTML = `
+            <div class="participant-card"><div class="participant-name">${escapeHtml(currentUser.name)} (Вы)</div><div class="participant-avatar">🐌</div><div class="participant-status">${localStream?.getAudioTracks()[0]?.enabled ? '🎤 Микрофон включён' : '🔇 Микрофон выключен'}</div><div class="speaking-indicator hidden-indicator" id="speakMe"></div><div class="volume-indicator"><div class="volume-level" id="volMe"></div></div></div>
+            <div class="participant-card"><div class="participant-name">${escapeHtml(remoteUser.name)}</div><div class="participant-avatar">🐌</div><div class="participant-status">${peer?.connected ? '✅ Подключён' : '🔄 Соединение...'}</div><div class="speaking-indicator hidden-indicator" id="speakRemote"></div><div class="volume-indicator"><div class="volume-level" id="volRemote"></div></div><audio id="remoteAudio" controls style="width:100%; margin-top:8px;"></audio></div>
+        `;
+        document.getElementById('participantCount').innerText = '2 участника';
+        if (peer && peer._remoteStreams && peer._remoteStreams[0]) {
+            const audioEl = document.getElementById('remoteAudio');
+            if (audioEl && audioEl.srcObject !== peer._remoteStreams[0]) {
+                audioEl.srcObject = peer._remoteStreams[0];
+                if (audioUnlocked) audioEl.play().catch(e => log('Ошибка: ' + e.message));
+            }
+        }
+    }
+
+    function escapeHtml(s) { return s ? s.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;') : ''; }
+
+    function unlockAudio() {
+        if (audioUnlocked) return;
+        new (window.AudioContext || window.webkitAudioContext)().resume().then(() => {
+            audioUnlocked = true;
+            unlockDiv.classList.add('hidden');
+            log('🔊 Аудио разблокировано');
+            const a = document.getElementById('remoteAudio');
+            if (a && a.srcObject) a.play().catch(e => {});
+        });
+    }
+    unlockDiv.onclick = unlockAudio;
+    document.addEventListener('click', () => { if (!audioUnlocked) unlockAudio(); }, { once: true });
+
+    function testMic() {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(s => { log('✅ Микрофон работает'); s.getTracks().forEach(t => t.stop()); }).catch(() => alert('Нет доступа к микрофону'));
+    }
+    function testSound() {
+        const ac = new (AudioContext || webkitAudioContext)();
+        const o = ac.createOscillator();
+        o.connect(ac.destination);
+        o.frequency.value = 440;
+        o.start();
+        o.stop(ac.currentTime + 0.3);
+        log('🔊 Тест звука');
     }
 
     function getIceServers() {
@@ -467,267 +298,86 @@
         ];
     }
 
-    function updateParticipantsGrid() {
-        if (!allUsers) return;
-        let html = '';
-        const userIds = Object.keys(allUsers).sort((a,b) => a === currentUser.id ? -1 : b === currentUser.id ? 1 : 0);
-        
-        userIds.forEach(userId => {
-            const user = allUsers[userId];
-            const isMe = userId === currentUser.id;
-            const peer = peers[userId];
-            const hasAudio = audioElements[userId] && audioElements[userId].srcObject;
-            const isMuted = muteStatus[userId] || (isMe && localStream && !localStream.getAudioTracks()[0]?.enabled);
-            
-            let statusText = isMe ? (localStream?.getAudioTracks()[0]?.enabled ? '🎤 Микрофон включён' : '🔇 Микрофон выключен') :
-                            (peer?.connected && hasAudio ? (isMuted ? '🔇 Микрофон выключен' : '🎤 Микрофон включён') : '🔄 Соединение...');
-            
-            html += `
-                <div class="participant-card ${isMuted ? 'muted' : ''}">
-                    <div class="participant-name">${escapeHtml(user.name)}${isMe ? ' (Вы)' : ''} ${isMuted ? '<span class="mute-badge">🔇 выкл</span>' : ''}</div>
-                    <div class="participant-avatar">${isMuted ? '🔇' : '🐌'}</div>
-                    <div class="participant-status">${statusText}</div>
-                    ${!isMe ? `<audio id="audio-${userId}" controls style="width:100%; margin:8px 0;"></audio>` : ''}
-                    <div class="speaking-indicator hidden-indicator" id="speaking-${userId}"></div>
-                    <div class="volume-indicator"><div class="volume-level" id="volume-${userId}"></div></div>
-                </div>
-            `;
-        });
-        participantsGrid.innerHTML = html;
-        
-        Object.keys(audioElements).forEach(userId => {
-            const el = document.getElementById(`audio-${userId}`);
-            if (el && audioElements[userId]?.srcObject) {
-                el.srcObject = audioElements[userId].srcObject;
-                audioElements[userId] = el;
-                if (audioUnlocked) el.play().catch(e => {});
-            }
-        });
-        participantCountSpan.textContent = `${Object.keys(allUsers).length} участников`;
-    }
-
-    function escapeHtml(str) { 
-        if(!str) return '';
-        return str.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
-
-    function unlockAudio() {
-        if (audioUnlocked) return;
-        const ac = new (window.AudioContext || window.webkitAudioContext)();
-        ac.resume().then(() => {
-            audioUnlocked = true;
-            unlockAudioDiv.classList.add('hidden');
-            Object.values(audioElements).forEach(a => a.play().catch(e => {}));
-            log('🔊 Аудио разблокировано');
-        });
-    }
-    unlockAudioDiv.onclick = unlockAudio;
-    document.addEventListener('click', () => { if (!audioUnlocked) unlockAudio(); }, { once: true });
-
-    async function testMic() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            log('✅ Микрофон работает');
-            stream.getTracks().forEach(t => t.stop());
-        } catch(e) { alert('Нет доступа к микрофону'); log('❌ Ошибка микрофона'); }
-    }
-    function testSound() {
-        const ac = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ac.createOscillator();
-        osc.connect(ac.destination);
-        osc.frequency.value = 440;
-        osc.start();
-        osc.stop(ac.currentTime + 0.3);
-        log('🔊 Тест звука');
-    }
-
-    function startKeepAlive(peer, userId) {
-        if (keepAliveIntervals[userId]) clearInterval(keepAliveIntervals[userId]);
-        keepAliveIntervals[userId] = setInterval(() => {
-            if (peer && !peer.destroyed && peer.connected) {
-                // keep-alive просто проверяем состояние
-                if (peer._pc && peer._pc.iceConnectionState === 'failed') {
-                    log(`⚠️ ICE failed для ${userId}, перезапуск`);
-                    peer._pc.restartIce();
-                }
-            } else {
-                clearInterval(keepAliveIntervals[userId]);
-                delete keepAliveIntervals[userId];
-            }
-        }, 10000);
-    }
-
-    function createPeerWith(userId, userName) {
-        if (peers[userId]) return;
-        log(`🔧 Создаём peer для ${userName}`);
-        
-        const isInit = currentUser.id < userId;
-        
-        const peer = new SimplePeer({
-            initiator: isInit,
+    function createPeer(isInitiator) {
+        log(`🔧 Создаём peer (инициатор: ${isInitiator})`);
+        peer = new SimplePeer({
+            initiator: isInitiator,
             stream: localStream,
             trickle: false,
             config: { iceServers: getIceServers() }
         });
-        
-        const audioEl = document.createElement('audio');
-        audioEl.id = `audio-${userId}`;
-        audioEl.autoplay = true;
-        audioEl.controls = true;
-        audioEl.style.display = 'none';
-        document.body.appendChild(audioEl);
-        audioElements[userId] = audioEl;
-        
         peer.on('signal', data => {
-            log(`📤 Отправка сигнала для ${userName}`);
-            callsRef.push({ from: currentUser.id, to: userId, data });
+            log('📤 Отправка сигнала');
+            callsRef.push({ from: currentUser.id, to: remoteUser.id, data });
         });
-        
         peer.on('stream', stream => {
-            log(`🎵 Получен аудиопоток от ${userName}`);
-            audioElements[userId].srcObject = stream;
-            if (audioUnlocked) audioElements[userId].play().catch(e => {});
-            updateParticipantsGrid();
-            
-            setTimeout(() => {
-                try {
-                    const ctx = new AudioContext();
-                    const analyser = ctx.createAnalyser();
-                    const src = ctx.createMediaStreamSource(stream);
-                    src.connect(analyser);
-                    const data = new Uint8Array(analyser.frequencyBinCount);
-                    setInterval(() => {
-                        analyser.getByteFrequencyData(data);
-                        const avg = data.reduce((a,b)=>a+b)/data.length;
-                        const vol = document.getElementById(`volume-${userId}`);
-                        if (vol) vol.style.width = Math.min(100, (avg/128)*100) + '%';
-                        const spk = document.getElementById(`speaking-${userId}`);
-                        if (spk) spk.classList.toggle('hidden-indicator', avg <= 20);
-                    }, 100);
-                } catch(e) {}
-            }, 500);
-        });
-        
-        peer.on('connect', () => {
-            log(`✅ Соединение с ${userName} установлено!`);
-            startKeepAlive(peer, userId);
-            updateParticipantsGrid();
-            delete reconnectAttempts[userId];
-        });
-        
-        peer.on('error', e => {
-            log(`❌ Ошибка peer с ${userName}: ${e.message}`);
-            if (!reconnectAttempts[userId]) reconnectAttempts[userId] = 0;
-            if (reconnectAttempts[userId] < 3 && allUsers[userId]) {
-                reconnectAttempts[userId]++;
-                setTimeout(() => {
-                    if (!peers[userId] && allUsers[userId]) {
-                        log(`🔄 Переподключение к ${userName} (попытка ${reconnectAttempts[userId]})`);
-                        createPeerWith(userId, userName);
-                    }
-                }, 3000);
+            log('🎵 Получен аудиопоток');
+            const audioEl = document.getElementById('remoteAudio');
+            if (audioEl) {
+                audioEl.srcObject = stream;
+                if (audioUnlocked) audioEl.play().catch(e => log('Ошибка: ' + e.message));
             }
+            updateUI();
+            statusDiv.innerText = '✅ Соединение установлено!';
         });
-        
-        peer.on('close', () => {
-            log(`🔒 Peer с ${userName} закрыт`);
-            if (keepAliveIntervals[userId]) clearInterval(keepAliveIntervals[userId]);
-            delete keepAliveIntervals[userId];
-            delete peers[userId];
-            if (audioElements[userId]) audioElements[userId].remove();
-            delete audioElements[userId];
-        });
-        
-        if (peer._pc) {
-            peer._pc.oniceconnectionstatechange = () => {
-                const state = peer._pc.iceConnectionState;
-                if (state === 'failed' || state === 'disconnected') {
-                    log(`🔌 ICE состояние с ${userName}: ${state}, попытка восстановления`);
-                    peer._pc.restartIce();
-                }
-            };
-        }
-        
-        peers[userId] = peer;
+        peer.on('connect', () => { log('✅ Peer соединение установлено'); updateUI(); });
+        peer.on('error', e => log('❌ Ошибка: ' + e.message));
+        peer.on('close', () => { log('🔒 Peer закрыт'); peer = null; updateUI(); });
     }
 
     async function joinRoom() {
-        const roomId = roomIdInput.value.trim();
+        const roomId = document.getElementById('roomId').value.trim();
         if (!roomId) return alert('Введите ID комнаты');
-        autoJoinMessageDiv.style.display = 'none';
-        
+        document.getElementById('autoJoinMessage').style.display = 'none';
+
         try {
-            statusDiv.textContent = '🎤 Запрос микрофона...';
-            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            statusDiv.innerText = '🎤 Запрашиваем микрофон...';
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
             localStream.getAudioTracks().forEach(t => t.enabled = true);
             log('✅ Микрофон получен');
-            
+
             currentRoom = roomId;
-            currentRoomDisplay.textContent = roomId;
+            document.getElementById('currentRoomDisplay').innerText = roomId;
             setupDiv.classList.add('hidden');
             callDiv.classList.remove('hidden');
-            
+
             roomRef = db.ref('rooms/' + roomId);
             await roomRef.child('users/' + currentUser.id).set({ name: currentUser.name, timestamp: Date.now() });
             roomRef.child('users/' + currentUser.id).onDisconnect().remove();
-            
-            roomRef.child('mute').on('value', snap => {
-                const mutes = snap.val() || {};
-                Object.keys(mutes).forEach(uid => { if (uid !== currentUser.id) muteStatus[uid] = mutes[uid].muted; });
-                updateParticipantsGrid();
-            });
-            
+
             callsRef = db.ref('calls/' + roomId);
+
+            // Слушаем сигналы
             callsRef.on('child_added', snap => {
                 const signal = snap.val();
                 if (signal.from !== currentUser.id) {
-                    log(`📨 Получен сигнал от ${signal.from}`);
-                    if (peers[signal.from]) {
-                        peers[signal.from].signal(signal.data);
-                    } else {
-                        if (allUsers[signal.from]) {
-                            createPeerWith(signal.from, allUsers[signal.from].name);
-                            setTimeout(() => {
-                                if (peers[signal.from]) peers[signal.from].signal(signal.data);
-                            }, 500);
-                        }
-                    }
+                    log(`📨 Получен сигнал`);
+                    if (peer) peer.signal(signal.data);
                     snap.ref.remove();
                 }
             });
-            
+
+            // Слушаем других пользователей
             roomRef.child('users').on('value', snap => {
                 const users = snap.val() || {};
-                const oldUsers = Object.keys(allUsers);
-                allUsers = users;
-                
-                Object.keys(users).forEach(uid => {
-                    if (uid !== currentUser.id && !peers[uid]) {
-                        log(`🔔 Новый участник: ${users[uid].name}`);
-                        createPeerWith(uid, users[uid].name);
-                    }
-                });
-                
-                oldUsers.forEach(uid => {
-                    if (uid !== currentUser.id && !users[uid]) {
-                        log(`🔔 Участник отключился: ${allUsers[uid]?.name || uid}`);
-                        if (keepAliveIntervals[uid]) clearInterval(keepAliveIntervals[uid]);
-                        if (peers[uid]) peers[uid].destroy();
-                        delete peers[uid];
-                        if (audioElements[uid]) audioElements[uid].remove();
-                        delete audioElements[uid];
-                    }
-                });
-                
-                updateParticipantsGrid();
-                statusDiv.textContent = `👥 В комнате: ${Object.keys(users).length} участников`;
+                const otherId = Object.keys(users).find(id => id !== currentUser.id);
+                if (otherId && !peer) {
+                    remoteUser = { id: otherId, name: users[otherId].name };
+                    log(`👤 Собеседник найден: ${remoteUser.name}`);
+                    statusDiv.innerText = '🔄 Устанавливаем соединение...';
+                    createPeer(currentUser.id < otherId);
+                    updateUI();
+                } else if (!otherId && peer) {
+                    log('👋 Собеседник отключился');
+                    if (peer) peer.destroy();
+                    peer = null;
+                    remoteUser = null;
+                    statusDiv.innerText = '⏳ Ожидание собеседника...';
+                    updateUI();
+                }
+                const count = Object.keys(users).length;
+                document.getElementById('participantCount').innerText = `${count} участник${count !== 1 ? 'а' : ''}`;
             });
-            
         } catch(e) {
             log('❌ Ошибка: ' + e.message);
             alert('Ошибка доступа к микрофону');
@@ -735,68 +385,55 @@
             callDiv.classList.add('hidden');
         }
     }
-    
+
     window.createRoom = () => {
-        roomIdInput.value = Math.random().toString(36).substring(2, 8);
-        updateLinkInfo(roomIdInput.value);
-        log('Создана комната: ' + roomIdInput.value);
+        const rid = Math.random().toString(36).substring(2, 8);
+        document.getElementById('roomId').value = rid;
+        document.getElementById('linkInfo').innerHTML = `🔗 Ссылка: ${location.origin + location.pathname}?call=${rid}`;
+        log('Создана комната: ' + rid);
         joinRoom();
     };
     window.joinRoom = joinRoom;
     window.toggleMic = () => {
         if (!localStream) return;
-        const track = localStream.getAudioTracks()[0];
-        track.enabled = !track.enabled;
-        micBtn.textContent = track.enabled ? '🔇 Выкл микрофон' : '🎤 Вкл микрофон';
-        muteStatus[currentUser.id] = !track.enabled;
-        if (roomRef) roomRef.child('mute/' + currentUser.id).set({ muted: !track.enabled });
-        updateParticipantsGrid();
+        const t = localStream.getAudioTracks()[0];
+        t.enabled = !t.enabled;
+        document.getElementById('micBtn').innerText = t.enabled ? '🔇 Выкл микрофон' : '🎤 Вкл микрофон';
+        updateUI();
     };
     window.endCall = () => {
         log('Завершение звонка');
-        Object.values(keepAliveIntervals).forEach(i => clearInterval(i));
-        keepAliveIntervals = {};
         if (roomRef) {
             roomRef.child('users').off();
-            roomRef.child('mute').off();
             roomRef.child('users/' + currentUser.id).remove();
         }
         if (callsRef) callsRef.off();
-        Object.values(peers).forEach(p => p.destroy());
-        Object.values(audioElements).forEach(a => a.remove());
+        if (peer) peer.destroy();
         if (localStream) localStream.getTracks().forEach(t => t.stop());
-        peers = {}; audioElements = {}; allUsers = {}; muteStatus = {}; reconnectAttempts = {};
-        currentRoom = null; localStream = null; roomRef = null; callsRef = null;
+        peer = null; localStream = null; remoteUser = null; currentRoom = null; roomRef = null; callsRef = null;
         setupDiv.classList.remove('hidden');
         callDiv.classList.add('hidden');
-        unlockAudioDiv.classList.add('hidden');
+        unlockDiv.classList.add('hidden');
         log('✅ Звонок завершён');
     };
-    window.copyRoomId = () => navigator.clipboard.writeText(currentRoomDisplay.textContent).then(() => alert('ID скопирован'));
+    window.copyRoomId = () => navigator.clipboard.writeText(document.getElementById('currentRoomDisplay').innerText).then(() => alert('ID скопирован'));
     window.copyCallLink = () => {
-        const link = window.location.origin + window.location.pathname + '?call=' + currentRoom;
+        const link = location.origin + location.pathname + '?call=' + currentRoom;
         navigator.clipboard.writeText(link).then(() => alert('Ссылка скопирована'));
     };
     window.testMic = testMic;
     window.testSound = testSound;
-    
-    function updateLinkInfo(roomId) {
-        if (roomId) linkInfoDiv.innerHTML = `🔗 Ссылка: ${window.location.origin + window.location.pathname}?call=${roomId}`;
-        else linkInfoDiv.innerHTML = '';
+
+    // Автоматическое подключение по ссылке
+    const urlCall = new URLSearchParams(location.search).get('call');
+    if (urlCall) {
+        document.getElementById('roomId').value = urlCall;
+        document.getElementById('linkInfo').innerHTML = `🔗 Ссылка: ${location.origin + location.pathname}?call=${urlCall}`;
+        document.getElementById('autoJoinMessage').style.display = 'block';
+        setTimeout(() => joinRoom(), 1000);
     }
-    function getUrlParams() { return new URLSearchParams(window.location.search).get('call'); }
-    
-    (function autoJoin() {
-        const call = getUrlParams();
-        if (call) {
-            roomIdInput.value = call;
-            updateLinkInfo(call);
-            autoJoinMessageDiv.style.display = 'block';
-            setTimeout(() => joinRoom(), 1000);
-        }
-    })();
-    
-    userNameInput.oninput = e => currentUser.name = e.target.value || 'Гость';
+
+    document.getElementById('userName').oninput = e => currentUser.name = e.target.value || 'Гость';
 })();
 </script>
 </body>
