@@ -103,6 +103,7 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
+            flex-wrap: wrap;
         }
 
         .status-bar.success {
@@ -240,10 +241,11 @@
 
         .progress-bar {
             width: 100%;
-            height: 6px;
+            height: 10px;
             background: #1b331b;
             border-radius: 10px;
             overflow: hidden;
+            margin: 0.5rem 0;
         }
 
         .progress-bar .progress-fill {
@@ -259,6 +261,7 @@
             font-size: 0.95rem;
             color: #dcedc4;
             min-height: 1.5rem;
+            word-wrap: break-word;
         }
 
         .code-section {
@@ -476,6 +479,28 @@
             margin-top: 0.2rem;
         }
 
+        .file-info {
+            background: #1b331b;
+            border-radius: 12px;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: #a0bf90;
+            text-align: center;
+        }
+
+        .file-info span {
+            color: #c7f0b1;
+            font-weight: 600;
+        }
+
+        .chunk-progress {
+            font-size: 0.8rem;
+            color: #a0bf90;
+            text-align: center;
+            margin-top: 0.2rem;
+        }
+
         @media (max-width: 600px) {
             .main-container { padding: 1.5rem 1rem; }
             .header-title { font-size: 2rem; }
@@ -498,7 +523,7 @@
     </div>
 
     <div id="statusBar" class="status-bar">
-        <span class="spinner">🔄</span> подключение к Firebase...
+        <span class="spinner">🔄</span> подключение...
     </div>
 
     <div class="upload-section">
@@ -513,6 +538,8 @@
                 <div class="progress-fill" id="progressFill"></div>
             </div>
             <div class="upload-status" id="uploadStatus">готов к загрузке 🐌</div>
+            <div class="chunk-progress" id="chunkProgress"></div>
+            <div class="file-info" id="fileInfo">Куски по 700 КБ (для обхода лимита Firestore)</div>
         </div>
     </div>
 
@@ -535,10 +562,9 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- Firebase SDK via CDN - используем compat версию -->
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <script>
 // Firebase Config
@@ -553,32 +579,29 @@ const firebaseConfig = {
 };
 
 // Инициализация Firebase
-let db, storage;
+let db;
 let firebaseReady = false;
-
 const statusBar = document.getElementById('statusBar');
 
 function updateStatus(message, type = '') {
-    statusBar.textContent = message;
+    statusBar.innerHTML = message;
     statusBar.className = 'status-bar' + (type ? ' ' + type : '');
 }
 
 try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
-    storage = firebase.storage();
     
-    // Настройка для работы из локального файла
     db.settings({
         experimentalAutoDetectLongPolling: true
     });
     
     firebaseReady = true;
-    updateStatus('✅ подключено к Firebase 🐌', 'success');
-    console.log('🔥 Firebase initialized successfully');
+    updateStatus('✅ подключено 🐌', 'success');
+    console.log('🔥 Firebase ready');
 } catch (error) {
     console.error('Firebase init error:', error);
-    updateStatus('❌ ошибка подключения: ' + error.message, 'error');
+    updateStatus('❌ ошибка: ' + error.message, 'error');
 }
 
 // DOM Elements
@@ -587,6 +610,8 @@ const fileNameInput = document.getElementById('fileNameInput');
 const uploadBtn = document.getElementById('uploadBtn');
 const progressFill = document.getElementById('progressFill');
 const uploadStatus = document.getElementById('uploadStatus');
+const chunkProgress = document.getElementById('chunkProgress');
+const fileInfo = document.getElementById('fileInfo');
 const toast = document.getElementById('toast');
 const codeInput = document.getElementById('codeInput');
 const openByCodeBtn = document.getElementById('openByCodeBtn');
@@ -594,7 +619,9 @@ const fileViewer = document.getElementById('fileViewer');
 
 let isUploading = false;
 
-// Generate random code (6 characters)
+// Размер куска: 700 КБ (чтобы Base64 влезал в лимит Firestore 1,048,487 байт)
+const CHUNK_SIZE = 700 * 1024; // 700 КБ
+
 function generateCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let code = '';
@@ -604,7 +631,6 @@ function generateCode() {
     return code;
 }
 
-// Toast
 function showToast(message, duration = 3000) {
     toast.textContent = message;
     toast.classList.add('show');
@@ -612,7 +638,6 @@ function showToast(message, duration = 3000) {
     toast._timeout = setTimeout(() => toast.classList.remove('show'), duration);
 }
 
-// Format file size
 function formatSize(bytes) {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -621,7 +646,6 @@ function formatSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
-// Get file icon
 function getFileIcon(filename) {
     const ext = filename.split('.').pop()?.toLowerCase() || '';
     const icons = {
@@ -636,11 +660,33 @@ function getFileIcon(filename) {
         'json': '📊', 'xml': '📊', 'csv': '📊',
         'py': '🐍', 'js': '📜', 'html': '🌐', 'css': '🎨', 'java': '☕',
         'c': '🔧', 'cpp': '🔧', 'h': '🔧',
+        'sb3': '🎮', 'sb2': '🎮'
     };
     return icons[ext] || '📎';
 }
 
-// Upload file
+// Конвертация Uint8Array в Base64
+function uint8ArrayToBase64(uint8Array) {
+    let binary = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+        const chunk = uint8Array.subarray(i, i + chunkSize);
+        binary += String.fromCharCode.apply(null, chunk);
+    }
+    return btoa(binary);
+}
+
+// Конвертация Base64 в Uint8Array
+function base64ToUint8Array(base64) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+}
+
+// Загрузка файла с разбивкой на куски
 async function uploadFile(file, customName) {
     if (!file) {
         showToast('🐌 выберите файл!');
@@ -661,77 +707,99 @@ async function uploadFile(file, customName) {
     uploadBtn.disabled = true;
     uploadStatus.textContent = '⏳ подготовка...';
     progressFill.style.width = '0%';
+    chunkProgress.textContent = '';
 
     try {
         const fileName = customName.trim() || file.name;
         const code = generateCode();
-        const storagePath = `uploads/${Date.now()}_${file.name}`;
-        const storageRef = storage.ref(storagePath);
+        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+        
+        fileInfo.innerHTML = `Файл: <span>${escapeHtml(fileName)}</span> · Размер: <span>${formatSize(file.size)}</span> · Кусков: <span>${totalChunks}</span> (по ${formatSize(CHUNK_SIZE)})`;
+        uploadStatus.textContent = `⏳ чтение файла... (0/${totalChunks})`;
 
-        // Загружаем файл через SDK
-        const uploadTask = storageRef.put(file);
+        // Читаем файл как ArrayBuffer
+        const arrayBuffer = await file.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        
+        // Загружаем куски
+        let uploadedChunks = 0;
 
-        // Отслеживаем прогресс
-        uploadTask.on('state_changed',
-            (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                progressFill.style.width = progress + '%';
-                uploadStatus.textContent = `⏳ загрузка: ${Math.round(progress)}%`;
-            },
-            (error) => {
-                console.error('Upload error:', error);
-                uploadStatus.textContent = '❌ ошибка: ' + error.message;
-                showToast('❌ ошибка загрузки: ' + error.message);
-                isUploading = false;
-                uploadBtn.disabled = false;
+        for (let i = 0; i < totalChunks; i++) {
+            const start = i * CHUNK_SIZE;
+            const end = Math.min(start + CHUNK_SIZE, bytes.length);
+            const chunk = bytes.slice(start, end);
+            
+            // Конвертируем в Base64
+            const chunkBase64 = uint8ArrayToBase64(chunk);
+            
+            // Проверяем размер Base64 (не должен превышать 1,048,487 байт)
+            if (chunkBase64.length > 1048487) {
+                throw new Error(`Кусок ${i+1} слишком большой (${chunkBase64.length} байт). Уменьшите CHUNK_SIZE.`);
             }
-        );
+            
+            // Сохраняем кусок в Firestore
+            await db.collection('file_chunks').add({
+                fileCode: code,
+                chunkIndex: i,
+                totalChunks: totalChunks,
+                data: chunkBase64,
+                size: chunk.length,
+                uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            uploadedChunks++;
+            
+            // Обновляем прогресс
+            const progress = (uploadedChunks / totalChunks) * 100;
+            progressFill.style.width = progress + '%';
+            uploadStatus.textContent = `⏳ загрузка: ${Math.round(progress)}% (${uploadedChunks}/${totalChunks})`;
+            chunkProgress.textContent = `📦 кусок ${uploadedChunks}/${totalChunks} (${formatSize(chunk.length)})`;
+            
+            console.log(`Chunk ${i+1}/${totalChunks} uploaded (${formatSize(chunk.length)})`);
+        }
 
-        // Ждем завершения
-        await uploadTask;
-        const downloadURL = await storageRef.getDownloadURL();
-
-        // Сохраняем в Firestore
+        // Создаем запись о файле
         await db.collection('files').add({
             name: fileName,
             originalName: file.name,
             size: file.size,
-            url: downloadURL,
-            storagePath: storagePath,
+            mimeType: file.type || 'application/octet-stream',
             code: code,
+            totalChunks: totalChunks,
+            chunkSize: CHUNK_SIZE,
             uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
+        progressFill.style.width = '100%';
         uploadStatus.innerHTML = `
             <div class="upload-success-text">✅ файл загружен! 🐌</div>
             <div class="code-display" onclick="copyCode('${code}')">🔑 ${code}</div>
             <div class="copy-hint">📋 нажмите на код, чтобы скопировать</div>
         `;
+        chunkProgress.textContent = `✅ ${totalChunks} кусков загружено`;
+        fileInfo.innerHTML = `Файл: <span>${escapeHtml(fileName)}</span> · Размер: <span>${formatSize(file.size)}</span> · Готово! 🎉`;
 
-        showToast(`✅ файл загружен! Код: ${code}`);
-        progressFill.style.width = '100%';
-
+        showToast(`✅ загружено! Код: ${code}`);
         fileInput.value = '';
         fileNameInput.value = '';
 
     } catch (error) {
         console.error('Upload error:', error);
         uploadStatus.textContent = '❌ ошибка: ' + error.message;
-        showToast('❌ ошибка загрузки: ' + error.message);
+        showToast('❌ ошибка: ' + error.message);
+        progressFill.style.width = '0%';
+        chunkProgress.textContent = '';
     } finally {
         isUploading = false;
         uploadBtn.disabled = false;
     }
 }
 
-// Copy code function
 window.copyCode = function(code) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(code).then(() => {
             showToast('📋 код скопирован!');
-        }).catch(() => {
-            fallbackCopy(code);
-        });
+        }).catch(() => fallbackCopy(code));
     } else {
         fallbackCopy(code);
     }
@@ -753,7 +821,6 @@ function fallbackCopy(text) {
     document.body.removeChild(textarea);
 }
 
-// Open file by code
 async function openByCode(code) {
     if (!code || code.trim().length === 0) {
         showToast('🐌 введите код!');
@@ -768,12 +835,13 @@ async function openByCode(code) {
     const codeUpper = code.trim().toUpperCase();
     
     try {
-        const snapshot = await db.collection('files')
+        // Ищем файл
+        const fileSnapshot = await db.collection('files')
             .where('code', '==', codeUpper)
             .limit(1)
             .get();
 
-        if (snapshot.empty) {
+        if (fileSnapshot.empty) {
             fileViewer.innerHTML = `
                 <div class="not-found">
                     <span class="big-snail">🐌❓</span>
@@ -784,23 +852,70 @@ async function openByCode(code) {
             return;
         }
 
-        const data = snapshot.docs[0].data();
-        const name = data.name || 'без имени';
-        const size = data.size || 0;
-        const url = data.url || '#';
+        const fileDoc = fileSnapshot.docs[0];
+        const fileData = fileDoc.data();
+        const name = fileData.name || 'без имени';
+        const size = fileData.size || 0;
+        const mimeType = fileData.mimeType || 'application/octet-stream';
+        const totalChunks = fileData.totalChunks || 0;
         const icon = getFileIcon(name);
-        const uploadedAt = data.uploadedAt?.toDate?.() || new Date();
+        const uploadedAt = fileData.uploadedAt?.toDate?.() || new Date();
         const dateStr = uploadedAt.toLocaleDateString('ru-RU') + ' ' + 
                        uploadedAt.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+
+        if (totalChunks === 0) {
+            throw new Error('Файл поврежден (нет кусков)');
+        }
+
+        showToast(`⏳ загрузка ${totalChunks} кусков...`);
+
+        // Загружаем все куски
+        const chunks = [];
+        for (let i = 0; i < totalChunks; i++) {
+            const chunkSnapshot = await db.collection('file_chunks')
+                .where('fileCode', '==', codeUpper)
+                .where('chunkIndex', '==', i)
+                .limit(1)
+                .get();
+
+            if (chunkSnapshot.empty) {
+                throw new Error(`Кусок ${i+1}/${totalChunks} не найден`);
+            }
+
+            const chunkData = chunkSnapshot.docs[0].data();
+            const chunkBase64 = chunkData.data;
+            const chunkBytes = base64ToUint8Array(chunkBase64);
+            chunks.push(chunkBytes);
+            
+            // Обновляем прогресс загрузки
+            if (i % 5 === 0 || i === totalChunks - 1) {
+                fileViewer.innerHTML = `
+                    <div style="color:#a0bf90;">⏳ загрузка кусков: ${i+1}/${totalChunks}</div>
+                `;
+            }
+        }
+
+        // Собираем файл
+        const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+        const fullFile = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const chunk of chunks) {
+            fullFile.set(chunk, offset);
+            offset += chunk.length;
+        }
+
+        // Создаем Blob и ссылку для скачивания
+        const blob = new Blob([fullFile], { type: mimeType });
+        const downloadUrl = URL.createObjectURL(blob);
 
         fileViewer.innerHTML = `
             <div class="file-icon">${icon}</div>
             <div class="file-name">${escapeHtml(name)}</div>
-            <div class="file-meta">${formatSize(size)} · ${dateStr}</div>
-            <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="download-link">⬇️ скачать файл</a>
+            <div class="file-meta">${formatSize(size)} · ${dateStr} · ${totalChunks} кусков</div>
+            <a href="${downloadUrl}" download="${escapeHtml(name)}" class="download-link">⬇️ скачать файл</a>
         `;
 
-        showToast(`🐌 файл «${name}» найден!`);
+        showToast(`🐌 файл «${name}» найден! (${totalChunks} кусков)`);
 
     } catch (error) {
         console.error('Open by code error:', error);
@@ -810,11 +925,10 @@ async function openByCode(code) {
                 ошибка: ${escapeHtml(error.message)}
             </div>
         `;
-        showToast('❌ ошибка поиска: ' + error.message);
+        showToast('❌ ошибка: ' + error.message);
     }
 }
 
-// Escape HTML
 function escapeHtml(unsafe) {
     if (!unsafe) return '';
     return String(unsafe)
@@ -834,8 +948,12 @@ uploadBtn.addEventListener('click', () => {
 
 fileInput.addEventListener('change', () => {
     const file = fileInput.files[0];
-    if (file && !fileNameInput.value) {
-        fileNameInput.placeholder = file.name;
+    if (file) {
+        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+        fileInfo.innerHTML = `Файл: <span>${escapeHtml(file.name)}</span> · Размер: <span>${formatSize(file.size)}</span> · Кусков: <span>${totalChunks}</span> (по ${formatSize(CHUNK_SIZE)})`;
+        if (!fileNameInput.value) {
+            fileNameInput.placeholder = file.name;
+        }
     }
 });
 
@@ -849,7 +967,7 @@ codeInput.addEventListener('keydown', (e) => {
     }
 });
 
-// Drag and drop support
+// Drag and drop
 document.addEventListener('dragover', (e) => e.preventDefault());
 document.addEventListener('drop', (e) => e.preventDefault());
 
@@ -872,16 +990,20 @@ uploadSection.addEventListener('drop', (e) => {
     uploadSection.style.boxShadow = 'none';
     const files = e.dataTransfer.files;
     if (files.length > 0) {
+        const file = files[0];
+        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+        fileInfo.innerHTML = `Файл: <span>${escapeHtml(file.name)}</span> · Размер: <span>${formatSize(file.size)}</span> · Кусков: <span>${totalChunks}</span> (по ${formatSize(CHUNK_SIZE)})`;
         fileInput.files = files;
         if (!fileNameInput.value) {
-            fileNameInput.placeholder = files[0].name;
+            fileNameInput.placeholder = file.name;
         }
         showToast('🐌 файл готов к загрузке');
     }
 });
 
 console.log('🐌 Ули · файлообменник готов!');
-console.log('Firebase ready:', firebaseReady);
+console.log(`Размер куска: ${formatSize(CHUNK_SIZE)}`);
+console.log(`Максимальный размер Base64: ~${formatSize(CHUNK_SIZE * 1.37)} (с учетом Base64)`);
 </script>
 </body>
 </html>
