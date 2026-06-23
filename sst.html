@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ули · файлообменник 🐌</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+            background-color: #1b3b1b;
+            background-image: radial-gradient(circle at 30% 40%, #2b5a2b 0%, #0e2f0e 90%);
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+            color: #f0f7da;
+            position: relative;
+        }
+
+        body::before {
+            content: "🐌🐌🐌";
+            font-size: 8rem;
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            opacity: 0.06;
+            white-space: nowrap;
+            transform: rotate(-10deg);
+            pointer-events: none;
+            letter-spacing: 2rem;
+            z-index: 0;
+        }
+
+        body::after {
+            content: "🐌🐌🐌";
+            font-size: 12rem;
+            position: fixed;
+            bottom: -20px;
+            right: 0;
+            opacity: 0.04;
+            transform: rotate(15deg);
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 0;
+        }
+
+        .main-container {
+            max-width: 700px;
+            width: 100%;
+            margin: 0 auto;
+            background: rgba(30, 50, 30, 0.75);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 3px solid #9bbc7b;
+            border-radius: 30px;
+            box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 2px #6f8c5d inset, 0 0 0 4px #3f6140 inset;
+            padding: 2.5rem 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem 1.2rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+            font-size: 2.8rem;
+            font-weight: 800;
+            text-shadow: 3px 3px 0 #2d4a2d, 5px 5px 0 #1b331b;
+            color: #e2f0c0;
+            letter-spacing: 2px;
+        }
+
+        .snail-icon-big {
+            font-size: 3.5rem;
+            transform: rotate(15deg);
+            transition: transform 0.2s;
+            filter: drop-shadow(2px 4px 4px #0f2a0f);
+        }
+
+        .snail-icon-big:hover {
+            transform: rotate(25deg) scale(1.1);
+        }
+
+        .status-bar {
+            background: #1b331b;
+            border: 1px solid #7eaf7a;
+            border-radius: 12px;
+            padding: 0.5rem 1rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #a0bf90;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .status-bar.success {
+            background: #1b3b1b;
+            border-color: #7eaf7a;
+            color: #c7f0b1;
+        }
+
+        .status-bar.error {
+            background: #3b1b1b;
+            border-color: #b07a7a;
+            color: #ffb0a0;
+        }
+
+        .status-bar .spinner {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .upload-section {
+            background: #2e4d2e;
+            border: 2px solid #7eaf7a;
+            border-radius: 24px;
+            padding: 1.8rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 15px -7px #102310, 0 0 0 2px #a7c8a3 inset;
+        }
+
+        .upload-section h2 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #fcfad6;
+            text-shadow: 0 2px 0 #466b46;
+        }
+
+        .upload-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .upload-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .upload-row input[type="file"] {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.7rem;
+            background: #385f38;
+            border: 2px solid #8ab47a;
+            border-radius: 16px;
+            color: #f0f7da;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        .upload-row input[type="file"]::file-selector-button {
+            padding: 0.4rem 1rem;
+            background: #a3c4a3;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            color: #1b3f1b;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        .upload-row input[type="file"]::file-selector-button:hover {
+            background: #c3e6b3;
+            transform: scale(1.02);
+        }
+
+        .upload-row input[type="text"] {
+            flex: 1;
+            min-width: 150px;
+            padding: 0.7rem 1rem;
+            background: #385f38;
+            border: 2px solid #8ab47a;
+            border-radius: 16px;
+            color: #f0f7da;
+            font-size: 0.95rem;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .upload-row input[type="text"]:focus {
+            border-color: #d8f0b5;
+            box-shadow: 0 0 15px rgba(168, 215, 130, 0.3);
+        }
+
+        .upload-row input[type="text"]::placeholder {
+            color: #a0bf90;
+        }
+
+        .upload-btn {
+            padding: 0.7rem 2rem;
+            background: #a3c4a3;
+            color: #1b3f1b;
+            border: 2px solid #d6f0be;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            cursor: pointer;
+            transition: 0.15s;
+            box-shadow: 0 5px 0 #446d44;
+            white-space: nowrap;
+        }
+
+        .upload-btn:hover:not(:disabled) {
+            background: #c3e6b3;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 0 #2f542f;
+        }
+
+        .upload-btn:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #2f542f;
+        }
+
+        .upload-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #1b331b;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #7eaf7a, #c7f0b1);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        .upload-status {
+            text-align: center;
+            font-size: 0.95rem;
+            color: #dcedc4;
+            min-height: 1.5rem;
+        }
+
+        .code-section {
+            background: #2e4d2e;
+            border: 2px solid #7eaf7a;
+            border-radius: 24px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 15px -7px #102310, 0 0 0 2px #a7c8a3 inset;
+        }
+
+        .code-section h2 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #fcfad6;
+            text-shadow: 0 2px 0 #466b46;
+        }
+
+        .code-section p {
+            text-align: center;
+            color: #a0bf90;
+            margin-bottom: 1rem;
+        }
+
+        .code-input-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .code-input-row input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.7rem 1rem;
+            background: #385f38;
+            border: 2px solid #8ab47a;
+            border-radius: 16px;
+            color: #f0f7da;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.2s;
+            text-align: center;
+            letter-spacing: 2px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .code-input-row input:focus {
+            border-color: #d8f0b5;
+            box-shadow: 0 0 15px rgba(168, 215, 130, 0.3);
+        }
+
+        .code-input-row button {
+            padding: 0.7rem 2rem;
+            background: #a3c4a3;
+            color: #1b3f1b;
+            border: 2px solid #d6f0be;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            cursor: pointer;
+            transition: 0.15s;
+            box-shadow: 0 5px 0 #446d44;
+            white-space: nowrap;
+        }
+
+        .code-input-row button:hover {
+            background: #c3e6b3;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 0 #2f542f;
+        }
+
+        .code-input-row button:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #2f542f;
+        }
+
+        .file-viewer {
+            background: #1b331b;
+            border: 2px solid #7eaf7a;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            text-align: center;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .file-viewer .file-icon {
+            font-size: 4rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-viewer .file-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #fcfad6;
+            margin-bottom: 0.3rem;
+        }
+
+        .file-viewer .file-meta {
+            color: #a0bf90;
+            margin-bottom: 0.8rem;
+        }
+
+        .file-viewer .download-link {
+            padding: 0.6rem 2rem;
+            background: #a3c4a3;
+            color: #1b3f1b;
+            border: 2px solid #d6f0be;
+            border-radius: 30px;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-block;
+            transition: 0.15s;
+            box-shadow: 0 4px 0 #446d44;
+        }
+
+        .file-viewer .download-link:hover {
+            background: #c3e6b3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 #2f542f;
+        }
+
+        .file-viewer .not-found {
+            color: #b07a7a;
+            font-size: 1.2rem;
+        }
+
+        .file-viewer .not-found .big-snail {
+            font-size: 4rem;
+            display: block;
+        }
+
+        .footer-snails {
+            margin-top: 2.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem 2rem;
+            flex-wrap: wrap;
+            font-size: 2rem;
+            color: #a2c78d;
+            border-top: 2px dashed #61855e;
+            padding-top: 1.5rem;
+            opacity: 0.8;
+        }
+
+        .footer-snails span {
+            filter: drop-shadow(0 5px 5px #172e17);
+            transition: 0.2s;
+            cursor: default;
+        }
+
+        .footer-snails span:hover {
+            transform: scale(1.2) rotate(5deg);
+            color: #e2ffb3;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2e4d2e;
+            border: 2px solid #7eaf7a;
+            border-radius: 20px;
+            padding: 0.8rem 2rem;
+            color: #f0f7da;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            text-align: center;
+            max-width: 90%;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .code-display {
+            background: #1b331b;
+            padding: 0.5rem 1.5rem;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 1.8rem;
+            letter-spacing: 4px;
+            color: #c7f0b1;
+            margin: 0.5rem 0;
+            border: 2px solid #7eaf7a;
+            display: inline-block;
+            user-select: all;
+            cursor: pointer;
+        }
+
+        .code-display:hover {
+            background: #2a4a2a;
+            border-color: #c7f0b1;
+        }
+
+        .upload-success-text {
+            color: #c7f0b1;
+            font-weight: 700;
+        }
+
+        .copy-hint {
+            font-size: 0.7rem;
+            color: #a0bf90;
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 600px) {
+            .main-container { padding: 1.5rem 1rem; }
+            .header-title { font-size: 2rem; }
+            .upload-row { flex-direction: column; }
+            .upload-row input[type="file"] { width: 100%; }
+            .upload-row input[type="text"] { width: 100%; }
+            .upload-btn { width: 100%; }
+            .code-input-row { flex-direction: column; }
+            .code-display { font-size: 1.4rem; padding: 0.4rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="header-title">
+        <span class="snail-icon-big">🐌</span>
+        <span>УЛИ · файлообменник</span>
+        <span class="snail-icon-big">🐌</span>
+    </div>
+
+    <div id="statusBar" class="status-bar">
+        <span class="spinner">🔄</span> подключение к Firebase...
+    </div>
+
+    <div class="upload-section">
+        <h2>🐚 загрузить файл</h2>
+        <div class="upload-form">
+            <div class="upload-row">
+                <input type="file" id="fileInput">
+                <input type="text" id="fileNameInput" placeholder="название (опционально)">
+                <button class="upload-btn" id="uploadBtn">📤 загрузить</button>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="upload-status" id="uploadStatus">готов к загрузке 🐌</div>
+        </div>
+    </div>
+
+    <div class="code-section">
+        <h2>🔑 открыть по коду</h2>
+        <p>введите код файла, чтобы скачать</p>
+        <div class="code-input-row">
+            <input type="text" id="codeInput" placeholder="код файла" maxlength="8">
+            <button id="openByCodeBtn">🐌 открыть</button>
+        </div>
+        <div class="file-viewer" id="fileViewer">
+            <div style="color:#a0bf90;">введите код и нажмите «открыть»</div>
+        </div>
+    </div>
+
+    <div class="footer-snails">
+        <span>🐌</span><span>🐌💚</span><span>🐌</span><span>🐚</span><span>🐌</span><span>🍀🐌</span>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDK via CDN - используем compat версию -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+<script>
+// Firebase Config
+const firebaseConfig = {
+    apiKey: "AIzaSyCWQ3cuVf3J18WHoIncw5EarAhCnhZWB6E",
+    authDomain: "sstore-a5e9a.firebaseapp.com",
+    projectId: "sstore-a5e9a",
+    storageBucket: "sstore-a5e9a.firebasestorage.app",
+    messagingSenderId: "810731138634",
+    appId: "1:810731138634:web:f9fccc44b9a3f6956640b3",
+    measurementId: "G-H4L4QQD1T9"
+};
+
+// Инициализация Firebase
+let db, storage;
+let firebaseReady = false;
+
+const statusBar = document.getElementById('statusBar');
+
+function updateStatus(message, type = '') {
+    statusBar.textContent = message;
+    statusBar.className = 'status-bar' + (type ? ' ' + type : '');
+}
+
+try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    storage = firebase.storage();
+    
+    // Настройка для работы из локального файла
+    db.settings({
+        experimentalAutoDetectLongPolling: true
+    });
+    
+    firebaseReady = true;
+    updateStatus('✅ подключено к Firebase 🐌', 'success');
+    console.log('🔥 Firebase initialized successfully');
+} catch (error) {
+    console.error('Firebase init error:', error);
+    updateStatus('❌ ошибка подключения: ' + error.message, 'error');
+}
+
+// DOM Elements
+const fileInput = document.getElementById('fileInput');
+const fileNameInput = document.getElementById('fileNameInput');
+const uploadBtn = document.getElementById('uploadBtn');
+const progressFill = document.getElementById('progressFill');
+const uploadStatus = document.getElementById('uploadStatus');
+const toast = document.getElementById('toast');
+const codeInput = document.getElementById('codeInput');
+const openByCodeBtn = document.getElementById('openByCodeBtn');
+const fileViewer = document.getElementById('fileViewer');
+
+let isUploading = false;
+
+// Generate random code (6 characters)
+function generateCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+
+// Toast
+function showToast(message, duration = 3000) {
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => toast.classList.remove('show'), duration);
+}
+
+// Format file size
+function formatSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+// Get file icon
+function getFileIcon(filename) {
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    const icons = {
+        'pdf': '📄', 'doc': '📝', 'docx': '📝', 'txt': '📃',
+        'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️', 'svg': '🖼️', 'webp': '🖼️',
+        'mp4': '🎬', 'avi': '🎬', 'mov': '🎬', 'mkv': '🎬',
+        'mp3': '🎵', 'wav': '🎵', 'flac': '🎵',
+        'zip': '📦', 'rar': '📦', '7z': '📦', 'tar': '📦', 'gz': '📦',
+        'exe': '⚙️', 'msi': '⚙️',
+        'apk': '📱',
+        'iso': '💿',
+        'json': '📊', 'xml': '📊', 'csv': '📊',
+        'py': '🐍', 'js': '📜', 'html': '🌐', 'css': '🎨', 'java': '☕',
+        'c': '🔧', 'cpp': '🔧', 'h': '🔧',
+    };
+    return icons[ext] || '📎';
+}
+
+// Upload file
+async function uploadFile(file, customName) {
+    if (!file) {
+        showToast('🐌 выберите файл!');
+        return;
+    }
+
+    if (isUploading) {
+        showToast('⏳ уже загружается...');
+        return;
+    }
+
+    if (!firebaseReady) {
+        showToast('❌ Firebase не готов');
+        return;
+    }
+
+    isUploading = true;
+    uploadBtn.disabled = true;
+    uploadStatus.textContent = '⏳ подготовка...';
+    progressFill.style.width = '0%';
+
+    try {
+        const fileName = customName.trim() || file.name;
+        const code = generateCode();
+        const storagePath = `uploads/${Date.now()}_${file.name}`;
+        const storageRef = storage.ref(storagePath);
+
+        // Загружаем файл через SDK
+        const uploadTask = storageRef.put(file);
+
+        // Отслеживаем прогресс
+        uploadTask.on('state_changed',
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                progressFill.style.width = progress + '%';
+                uploadStatus.textContent = `⏳ загрузка: ${Math.round(progress)}%`;
+            },
+            (error) => {
+                console.error('Upload error:', error);
+                uploadStatus.textContent = '❌ ошибка: ' + error.message;
+                showToast('❌ ошибка загрузки: ' + error.message);
+                isUploading = false;
+                uploadBtn.disabled = false;
+            }
+        );
+
+        // Ждем завершения
+        await uploadTask;
+        const downloadURL = await storageRef.getDownloadURL();
+
+        // Сохраняем в Firestore
+        await db.collection('files').add({
+            name: fileName,
+            originalName: file.name,
+            size: file.size,
+            url: downloadURL,
+            storagePath: storagePath,
+            code: code,
+            uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        uploadStatus.innerHTML = `
+            <div class="upload-success-text">✅ файл загружен! 🐌</div>
+            <div class="code-display" onclick="copyCode('${code}')">🔑 ${code}</div>
+            <div class="copy-hint">📋 нажмите на код, чтобы скопировать</div>
+        `;
+
+        showToast(`✅ файл загружен! Код: ${code}`);
+        progressFill.style.width = '100%';
+
+        fileInput.value = '';
+        fileNameInput.value = '';
+
+    } catch (error) {
+        console.error('Upload error:', error);
+        uploadStatus.textContent = '❌ ошибка: ' + error.message;
+        showToast('❌ ошибка загрузки: ' + error.message);
+    } finally {
+        isUploading = false;
+        uploadBtn.disabled = false;
+    }
+}
+
+// Copy code function
+window.copyCode = function(code) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(() => {
+            showToast('📋 код скопирован!');
+        }).catch(() => {
+            fallbackCopy(code);
+        });
+    } else {
+        fallbackCopy(code);
+    }
+};
+
+function fallbackCopy(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        document.execCommand('copy');
+        showToast('📋 код скопирован!');
+    } catch (err) {
+        showToast('❌ не удалось скопировать');
+    }
+    document.body.removeChild(textarea);
+}
+
+// Open file by code
+async function openByCode(code) {
+    if (!code || code.trim().length === 0) {
+        showToast('🐌 введите код!');
+        return;
+    }
+
+    if (!firebaseReady) {
+        showToast('❌ Firebase не готов');
+        return;
+    }
+
+    const codeUpper = code.trim().toUpperCase();
+    
+    try {
+        const snapshot = await db.collection('files')
+            .where('code', '==', codeUpper)
+            .limit(1)
+            .get();
+
+        if (snapshot.empty) {
+            fileViewer.innerHTML = `
+                <div class="not-found">
+                    <span class="big-snail">🐌❓</span>
+                    файл с кодом «${escapeHtml(codeUpper)}» не найден
+                </div>
+            `;
+            showToast('❌ файл не найден');
+            return;
+        }
+
+        const data = snapshot.docs[0].data();
+        const name = data.name || 'без имени';
+        const size = data.size || 0;
+        const url = data.url || '#';
+        const icon = getFileIcon(name);
+        const uploadedAt = data.uploadedAt?.toDate?.() || new Date();
+        const dateStr = uploadedAt.toLocaleDateString('ru-RU') + ' ' + 
+                       uploadedAt.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+
+        fileViewer.innerHTML = `
+            <div class="file-icon">${icon}</div>
+            <div class="file-name">${escapeHtml(name)}</div>
+            <div class="file-meta">${formatSize(size)} · ${dateStr}</div>
+            <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="download-link">⬇️ скачать файл</a>
+        `;
+
+        showToast(`🐌 файл «${name}» найден!`);
+
+    } catch (error) {
+        console.error('Open by code error:', error);
+        fileViewer.innerHTML = `
+            <div class="not-found">
+                <span class="big-snail">🐌🍂</span>
+                ошибка: ${escapeHtml(error.message)}
+            </div>
+        `;
+        showToast('❌ ошибка поиска: ' + error.message);
+    }
+}
+
+// Escape HTML
+function escapeHtml(unsafe) {
+    if (!unsafe) return '';
+    return String(unsafe)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+// Event Listeners
+uploadBtn.addEventListener('click', () => {
+    const file = fileInput.files[0];
+    const customName = fileNameInput.value;
+    uploadFile(file, customName);
+});
+
+fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (file && !fileNameInput.value) {
+        fileNameInput.placeholder = file.name;
+    }
+});
+
+openByCodeBtn.addEventListener('click', () => {
+    openByCode(codeInput.value);
+});
+
+codeInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        openByCode(codeInput.value);
+    }
+});
+
+// Drag and drop support
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => e.preventDefault());
+
+const uploadSection = document.querySelector('.upload-section');
+uploadSection.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadSection.style.borderColor = '#d8f0b5';
+    uploadSection.style.boxShadow = '0 0 30px rgba(168, 215, 130, 0.2)';
+});
+
+uploadSection.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    uploadSection.style.borderColor = '#7eaf7a';
+    uploadSection.style.boxShadow = 'none';
+});
+
+uploadSection.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadSection.style.borderColor = '#7eaf7a';
+    uploadSection.style.boxShadow = 'none';
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        fileInput.files = files;
+        if (!fileNameInput.value) {
+            fileNameInput.placeholder = files[0].name;
+        }
+        showToast('🐌 файл готов к загрузке');
+    }
+});
+
+console.log('🐌 Ули · файлообменник готов!');
+console.log('Firebase ready:', firebaseReady);
+</script>
+</body>
+</html>
