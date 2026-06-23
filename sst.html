@@ -574,11 +574,11 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-<!-- LZ4 сжатие (легкая и быстрая реализация) -->
 <script>
-// Простое LZ-сжатие (LZ4-like)
+// ============================================
+// АЛГОРИТМ СЖАТИЯ (упрощенный LZ)
+// ============================================
 const LZ = {
-    // Сжатие
     compress: function(input) {
         if (typeof input === 'string') {
             input = new TextEncoder().encode(input);
@@ -593,13 +593,12 @@ const LZ = {
             let matchLen = 0;
             let matchOffset = 0;
             
-            // Ищем совпадение в словаре
             const maxMatch = Math.min(255, input.length - i);
             for (let len = 3; len <= maxMatch; len++) {
                 const key = Array.from(input.slice(i, i + len)).join(',');
                 if (dict.has(key)) {
                     const prevPos = dict.get(key);
-                    if (i - prevPos < 4096) { // Максимальное смещение 4KB
+                    if (i - prevPos < 4096) {
                         matchLen = len;
                         matchOffset = i - prevPos;
                     }
@@ -609,19 +608,16 @@ const LZ = {
             }
             
             if (matchLen >= 3) {
-                // Кодируем как смещение и длину
                 output.push(0xFF & matchOffset);
                 output.push(0xFF & (matchOffset >> 8));
                 output.push(0xFF & matchLen);
                 i += matchLen;
             } else {
-                // Кодируем как литерал
                 output.push(0);
                 output.push(input[i]);
                 i++;
             }
             
-            // Добавляем в словарь
             if (i < input.length) {
                 for (let j = Math.max(0, i - 64); j < i; j++) {
                     const key = Array.from(input.slice(j, i)).join(',');
@@ -633,7 +629,6 @@ const LZ = {
         return new Uint8Array(output);
     },
     
-    // Распаковка
     decompress: function(input) {
         const output = [];
         let i = 0;
@@ -642,12 +637,10 @@ const LZ = {
             const flags = input[i++];
             
             if (flags === 0) {
-                // Литерал
                 if (i < input.length) {
                     output.push(input[i++]);
                 }
             } else {
-                // Смещение и длина
                 if (i + 2 < input.length) {
                     const offset = flags | (input[i] << 8);
                     const length = input[i + 1];
@@ -667,19 +660,9 @@ const LZ = {
     }
 };
 
-// Конвертация Uint8Array в Base64 с сжатием
-function compressAndEncode(data) {
-    const compressed = LZ.compress(data);
-    return uint8ArrayToBase64(compressed);
-}
-
-// Конвертация Base64 в Uint8Array с распаковкой
-function decodeAndDecompress(base64) {
-    const compressed = base64ToUint8Array(base64);
-    return LZ.decompress(compressed);
-}
-
-// Конвертация Uint8Array в Base64
+// ============================================
+// КОНВЕРТАЦИЯ
+// ============================================
 function uint8ArrayToBase64(uint8Array) {
     let binary = '';
     const chunkSize = 8192;
@@ -690,7 +673,6 @@ function uint8ArrayToBase64(uint8Array) {
     return btoa(binary);
 }
 
-// Конвертация Base64 в Uint8Array
 function base64ToUint8Array(base64) {
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
@@ -699,10 +681,10 @@ function base64ToUint8Array(base64) {
     }
     return bytes;
 }
-</script>
 
-<script>
-// Firebase Config
+// ============================================
+// ОСНОВНОЙ КОД
+// ============================================
 const firebaseConfig = {
     apiKey: "AIzaSyCWQ3cuVf3J18WHoIncw5EarAhCnhZWB6E",
     authDomain: "sstore-a5e9a.firebaseapp.com",
@@ -713,7 +695,6 @@ const firebaseConfig = {
     measurementId: "G-H4L4QQD1T9"
 };
 
-// Инициализация Firebase
 let db;
 let firebaseReady = false;
 const statusBar = document.getElementById('statusBar');
@@ -726,11 +707,7 @@ function updateStatus(message, type = '') {
 try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
-    
-    db.settings({
-        experimentalAutoDetectLongPolling: true
-    });
-    
+    db.settings({ experimentalAutoDetectLongPolling: true });
     firebaseReady = true;
     updateStatus('✅ подключено 🐌', 'success');
     console.log('🔥 Firebase ready');
@@ -754,9 +731,6 @@ const openByCodeBtn = document.getElementById('openByCodeBtn');
 const fileViewer = document.getElementById('fileViewer');
 
 let isUploading = false;
-let uploadCanceled = false;
-
-// Размер куска: 700 КБ (сжатие уменьшит размер)
 const CHUNK_SIZE = 700 * 1024;
 
 function generateCode() {
@@ -802,12 +776,78 @@ function getFileIcon(filename) {
     return icons[ext] || '📎';
 }
 
-// Функция с задержкой для избежания перегрузки
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Загрузка с разбивкой и сжатием
+// ============================================
+// ПОШАГОВОЕ СЖАТИЕ С ОБНОВЛЕНИЕМ UI
+// ============================================
+function compressInSteps(data, stepSize = 1024 * 1024) {
+    return new Promise((resolve) => {
+        const output = [];
+        let i = 0;
+        const dict = new Map();
+        
+        function processStep() {
+            const start = performance.now();
+            const end = Math.min(i + stepSize, data.length);
+            
+            while (i < end) {
+                let matchLen = 0;
+                let matchOffset = 0;
+                
+                const maxMatch = Math.min(255, data.length - i);
+                for (let len = 3; len <= maxMatch; len++) {
+                    const key = Array.from(data.slice(i, i + len)).join(',');
+                    if (dict.has(key)) {
+                        const prevPos = dict.get(key);
+                        if (i - prevPos < 4096) {
+                            matchLen = len;
+                            matchOffset = i - prevPos;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+                
+                if (matchLen >= 3) {
+                    output.push(0xFF & matchOffset);
+                    output.push(0xFF & (matchOffset >> 8));
+                    output.push(0xFF & matchLen);
+                    i += matchLen;
+                } else {
+                    output.push(0);
+                    output.push(data[i]);
+                    i++;
+                }
+                
+                if (i < data.length) {
+                    for (let j = Math.max(0, i - 64); j < i; j++) {
+                        const key = Array.from(data.slice(j, i)).join(',');
+                        dict.set(key, j);
+                    }
+                }
+            }
+            
+            const progress = Math.min(100, (i / data.length) * 100);
+            uploadStatus.textContent = `⏳ сжатие: ${Math.round(progress)}%`;
+            progressFill.style.width = (progress * 0.4) + '%';
+            
+            if (i < data.length) {
+                setTimeout(processStep, 10);
+            } else {
+                resolve(new Uint8Array(output));
+            }
+        }
+        
+        setTimeout(processStep, 10);
+    });
+}
+
+// ============================================
+// ЗАГРУЗКА ФАЙЛА
+// ============================================
 async function uploadFile(file, customName) {
     if (!file) {
         showToast('🐌 выберите файл!');
@@ -825,12 +865,11 @@ async function uploadFile(file, customName) {
     }
 
     isUploading = true;
-    uploadCanceled = false;
     uploadBtn.disabled = true;
-    uploadStatus.textContent = '⏳ подготовка...';
+    uploadStatus.textContent = '⏳ чтение файла...';
     progressFill.style.width = '0%';
     chunkProgress.textContent = '';
-    compressionInfo.textContent = '🧊 сжатие LZ4...';
+    compressionInfo.textContent = '🧊 подготовка...';
 
     try {
         const fileName = customName.trim() || file.name;
@@ -840,13 +879,13 @@ async function uploadFile(file, customName) {
         const arrayBuffer = await file.arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
         
-        // Сжимаем весь файл целиком для лучшего сжатия
-        compressionInfo.textContent = '🧊 сжатие файла...';
-        uploadStatus.textContent = '⏳ сжатие...';
+        compressionInfo.textContent = '🧊 сжатие LZ4...';
+        uploadStatus.textContent = '⏳ сжатие: 0%';
         
-        const compressedBytes = LZ.compress(bytes);
+        // Сжимаем пошагово (не блокирует UI)
+        const compressedBytes = await compressInSteps(bytes);
+        
         const compressionRatio = ((1 - compressedBytes.length / bytes.length) * 100).toFixed(1);
-        
         compressionInfo.textContent = `🧊 сжатие: ${compressionRatio}% (${formatSize(compressedBytes.length)}/${formatSize(bytes.length)})`;
         
         const totalChunks = Math.ceil(compressedBytes.length / CHUNK_SIZE);
@@ -854,27 +893,21 @@ async function uploadFile(file, customName) {
         fileInfo.innerHTML = `Файл: <span>${escapeHtml(fileName)}</span> · Оригинал: <span>${formatSize(bytes.length)}</span> → Сжатый: <span>${formatSize(compressedBytes.length)}</span> · Кусков: <span>${totalChunks}</span>`;
         uploadStatus.textContent = `⏳ загрузка... (0/${totalChunks})`;
 
-        // Загружаем куски с паузами между ними
+        // Загружаем куски
         let uploadedChunks = 0;
 
         for (let i = 0; i < totalChunks; i++) {
-            if (uploadCanceled) {
-                throw new Error('Загрузка отменена');
-            }
-            
             const start = i * CHUNK_SIZE;
             const end = Math.min(start + CHUNK_SIZE, compressedBytes.length);
             const chunk = compressedBytes.slice(start, end);
             
-            // Конвертируем в Base64
             const chunkBase64 = uint8ArrayToBase64(chunk);
             
-            // Проверяем размер
             if (chunkBase64.length > 1048487) {
-                throw new Error(`Кусок ${i+1} слишком большой (${chunkBase64.length} байт)`);
+                throw new Error(`Кусок ${i+1} слишком большой`);
             }
             
-            // Сохраняем кусок с повторными попытками
+            // Сохраняем с повторными попытками
             let retries = 3;
             let saved = false;
             while (retries > 0 && !saved) {
@@ -893,25 +926,22 @@ async function uploadFile(file, customName) {
                     retries--;
                     if (retries === 0) throw e;
                     await sleep(1000);
-                    console.log(`Retry chunk ${i+1}, remaining: ${retries}`);
                 }
             }
             
             uploadedChunks++;
             
-            // Обновляем прогресс
-            const progress = (uploadedChunks / totalChunks) * 100;
+            const progress = 40 + (uploadedChunks / totalChunks) * 60;
             progressFill.style.width = progress + '%';
             uploadStatus.textContent = `⏳ загрузка: ${Math.round(progress)}% (${uploadedChunks}/${totalChunks})`;
             chunkProgress.textContent = `📦 кусок ${uploadedChunks}/${totalChunks} (${formatSize(chunk.length)})`;
             
-            // Небольшая пауза между кусками для предотвращения перегрузки
             if (i < totalChunks - 1) {
-                await sleep(100);
+                await sleep(50);
             }
         }
 
-        // Создаем запись о файле
+        // Сохраняем метаданные
         await db.collection('files').add({
             name: fileName,
             originalName: file.name,
@@ -942,13 +972,8 @@ async function uploadFile(file, customName) {
 
     } catch (error) {
         console.error('Upload error:', error);
-        if (error.message === 'Загрузка отменена') {
-            uploadStatus.textContent = '⏹️ загрузка отменена';
-            showToast('⏹️ загрузка отменена');
-        } else {
-            uploadStatus.textContent = '❌ ошибка: ' + error.message;
-            showToast('❌ ошибка: ' + error.message);
-        }
+        uploadStatus.textContent = '❌ ошибка: ' + error.message;
+        showToast('❌ ошибка: ' + error.message);
         progressFill.style.width = '0%';
         chunkProgress.textContent = '';
     } finally {
@@ -958,6 +983,9 @@ async function uploadFile(file, customName) {
     }
 }
 
+// ============================================
+// ОСТАЛЬНЫЕ ФУНКЦИИ
+// ============================================
 window.copyCode = function(code) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(code).then(() => {
@@ -1033,7 +1061,6 @@ async function openByCode(code) {
 
         showToast(`⏳ загрузка ${totalChunks} кусков...`);
 
-        // Загружаем куски с паузами
         const chunks = [];
         for (let i = 0; i < totalChunks; i++) {
             const chunkSnapshot = await db.collection('file_chunks')
@@ -1057,11 +1084,9 @@ async function openByCode(code) {
                 `;
             }
             
-            // Пауза для предотвращения перегрузки
-            await sleep(50);
+            await sleep(30);
         }
 
-        // Собираем сжатые данные
         const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
         const compressedData = new Uint8Array(totalLength);
         let offset = 0;
@@ -1070,7 +1095,6 @@ async function openByCode(code) {
             offset += chunk.length;
         }
 
-        // Распаковываем
         let fileDataBytes;
         if (compressed) {
             fileDataBytes = LZ.decompress(compressedData);
@@ -1116,7 +1140,9 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
-// Event Listeners
+// ============================================
+// EVENT LISTENERS
+// ============================================
 uploadBtn.addEventListener('click', () => {
     const file = fileInput.files[0];
     const customName = fileNameInput.value;
@@ -1180,7 +1206,7 @@ uploadSection.addEventListener('drop', (e) => {
 
 console.log('🐌 Ули · файлообменник готов!');
 console.log(`Размер куска: ${formatSize(CHUNK_SIZE)}`);
-console.log('🧊 Сжатие LZ4 включено');
+console.log('🧊 Сжатие LZ4 включено (пошаговое)');
 </script>
 </body>
 </html>
