@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="globals.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="macbook-air" data-model-id="28:7">
+    
+    <header class="top-bar">
+      <div class="logo-group">
+        <img 
+          class="element" 
+          src="https://barsik.org/Logo.png"
+          alt="Logo" 
+        />
+        <span class="text-wrapper-5">Barsik</span>
+      </div>
+      <nav class="nav">
+        <span class="text-wrapper">Products</span>
+        <span class="div">Support</span>
+        <span class="text-wrapper-2">Terms</span>
+      </nav>
+    </header>
+
+    <div class="main-heading">
+      <span class="highlight-box">
+        <span class="text-wrapper-3">Fast</span>
+      </span>
+      <span class="text-wrapper-4">reliable, and secure</span>
+    </div>
+
+    <h2 class="text-wrapper-6">realtime database</h2>
+
+    <div class="div-wrapper">
+      <p class="p">
+        A powerful cloud key-value store for your projects. Change and fetch text or JSON values via
+        <span class="text-wrapper-8">lightning-fast API in just a few lines of code.</span>
+      </p>
+    </div>
+
+    <a href="https://login.barsik.org" class="cta-button">
+      <span class="text-wrapper-7">Try now</span>
+    </a>
+
+  </div>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"06c37e8a1ce24b758522b1abee21a6ad","r":1}' crossorigin="anonymous"></script>
+</body>
+</html>

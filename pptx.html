@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<!-- saved from url=(0066)file:///C:/Users/user/Downloads/deepseek_html_20260728_adc26f.html -->
+<html lang="ru"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PPTXX · презентации</title>
+<script src="./pptx_files/firebase-app-compat.js"></script>
+<script src="./pptx_files/firebase-database-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Roboto,system-ui,sans-serif;background-color:#1b3b1b;background-image:radial-gradient(circle at 30% 40%,#2b5a2b 0%,#0e2f0e 90%);min-height:100vh;padding:2rem 1.5rem;color:#f0f7da}
+.container{max-width:1200px;margin:0 auto;background:rgba(30,50,30,0.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:3px solid #9bbc7b;border-radius:30px;box-shadow:0 25px 40px -10px rgba(0,0,0,0.6),0 0 0 2px #6f8c5d inset,0 0 0 4px #3f6140 inset;padding:2.5rem 2rem;position:relative;z-index:1}
+.header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.6rem 1.2rem;margin-bottom:1.5rem}
+.header-center{display:flex;align-items:center;gap:0.6rem 1.2rem;flex-wrap:wrap;font-size:2.8rem;font-weight:800;text-shadow:3px 3px 0 #2d4a2d,5px 5px 0 #1b331b;color:#e2f0c0;margin:0 auto}
+.header .logo{font-size:3.5rem;transform:rotate(15deg);filter:drop-shadow(2px 4px 4px #0f2a0f);transition:transform 0.2s}
+.header .logo:hover{transform:rotate(25deg) scale(1.1)}
+.header .pptxx{color:#ffd93d;letter-spacing:4px;font-weight:900}
+.btn-home{background:#2e4d2e;color:#c7e0b0;padding:0.5rem 1.2rem;border-radius:30px;border:2px solid #7eaf7a;text-decoration:none;font-weight:600;font-size:1rem;transition:0.2s;display:inline-flex;align-items:center;gap:0.4rem;white-space:nowrap}
+.btn-home:hover{background:#386d38;border-color:#d8f0b5;color:#f0f7da;transform:translateY(-2px)}
+.subhead{text-align:center;color:#c7e0b0;font-size:1.1rem;margin-bottom:2rem;border-bottom:2px dashed #61855e;padding-bottom:1rem}
+.controls{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.controls-left{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.controls label{color:#c7e0b0;font-size:0.95rem}
+.controls select{background:#2e4d2e;color:#f0f7da;border:2px solid #7eaf7a;border-radius:30px;padding:0.5rem 1.2rem;font-size:0.95rem;outline:none;cursor:pointer}
+.controls select:focus{border-color:#d8f0b5;box-shadow:0 0 0 3px #6f9a5f}
+.btn-add-top{background:#a3c4a3;color:#1b3f1b;font-weight:700;padding:0.6rem 2rem;border:none;border-radius:40px;font-size:1.05rem;border:2px solid #d6f0be;box-shadow:0 5px 0 #446d44;cursor:pointer;transition:0.1s;white-space:nowrap}
+.btn-add-top:hover{background:#c3e6b3;transform:translateY(-2px);box-shadow:0 7px 0 #2f542f}
+.btn-add-top:active{transform:translateY(3px);box-shadow:0 2px 0 #2f542f}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:2rem;margin-top:0.5rem}
+.product-card{background:#2e4d2e;border:2px solid #7eaf7a;border-radius:20px;overflow:hidden;box-shadow:0 12px 20px -10px #102310,0 0 0 2px #a7c8a3 inset;transition:0.3s ease;display:flex;flex-direction:column;backdrop-filter:blur(2px);position:relative}
+.product-card:hover{transform:translateY(-8px) scale(1.01);border-color:#d8f0b5;box-shadow:0 20px 30px -8px #091409,0 0 0 3px #c7f0b1 inset}
+.image-gallery{padding:0.8rem 0.8rem 0.4rem;background:#1a3a1a;border-bottom:2px solid #61855e}
+.main-image{width:100%;aspect-ratio:16/10;overflow:hidden;border-radius:14px;background:#1b331b}
+.main-image img{width:100%;height:100%;object-fit:cover;transition:transform 0.3s}
+.product-card:hover .main-image img{transform:scale(1.02)}
+.thumbnails{display:flex;gap:0.4rem;margin-top:0.5rem;overflow-x:auto;padding-bottom:0.2rem}
+.thumbnails img{width:50px;height:50px;object-fit:cover;border-radius:10px;border:2px solid #7eaf7a;flex-shrink:0;cursor:pointer;transition:0.2s}
+.thumbnails img:hover{border-color:#d8f0b5;transform:scale(1.05)}
+.product-info{padding:1rem 1.2rem 1.2rem;display:flex;flex-direction:column;flex-grow:1}
+.product-header{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.3rem;flex-wrap:wrap}
+.product-emoji{font-size:2rem;line-height:1}
+.product-name{font-size:1.4rem;font-weight:700;color:#fcfad6;text-shadow:0 2px 0 #466b46;word-break:break-word;flex:1}
+.product-rank{font-size:1.3rem;background:#2f542f;padding:0 0.6rem;border-radius:30px;border:1px solid #8bb46c;line-height:1.8}
+.product-desc{font-size:0.9rem;color:#dcedc4;margin:0.4rem 0 0.8rem;line-height:1.4;background:#385f38;padding:0.4rem 0.8rem;border-radius:16px;border:1px solid #8ab47a;flex-grow:1}
+.product-meta{display:flex;justify-content:space-between;align-items:center;margin:0.5rem 0 0.8rem;font-size:0.95rem}
+.product-rating{color:#ffd93d;letter-spacing:1px;background:#2f542f;padding:0.2rem 0.8rem;border-radius:30px;border:1px solid #8bb46c;font-size:0.9rem}
+.product-favorite{font-size:1.6rem;cursor:pointer;transition:0.2s;color:#a2c78d;user-select:none;line-height:1}
+.product-favorite:hover{transform:scale(1.2)}
+.product-favorite.liked{color:#ff6b6b}
+.product-link{display:block;background:#a3c4a3;color:#1b3f1b;text-decoration:none;font-weight:700;padding:0.6rem;border-radius:30px;font-size:1rem;border:2px solid #d6f0be;box-shadow:0 5px 0 #446d44;text-align:center;transition:0.15s;margin-top:0.2rem;cursor:pointer}
+.product-link:hover{background:#c3e6b3;transform:translateY(-2px);box-shadow:0 7px 0 #2f542f;color:#0f300f}
+.delete-btn{position:absolute;top:12px;right:14px;background:rgba(30,30,30,0.7);border:1px solid #9bbc7b;color:#ffb3b3;font-size:1rem;cursor:pointer;opacity:0.4;transition:0.2s;padding:0.2rem 0.6rem;border-radius:20px;z-index:10}
+.delete-btn:hover{opacity:1;background:rgba(80,30,30,0.8);transform:scale(1.1)}
+.empty-message{text-align:center;font-size:1.4rem;padding:3rem 0;color:#b8d9a8;grid-column:1/-1;background:#2f542f;border-radius:30px;border:2px dashed #9bbc7b}
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:1000;justify-content:center;align-items:center}
+.modal-box{background:#2e4d2e;border:3px solid #9bbc7b;border-radius:30px;padding:2.5rem 2rem;max-width:500px;width:90%;box-shadow:0 30px 50px -10px #000,0 0 0 2px #6f8c5d inset,0 0 0 4px #3f6140 inset}
+.modal-box h2{color:#fcfad6;text-shadow:0 3px 0 #466b46;font-size:1.6rem;margin-bottom:0.5rem;text-align:center}
+.modal-box .sub{color:#dcedc4;text-align:center;margin-bottom:1.2rem;font-size:0.95rem}
+.modal-form .form-row{display:flex;flex-wrap:wrap;gap:0.8rem;margin-bottom:0.8rem}
+.modal-form .form-row input{flex:1 1 180px;padding:0.7rem 1rem;border-radius:30px;border:2px solid #8bb46c;background:#1f3f1f;color:#f0f7da;font-size:0.95rem;outline:none;transition:0.2s;min-width:140px}
+.modal-form .form-row input::placeholder{color:#8aa87a}
+.modal-form .form-row input:focus{border-color:#d8f0b5;background:#2a4f2a;box-shadow:0 0 0 3px #6f9a5f}
+.modal-form .img-group{display:flex;flex-wrap:wrap;gap:0.5rem;background:transparent;border:none;padding:0;flex:1 1 100%}
+.modal-form .img-group input{flex:1 1 140px;min-width:100px;padding:0.5rem 0.8rem;border-radius:30px;border:2px solid #8bb46c;background:#1f3f1f;color:#f0f7da;font-size:0.85rem;outline:none}
+.modal-form .img-group input:focus{border-color:#d8f0b5;background:#2a4f2a}
+.modal-buttons{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:1rem}
+.modal-btn{padding:0.7rem 2.5rem;border:none;border-radius:40px;font-size:1rem;font-weight:700;cursor:pointer;transition:0.15s;min-width:120px}
+.modal-btn.submit{background:#a3c4a3;color:#1b3f1b;border:2px solid #d6f0be;box-shadow:0 5px 0 #446d44}
+.modal-btn.submit:hover{background:#c3e6b3;transform:translateY(-2px);box-shadow:0 7px 0 #2f542f}
+.modal-btn.cancel{background:#5a3d3d;color:#f0dada;border:2px solid #b38a7a;box-shadow:0 5px 0 #3d2a2a}
+.modal-btn.cancel:hover{background:#7a4d4d;transform:translateY(-2px)}
+.modal-stars{display:flex;justify-content:center;gap:0.6rem;font-size:3.2rem;margin:1rem 0 1.5rem;cursor:pointer}
+.modal-stars .star{transition:0.15s;opacity:0.3;filter:grayscale(1);cursor:pointer;user-select:none}
+.modal-stars .star.active{opacity:1;filter:grayscale(0);transform:scale(1.1)}
+.modal-stars .star:hover{transform:scale(1.3)}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#2e4d2e;border:2px solid #7eaf7a;border-radius:20px;padding:0.8rem 2rem;color:#f0f7da;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,0.5);z-index:2000;opacity:0;transition:opacity 0.3s ease;pointer-events:none;text-align:center;max-width:90%}
+.toast.show{opacity:1}
+.footer-snails{margin-top:3rem;display:flex;justify-content:center;gap:0.8rem 2rem;flex-wrap:wrap;font-size:2rem;color:#a2c78d;border-top:2px dashed #61855e;padding-top:1.8rem;opacity:0.8}
+.footer-snails span{filter:drop-shadow(0 5px 5px #172e17);transition:0.2s;cursor:default}
+.footer-snails span:hover{transform:scale(1.2) rotate(5deg);color:#e2ffb3}
+.note{text-align:center;font-size:0.9rem;color:#8aa87a;margin-top:1.5rem}
+.note a{color:#c7e0b0;text-decoration:underline wavy #a3d683}
+.pptxx-badge{background:#2f542f;color:#ffd93d;padding:0.1rem 0.8rem;border-radius:30px;font-size:0.9rem;border:1px solid #8bb46c;font-weight:700;letter-spacing:1px}
+@media (max-width:600px){.container{padding:1.5rem 1rem}.header{flex-direction:column;align-items:center}.header-center{font-size:2rem;margin:0}.btn-home{font-size:0.85rem;padding:0.3rem 1rem}.modal-form .form-row input{flex:1 1 100%}.modal-form .img-group input{flex:1 1 100%}.product-grid{grid-template-columns:1fr}.modal-box{padding:1.8rem 1.2rem}.modal-stars{font-size:2.5rem}.controls{justify-content:center}.controls-left{justify-content:center}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<a href="https://uliigra2.c6t.ru/home" class="btn-home">🏠 Домой</a>
+<div class="header-center"><span class="logo">🐌</span><span class="pptxx">PPTXX</span><span class="logo">🐌</span></div>
+<div style="width:100px;"></div>
+</div>
+<div class="subhead">🍃 хостинг презентаций · скачивай, оценивай, добавляй!</div>
+<div class="controls">
+<div class="controls-left">
+<label for="sort-control">Сортировка:</label>
+<select id="sort-control"><option value="rating">⭐ По рейтингу</option><option value="new">🕐 По новизне</option></select>
+</div>
+<button class="btn-add-top" id="openAddModal">➕ добавить</button>
+</div>
+<div id="presentation-list" class="product-grid"><div class="product-card"><div class="image-gallery"><div class="main-image"><img src="https://via.placeholder.com/300x200/2d4a2d/9bbc7b?text=%F0%9F%90%8C+PPTXX" alt="ВСЕ ПЕРЕХОДИТЕ НА САЙТ BAR" loading="lazy" onerror="this.src=&#39;https://via.placeholder.com/300x200/2d4a2d/9bbc7b?text=🐌+PPTXX&#39;"></div><div class="thumbnails"><img src="./pptx_files/saved_resource" alt="thumb" loading="lazy" onerror="this.style.display=&#39;none&#39;" style="display: none;"><img src="./pptx_files/saved_resource" alt="thumb" loading="lazy" onerror="this.style.display=&#39;none&#39;" style="display: none;"><img src="./pptx_files/saved_resource" alt="thumb" loading="lazy" onerror="this.style.display=&#39;none&#39;" style="display: none;"><img src="./pptx_files/saved_resource" alt="thumb" loading="lazy" onerror="this.style.display=&#39;none&#39;" style="display: none;"></div></div><div class="product-info"><div class="product-header"><span class="product-emoji">🪿</span><span class="product-name">ВСЕ ПЕРЕХОДИТЕ НА САЙТ BAR</span><span class="product-rank">🥇</span></div><div class="product-desc">barsik.org barsik.org barsik.org</div><div class="product-meta"><span class="product-rating" title="4.1 (8 оценок)">⭐⭐⭐⭐☆ 4.1</span><span class="product-favorite" data-key="-OydXuPlwA2TQbfZ5RPH">🤍</span></div><button class="product-link" data-key="-OydXuPlwA2TQbfZ5RPH" data-name="ВСЕ ПЕРЕХОДИТЕ НА САЙТ BAR" data-link="https://barsik.org">📥 Скачать</button><button class="delete-btn" data-key="-OydXuPlwA2TQbfZ5RPH">✖</button></div></div><div class="product-card"><div class="image-gallery"><div class="main-image"><img src="https://via.placeholder.com/300x200/2d4a2d/9bbc7b?text=%F0%9F%90%8C+PPTXX" alt="ВСЕ ПЕРЕХОДИТЕ НА САЙТ BAR" loading="lazy" onerror="this.src=&#39;https://via.placeholder.com/300x200/2d4a2d/9bbc7b?text=🐌+PPTXX&#39;"></div><div class="thumbnails"><img src="./pptx_files/saved_resource" alt="thumb" loading="lazy" onerror="this.style.display=&#39;none&#39;" style="display: none;"><img src="./pptx_files/saved_resource" alt="thumb" loading="lazy" onerror="this.style.display=&#39;none&#39;" style="display: none;"><img src="./pptx_files/saved_resource" alt="thumb" loading="lazy" onerror="this.style.display=&#39;none&#39;" style="display: none;"><img src="./pptx_files/saved_resource" alt="thumb" loading="lazy" onerror="this.style.display=&#39;none&#39;" style="display: none;"></div></div><div class="product-info"><div class="product-header"><span class="product-emoji">🪿</span><span class="product-name">ВСЕ ПЕРЕХОДИТЕ НА САЙТ BAR</span><span class="product-rank">🥈</span></div><div class="product-desc">barsik.org barsik.org barsik.org</div><div class="product-meta"><span class="product-rating" title="2.5 (2 оценок)">⭐⭐⭐☆☆ 2.5</span><span class="product-favorite" data-key="-OydXmNsOpyXC90cjVuB">🤍</span></div><button class="product-link" data-key="-OydXmNsOpyXC90cjVuB" data-name="ВСЕ ПЕРЕХОДИТЕ НА САЙТ BAR" data-link="https://barsik.org">📥 Скачать</button><button class="delete-btn" data-key="-OydXmNsOpyXC90cjVuB">✖</button></div></div><div class="product-card"><div class="image-gallery"><div class="main-image"><img src="https://via.placeholder.com/300x200/2d4a2d/9bbc7b?text=%F0%9F%90%8C+PPTXX" alt="NIGGA MEOW OS" loading="lazy" onerror="this.src=&#39;https://via.placeholder.com/300x200/2d4a2d/9bbc7b?text=🐌+PPTXX&#39;"></div><div class="thumbnails"><img src="./pptx_files/saved_resource" alt="thumb" loading="lazy" onerror="this.style.display=&#39;none&#39;" style="display: none;"><img src="./pptx_files/saved_resource" alt="thumb" loading="lazy" onerror="this.style.display=&#39;none&#39;" style="display: none;"><img src="./pptx_files/saved_resource" alt="thumb" loading="lazy" onerror="this.style.display=&#39;none&#39;" style="display: none;"><img src="./pptx_files/saved_resource" alt="thumb" loading="lazy" onerror="this.style.display=&#39;none&#39;" style="display: none;"></div></div><div class="product-info"><div class="product-header"><span class="product-emoji">🐌SDFASDFADSF</span><span class="product-name">NIGGA MEOW OS</span><span class="product-rank">🥉</span></div><div class="product-desc">https://barsik.org</div><div class="product-meta"><span class="product-rating" title="2.4 (5 оценок)">⭐⭐☆☆☆ 2.4</span><span class="product-favorite" data-key="-OydY6Bt08ayxzDJ0Us-">🤍</span></div><button class="product-link" data-key="-OydY6Bt08ayxzDJ0Us-" data-name="NIGGA MEOW OS" data-link="https://barsik.org">📥 Скачать</button><button class="delete-btn" data-key="-OydY6Bt08ayxzDJ0Us-">✖</button></div></div><div class="product-card"><div class="image-gallery"><div class="main-image"><img src="https://via.placeholder.com/300x200/2d4a2d/9bbc7b?text=%F0%9F%90%8C+PPTXX" alt="ВСЕ ПЕРЕХОДИТЕ НА САЙТ BAR" loading="lazy" onerror="this.src=&#39;https://via.placeholder.com/300x200/2d4a2d/9bbc7b?text=🐌+PPTXX&#39;"></div><div class="thumbnails"><img src="./pptx_files/saved_resource" alt="thumb" loading="lazy" onerror="this.style.display=&#39;none&#39;" style="display: none;"><img src="./pptx_files/saved_resource" alt="thumb" loading="lazy" onerror="this.style.display=&#39;none&#39;" style="display: none;"><img src="./pptx_files/saved_resource" alt="thumb" loading="lazy" onerror="this.style.display=&#39;none&#39;" style="display: none;"><img src="./pptx_files/saved_resource" alt="thumb" loading="lazy" onerror="this.style.display=&#39;none&#39;" style="display: none;"></div></div><div class="product-info"><div class="product-header"><span class="product-emoji">🪿</span><span class="product-name">ВСЕ ПЕРЕХОДИТЕ НА САЙТ BAR</span><span class="product-rank">#4</span></div><div class="product-desc">barsik.org barsik.org barsik.org</div><div class="product-meta"><span class="product-rating" title="1.7 (3 оценок)">⭐⭐☆☆☆ 1.7</span><span class="product-favorite" data-key="-OydXylTZ1yb1qajOJwX">🤍</span></div><button class="product-link" data-key="-OydXylTZ1yb1qajOJwX" data-name="ВСЕ ПЕРЕХОДИТЕ НА САЙТ BAR" data-link="https://barsik.org">📥 Скачать</button><button class="delete-btn" data-key="-OydXylTZ1yb1qajOJwX">✖</button></div></div></div>
+<div class="footer-snails"><span>🐌</span><span>PPTXX</span><span>🐌</span><span>🐚</span><span>🐌</span><span>🍀🐌</span></div>
+<div class="note">🔗 ссылки ведут на внешние файлообменники<br><span class="pptxx-badge">🐌 PPTXX v1.0</span></div>
+</div>
+<div id="rating-modal" class="modal-overlay"><div class="modal-box"><h2 id="modal-title">Оцените презентацию</h2><p id="modal-message">Нажмите на звёзды, чтобы оценить</p><div class="modal-stars" id="modal-stars"><span class="star" data-value="1">⭐</span><span class="star" data-value="2">⭐</span><span class="star" data-value="3">⭐</span><span class="star" data-value="4">⭐</span><span class="star" data-value="5">⭐</span></div><div class="modal-buttons"><button class="modal-btn submit" id="modal-submit">⭐ Оценить</button><button class="modal-btn cancel" id="modal-cancel">Отмена</button></div></div></div>
+<div id="add-modal" class="modal-overlay"><div class="modal-box"><h2>➕ добавить презентацию</h2><p class="sub">заполните поля и придумайте пароль для удаления</p><form id="add-form" class="modal-form"><div class="form-row"><input type="text" id="pres-name" placeholder="Название *" required=""><input type="text" id="pres-emoji" placeholder="Эмодзи (🐌)" value="🐌"></div><div class="form-row"><input type="text" id="pres-desc" placeholder="Краткое описание"><input type="url" id="pres-link" placeholder="Ссылка на файл *" required=""></div><div class="form-row"><div class="img-group"><input type="url" id="img1" placeholder="Картинка 1 (обложка)"><input type="url" id="img2" placeholder="Картинка 2"><input type="url" id="img3" placeholder="Картинка 3"><input type="url" id="img4" placeholder="Картинка 4"><input type="url" id="img5" placeholder="Картинка 5"></div></div><div class="form-row"><input type="password" id="pres-password" placeholder="Пароль для удаления *" required=""></div><div class="modal-buttons"><button type="submit" class="modal-btn submit">🐌 добавить</button><button type="button" class="modal-btn cancel" id="closeAddModal">Отмена</button></div></form></div></div>
+<div id="delete-modal" class="modal-overlay"><div class="modal-box"><h2>🗑️ удалить презентацию</h2><p class="sub">введите пароль для подтверждения</p><form id="delete-form" class="modal-form"><div class="form-row"><input type="password" id="delete-password" placeholder="Пароль" required=""></div><div class="modal-buttons"><button type="submit" class="modal-btn submit">🗑️ удалить</button><button type="button" class="modal-btn cancel" id="closeDeleteModal">Отмена</button></div></form></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const firebaseConfig={apiKey:"AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",authDomain:"kcalls.firebaseapp.com",databaseURL:"https://kcalls-default-rtdb.firebaseio.com",projectId:"kcalls",storageBucket:"kcalls.firebasestorage.app",messagingSenderId:"990117089104",appId:"1:990117089104:web:278a42c037e975ebb76655",measurementId:"G-TK6GVEX9G5"};
+let db;try{firebase.initializeApp(firebaseConfig);db=firebase.database();console.log('PPTXX ready');}catch(e){console.error(e);}
+function escapeHtml(s){if(!s)return '';return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
+function showToast(m,d){d=d||3000;const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._timeout);t._timeout=setTimeout(()=>t.classList.remove('show'),d);}
+async function hashPassword(p){const e=new TextEncoder().encode(p);const h=await crypto.subtle.digest('SHA-256',e);return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');}
+let currentRatingKey=null,selectedRating=0,deleteTargetKey=null;
+function openRatingModal(key,name){currentRatingKey=key;selectedRating=0;document.getElementById('modal-title').textContent='Оцените "'+name+'"';document.getElementById('modal-message').textContent='Нажмите на звёзды, чтобы оценить';renderModalStars(0);document.getElementById('rating-modal').style.display='flex';}
+function closeRatingModal(){document.getElementById('rating-modal').style.display='none';currentRatingKey=null;selectedRating=0;}
+function renderModalStars(r){const c=document.getElementById('modal-stars');c.innerHTML='';for(let i=1;i<=5;i++){const s=document.createElement('span');s.className='star'+(i<=r?' active':'');s.textContent='⭐';s.dataset.value=i;s.addEventListener('click',()=>{selectedRating=i;renderModalStars(i);});c.appendChild(s);}}
+async function submitRating(){if(!currentRatingKey||selectedRating===0){showToast('выберите рейтинг (1-5 звёзд)');return;}try{const snap=await db.ref('presentations/'+currentRatingKey).get();const data=snap.val();if(!data){showToast('презентация не найдена');closeRatingModal();return;}const oldTotal=data.ratingTotal||0,oldCount=data.ratingCount||0,newTotal=oldTotal+selectedRating,newCount=oldCount+1,newAvg=Math.round((newTotal/newCount)*10)/10;await db.ref('presentations/'+currentRatingKey).update({ratingTotal:newTotal,ratingCount:newCount,ratingAvg:newAvg});showToast('оценка '+selectedRating+' звёзд сохранена!');closeRatingModal();}catch(err){showToast('ошибка: '+err.message);}}
+function renderPresentations(snap){const data=snap.val();const list=document.getElementById('presentation-list');list.innerHTML='';if(!data){list.innerHTML='<div class="empty-message">🐌 пока нет презентаций... добавьте первую!</div>';return;}const keys=Object.keys(data);const sortBy=document.getElementById('sort-control').value;if(sortBy==='rating'){keys.sort((a,b)=>(data[b].ratingAvg||0)-(data[a].ratingAvg||0));}else{keys.sort((a,b)=>(data[b].timestamp||0)-(data[a].timestamp||0));}
+keys.forEach(key=>{const item=data[key];const card=document.createElement('div');card.className='product-card';const images=[];for(let i=1;i<=5;i++){if(item['img'+i])images.push(item['img'+i]);}
+if(images.length===0)images.push('https://via.placeholder.com/300x200/2d4a2d/9bbc7b?text=🐌+PPTXX');let gallery='<div class="image-gallery"><div class="main-image"><img src="'+escapeHtml(images[0])+'" alt="'+escapeHtml(item.name)+'" loading="lazy" onerror="this.src=\'https://via.placeholder.com/300x200/2d4a2d/9bbc7b?text=🐌+PPTXX\'" /></div><div class="thumbnails">';for(let i=1;i<images.length&&i<5;i++){gallery+='<img src="'+escapeHtml(images[i])+'" alt="thumb" loading="lazy" onerror="this.style.display=\'none\'" />';}
+gallery+='</div></div>';const avg=item.ratingAvg||0,count=item.ratingCount||0;const full=Math.floor(avg);const half=(avg%1>=0.5)?'⭐':'';const empty='☆'.repeat(5-full-(half?1:0));const stars='⭐'.repeat(full)+half+empty;let rank='';if(sortBy==='rating'&&count>0){const r=keys.indexOf(key)+1;const medals=['🥇','🥈','🥉'];rank='<span class="product-rank">'+(r<=3?medals[r-1]:'#'+r)+'</span>';}
+const link=item.link||'#';card.innerHTML=gallery+'<div class="product-info"><div class="product-header"><span class="product-emoji">'+escapeHtml(item.emoji||'🐌')+'</span><span class="product-name">'+escapeHtml(item.name)+'</span>'+rank+'</div><div class="product-desc">'+escapeHtml(item.desc||'описание отсутствует')+'</div><div class="product-meta"><span class="product-rating" title="'+(count>0?avg.toFixed(1)+' ('+count+' оценок)':'нет оценок')+'">'+stars+' '+avg.toFixed(1)+'</span><span class="product-favorite" data-key="'+key+'">🤍</span></div><button class="product-link" data-key="'+key+'" data-name="'+escapeHtml(item.name)+'" data-link="'+escapeHtml(link)+'">📥 Скачать</button><button class="delete-btn" data-key="'+key+'">✖</button></div>';list.appendChild(card);});
+document.querySelectorAll('.product-link').forEach(btn=>{btn.addEventListener('click',function(e){e.preventDefault();const key=this.dataset.key,name=this.dataset.name,link=this.dataset.link;window.open(link,'_blank');setTimeout(()=>{openRatingModal(key,name);},1500);});});
+document.querySelectorAll('.delete-btn').forEach(btn=>{btn.addEventListener('click',function(e){e.stopPropagation();const key=this.dataset.key;deleteTargetKey=key;document.getElementById('delete-modal').style.display='flex';document.getElementById('delete-password').value='';document.getElementById('delete-password').focus();});});
+document.querySelectorAll('.product-favorite').forEach(btn=>{btn.addEventListener('click',function(e){e.stopPropagation();this.classList.toggle('liked');this.textContent=this.classList.contains('liked')?'❤️':'🤍';this.style.color=this.classList.contains('liked')?'#ff6b6b':'#a2c78d';});});}
+db.ref('presentations').on('value',snap=>{renderPresentations(snap);});
+document.getElementById('modal-submit').addEventListener('click',submitRating);
+document.getElementById('modal-cancel').addEventListener('click',closeRatingModal);
+document.getElementById('rating-modal').addEventListener('click',function(e){if(e.target===this)closeRatingModal();});
+document.getElementById('sort-control').addEventListener('change',function(){db.ref('presentations').once('value',snap=>{renderPresentations(snap);});});
+document.getElementById('openAddModal').addEventListener('click',function(){document.getElementById('add-modal').style.display='flex';});
+document.getElementById('closeAddModal').addEventListener('click',function(){document.getElementById('add-modal').style.display='none';});
+document.getElementById('add-modal').addEventListener('click',function(e){if(e.target===this)this.style.display='none';});
+document.getElementById('closeDeleteModal').addEventListener('click',function(){document.getElementById('delete-modal').style.display='none';deleteTargetKey=null;});
+document.getElementById('delete-modal').addEventListener('click',function(e){if(e.target===this){this.style.display='none';deleteTargetKey=null;}});
+document.getElementById('delete-form').addEventListener('submit',async function(e){e.preventDefault();if(!deleteTargetKey){showToast('ошибка: ключ не найден');return;}const password=document.getElementById('delete-password').value.trim();if(!password){showToast('введите пароль');return;}try{const snap=await db.ref('presentations/'+deleteTargetKey).get();const data=snap.val();if(!data){showToast('презентация не найдена');document.getElementById('delete-modal').style.display='none';deleteTargetKey=null;return;}const hash=await hashPassword(password);if(data.passwordHash!==hash){showToast('❌ неверный пароль');document.getElementById('delete-password').value='';document.getElementById('delete-password').focus();return;}await db.ref('presentations/'+deleteTargetKey).remove();showToast('🗑️ презентация удалена');document.getElementById('delete-modal').style.display='none';deleteTargetKey=null;}catch(err){showToast('ошибка: '+err.message);}});
+document.getElementById('add-form').addEventListener('submit',async function(e){e.preventDefault();const name=document.getElementById('pres-name').value.trim();const desc=document.getElementById('pres-desc').value.trim();const link=document.getElementById('pres-link').value.trim();const emoji=document.getElementById('pres-emoji').value.trim()||'🐌';const password=document.getElementById('pres-password').value.trim();if(!name){showToast('введите название');return;}if(!link){showToast('укажите ссылку на файл');return;}if(!password||password.length<4){showToast('придумайте пароль (минимум 4 символа)');return;}try{new URL(link);}catch{showToast('ссылка невалидна');return;}
+const imgData={};const inputs=[document.getElementById('img1'),document.getElementById('img2'),document.getElementById('img3'),document.getElementById('img4'),document.getElementById('img5')];for(let i=0;i<inputs.length;i++){const val=inputs[i]?.value.trim();if(val){try{new URL(val);imgData['img'+(i+1)]=val;}catch{showToast('картинка '+(i+1)+' — невалидная ссылка');return;}}}
+try{const hash=await hashPassword(password);const ref=db.ref('presentations').push();await ref.set({name:name,desc:desc,link:link,emoji:emoji,passwordHash:hash,timestamp:Date.now(),ratingTotal:0,ratingCount:0,ratingAvg:0,...imgData});showToast('✅ презентация добавлена! (пароль сохранён)');document.getElementById('add-form').reset();inputs.forEach(inp=>inp.value='');document.getElementById('add-modal').style.display='none';}catch(err){showToast('ошибка: '+err.message);}});
+console.log('🐌 PPTXX готов!');
+</script>
+
+</body></html>
