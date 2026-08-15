@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SnailTail · статьи</title>
+    <link rel="icon" type="image/png" href="https://uliigra2.c6t.ru/icon.png" />
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
+    </script>
+
+    <!-- Подсветка кода -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js">
+    </script>
+
+    <style>
+        /* ===== ОБЩИЙ СТИЛЬ (улиточный) ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+            background-color: #1b3b1b;
+            background-image: radial-gradient(circle at 30% 40%, #2b5a2b 0%, #0e2f0e 90%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1.5rem;
+            color: #f0f7da;
+        }
+
+        /* декоративные улитки (фон) */
+        body::before {
+            content: "🐌🐌🐌";
+            font-size: 8rem;
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            opacity: 0.06;
+            white-space: nowrap;
+            transform: rotate(-10deg);
+            pointer-events: none;
+            letter-spacing: 2rem;
+            z-index: 0;
+        }
+
+        body::after {
+            content: "🐌🐌🐌";
+            font-size: 12rem;
+            position: fixed;
+            bottom: -20px;
+            right: 0;
+            opacity: 0.05;
+            transform: rotate(15deg);
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 0;
+        }
+
+        .main-container {
+            max-width: 1000px;
+            width: 100%;
+            background: rgba(30, 50, 30, 0.75);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 3px solid #9bbc7b;
+            border-radius: 30px;
+            box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 2px #6f8c5d inset, 0 0 0 4px #3f6140 inset;
+            padding: 2rem 2rem 3rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ===== ШАПКА ===== */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px dashed #7eaf7a;
+            padding-bottom: 1.2rem;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 2.8rem;
+            font-weight: 800;
+            text-shadow: 3px 3px 0 #2d4a2d, 5px 5px 0 #1b331b;
+            color: #e2f0c0;
+            letter-spacing: 2px;
+        }
+
+        .header-title .snail {
+            font-size: 3.4rem;
+            transform: rotate(15deg);
+            filter: drop-shadow(2px 4px 4px #0f2a0f);
+            transition: transform 0.2s;
+        }
+
+        .header-title .snail:hover {
+            transform: rotate(25deg) scale(1.1);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: #2e4d2e;
+            border: 2px solid #7eaf7a;
+            color: #f0f7da;
+            padding: 0.5rem 1.4rem;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 1rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            box-shadow: 0 4px 0 #1d3a1d;
+        }
+
+        .btn:hover {
+            background: #386d38;
+            border-color: #d8f0b5;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 #1d3a1d;
+        }
+
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #1d3a1d;
+        }
+
+        .btn-green {
+            background: #4c7a4c;
+            border-color: #a8d08a;
+        }
+
+        .btn-green:hover {
+            background: #5f9a5f;
+        }
+
+        /* ===== СТАТЬИ (список) ===== */
+        .articles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.8rem;
+            margin: 1.5rem 0;
+        }
+
+        .article-preview {
+            background: #2e4d2e;
+            border: 2px solid #7eaf7a;
+            border-radius: 24px;
+            padding: 1.5rem;
+            box-shadow: 0 12px 15px -7px #102310, 0 0 0 2px #a7c8a3 inset;
+            transition: all 0.25s ease;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .article-preview:hover {
+            background: #386d38;
+            border-color: #d8f0b5;
+            transform: translateY(-6px);
+            box-shadow: 0 20px 25px -8px #091409, 0 0 0 3px #c7f0b1 inset;
+        }
+
+        .article-preview .preview-cover {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 16px;
+            border: 2px solid #6f9a6a;
+            margin-bottom: 1rem;
+            background: #1f3f1f;
+        }
+
+        .article-preview .preview-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fcfad6;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .article-preview .preview-meta {
+            font-size: 0.85rem;
+            color: #b6d9a0;
+            margin-bottom: 0.5rem;
+        }
+
+        .article-preview .preview-excerpt {
+            color: #dcedc4;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            flex: 1;
+        }
+
+        .article-preview .preview-tags {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-top: 0.8rem;
+            padding-top: 0.6rem;
+            border-top: 1px dashed #6f9a6a;
+        }
+
+        .article-preview .preview-tags .tag {
+            background: #254f25;
+            padding: 0.1rem 0.6rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            border: 1px solid #6f9a6a;
+            color: #c7e9a8;
+        }
+
+        /* ===== СТРАНИЦА СТАТЬИ (полная) ===== */
+        .article-full {
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .article-full .article-cover {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 20px;
+            border: 3px solid #7eaf7a;
+            margin-bottom: 1.5rem;
+            background: #1f3f1f;
+        }
+
+        .article-full .article-title {
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: #fcfad6;
+            text-shadow: 0 3px 0 #466b46;
+            margin-bottom: 0.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .article-full .article-meta {
+            font-size: 0.95rem;
+            color: #b6d9a0;
+            margin-bottom: 1.2rem;
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            padding-bottom: 0.8rem;
+            border-bottom: 2px dotted #8bb46c;
+        }
+
+        .article-full .article-meta span {
+            background: #254f25;
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            border: 1px solid #6f9a6a;
+        }
+
+        .article-full .article-content {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #dcedc4;
+            overflow-wrap: break-word;
+        }
+
+        .article-full .article-content h1,
+        .article-full .article-content h2,
+        .article-full .article-content h3 {
+            color: #fcfad6;
+            margin: 1.4rem 0 0.6rem;
+            text-shadow: 0 2px 0 #3f643f;
+        }
+
+        .article-full .article-content h1 {
+            font-size: 2rem;
+            border-left: 6px solid #9bbc7b;
+            padding-left: 1rem;
+        }
+        .article-full .article-content h2 {
+            font-size: 1.6rem;
+            border-left: 4px solid #8bb46c;
+            padding-left: 0.8rem;
+        }
+        .article-full .article-content h3 {
+            font-size: 1.3rem;
+        }
+
+        .article-full .article-content p {
+            margin: 0.6rem 0;
+        }
+
+        .article-full .article-content a {
+            color: #d8f0b5;
+            text-decoration: underline wavy #a3d683;
+        }
+
+        .article-full .article-content a:hover {
+            color: #ffefc0;
+        }
+
+        .article-full .article-content img {
+            max-width: 100%;
+            border-radius: 16px;
+            border: 2px solid #7eaf7a;
+            margin: 0.8rem 0;
+            display: block;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        .article-full .article-content audio,
+        .article-full .article-content video {
+            max-width: 100%;
+            border-radius: 16px;
+            border: 2px solid #7eaf7a;
+            margin: 0.5rem 0;
+            display: block;
+        }
+
+        .article-full .article-content audio {
+            background: #1d3a1d;
+            padding: 0.5rem;
+        }
+
+        .article-full .article-content blockquote {
+            border-left: 5px solid #9bbc7b;
+            padding: 0.5rem 1.2rem;
+            margin: 1rem 0;
+            background: #2a4f2a;
+            border-radius: 0 16px 16px 0;
+            font-style: italic;
+        }
+
+        .article-full .article-content ul,
+        .article-full .article-content ol {
+            padding-left: 1.8rem;
+            margin: 0.6rem 0;
+        }
+
+        .article-full .article-content li {
+            margin: 0.3rem 0;
+        }
+
+        .article-full .article-content code {
+            background: #1f3f1f;
+            padding: 0.2rem 0.6rem;
+            border-radius: 8px;
+            font-size: 0.9em;
+            color: #d8f0b5;
+            border: 1px solid #5c825c;
+        }
+
+        .article-full .article-content pre {
+            background: #1a331a;
+            padding: 1rem;
+            border-radius: 16px;
+            border: 1px solid #6f9a6a;
+            overflow-x: auto;
+            margin: 0.8rem 0;
+        }
+
+        .article-full .article-content pre code {
+            background: transparent;
+            border: none;
+            padding: 0;
+            font-size: 0.9rem;
+        }
+
+        .article-full .article-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 0.8rem 0;
+        }
+
+        .article-full .article-content th,
+        .article-full .article-content td {
+            border: 1px solid #6f9a6a;
+            padding: 0.5rem 0.8rem;
+            text-align: left;
+        }
+
+        .article-full .article-content th {
+            background: #2a4f2a;
+        }
+
+        .article-full .article-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px dashed #6f9a6a;
+        }
+
+        .article-full .article-tags .tag {
+            background: #254f25;
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            border: 1px solid #6f9a6a;
+            color: #c7e9a8;
+        }
+
+        .article-full .article-files {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-top: 0.6rem;
+        }
+
+        .article-full .article-files .file-link {
+            background: #1f3f1f;
+            padding: 0.3rem 1rem;
+            border-radius: 30px;
+            border: 1px solid #7eaf7a;
+            color: #d8f0b5;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: 0.2s;
+        }
+
+        .article-full .article-files .file-link:hover {
+            background: #2f5a2f;
+            color: #ffefc0;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin: 1rem 0 0.5rem;
+            color: #a3c4a3;
+            text-decoration: none;
+            border: 2px solid #7eaf7a;
+            padding: 0.4rem 1.5rem;
+            border-radius: 40px;
+            transition: 0.2s;
+            font-weight: 600;
+        }
+
+        .back-link:hover {
+            background: #2f542f;
+            color: #ffefc0;
+            border-color: #d8f0b5;
+        }
+
+        /* ===== ЗАГРУЗКА ===== */
+        .loading-message {
+            text-align: center;
+            font-size: 1.2rem;
+            background: #446644;
+            padding: 1.5rem;
+            border-radius: 30px;
+            border: 2px dashed #c7e9a8;
+            color: #fcfae1;
+            margin: 2rem 0;
+        }
+
+        .empty-message {
+            text-align: center;
+            font-size: 1.4rem;
+            padding: 3rem 1rem;
+            color: #b6d9a0;
+        }
+
+        .empty-message .big-snail {
+            font-size: 4rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-snails {
+            margin-top: 2.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem 2rem;
+            flex-wrap: wrap;
+            font-size: 2rem;
+            color: #a2c78d;
+            border-top: 2px dashed #61855e;
+            padding-top: 1.5rem;
+            opacity: 0.7;
+        }
+
+        .footer-snails span {
+            filter: drop-shadow(0 5px 5px #172e17);
+            transition: 0.2s;
+            cursor: default;
+        }
+
+        .footer-snails span:hover {
+            transform: scale(1.2) rotate(5deg);
+            color: #e2ffb3;
+        }
+
+        @media (max-width: 600px) {
+            .main-container {
+                padding: 1.2rem 1rem;
+            }
+            .header-title {
+                font-size: 2rem;
+            }
+            .article-full .article-title {
+                font-size: 1.8rem;
+            }
+            .articles-grid {
+                grid-template-columns: 1fr;
+            }
+            .article-preview .preview-cover {
+                height: 140px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <!-- ШАПКА -->
+        <div class="header">
+            <div class="header-title">
+                <span class="snail">🐌</span>
+                SnailTail
+                <span class="snail">🐌</span>
+            </div>
+            <div class="header-controls">
+                <button class="btn" id="refreshBtn">🔄 обновить</button>
+                <a href="https://uliigra2.c6t.ru/home" class="btn btn-green">🏠 на главную</a>
+            </div>
+        </div>
+
+        <!-- КОНТЕЙНЕР -->
+        <div id="contentContainer">
+            <div class="loading-message">
+                <span style="font-size:2rem;">🐌</span> загрузка статей...
+            </div>
+        </div>
+
+        <!-- ПОДВАЛ -->
+        <div class="footer-snails">
+            <span>🐌</span><span>📄</span><span>🐌</span><span>🐚</span><span>🐌</span><span>🍀🐌</span>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        //  FIREBASE КОНФИГ
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
+            authDomain: "kcalls.firebaseapp.com",
+            databaseURL: "https://kcalls-default-rtdb.firebaseio.com",
+            projectId: "kcalls",
+            storageBucket: "kcalls.firebasestorage.app",
+            messagingSenderId: "990117089104",
+            appId: "1:990117089104:web:278a42c037e975ebb76655",
+            measurementId: "G-TK6GVEX9G5"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // ============================================================
+        //  ПАРСЕР MARKDOWN → HTML (с поддержкой изображений)
+        // ============================================================
+        function markdownToHtml(md) {
+            if (!md) return '';
+
+            let html = md;
+
+            // 1. Блоки кода ``` ... ```
+            html = html.replace(/```([\s\S]*?)```/g, function(match, code) {
+                const escaped = code
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+                return `<pre><code class="language-plaintext">${escaped}</code></pre>`;
+            });
+
+            // 2. Инлайн-код `...`
+            html = html.replace(/`([^`]+)`/g, function(match, code) {
+                const escaped = code
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+                return `<code>${escaped}</code>`;
+            });
+
+            // 3. Заголовки
+            html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+            html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+            // 4. Жирный / курсив
+            html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+            // 5. Зачёркивание
+            html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+            // 6. Ссылки [текст](url)
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+            // 7. Изображения ![](url) — ОСНОВНОЕ: показываем картинки прямо в статье
+            html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, function(match, alt, url) {
+                // Определяем тип файла по расширению
+                const ext = url.split('.').pop().toLowerCase();
+                const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext);
+                const isAudio = ['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext);
+                const isVideo = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'].includes(ext);
+
+                if (isImage) {
+                    return `<img src="${url}" alt="${alt || ''}" loading="lazy" />`;
+                } else if (isAudio) {
+                    return `<audio controls><source src="${url}" /></audio>`;
+                } else if (isVideo) {
+                    return `<video controls><source src="${url}" /></video>`;
+                } else {
+                    // Если неизвестный тип — показываем как ссылку
+                    return `<a href="${url}" target="_blank" rel="noopener">${alt || url}</a>`;
+                }
+            });
+
+            // 8. Цитаты
+            html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
+
+            // 9. Списки
+            html = html.replace(/^\- (.*$)/gim, '<li>$1</li>');
+            html = html.replace(/^\+ (.*$)/gim, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>)/gim, function(match) {
+                return `<ul>${match}</ul>`;
+            });
+
+            // 10. Горизонтальная линия
+            html = html.replace(/^---$/gim, '<hr />');
+
+            // 11. Абзацы
+            html = html.replace(/\n\s*\n/g, '</p><p>');
+            html = '<p>' + html + '</p>';
+
+            html = html.replace(/<p>\s*<\/p>/g, '');
+            html = html.replace(/<ul><ul>/g, '<ul>');
+            html = html.replace(/<\/ul><\/ul>/g, '</ul>');
+            html = html.replace(/<li><ul>/g, '<li><ul>');
+
+            return html;
+        }
+
+        // ============================================================
+        //  ОБРЕЗКА ТЕКСТА ДЛЯ ПРЕВЬЮ
+        // ============================================================
+        function truncateText(text, maxLength = 120) {
+            if (!text) return '';
+            const plain = text.replace(/[#*`>\[\]()!-]/g, '').trim();
+            if (plain.length <= maxLength) return plain;
+            return plain.substring(0, maxLength) + '...';
+        }
+
+        // ============================================================
+        //  ОТОБРАЖЕНИЕ СПИСКА СТАТЕЙ
+        // ============================================================
+        function renderArticleList(articles) {
+            const container = document.getElementById('contentContainer');
+
+            if (!articles || articles.length === 0) {
+                container.innerHTML = `
+                            <div class="empty-message">
+                                <span class="big-snail">🐌📭</span>
+                                пока нет статей
+                            </div>
+                        `;
+                return;
+            }
+
+            let html = '<div class="articles-grid">';
+            const sorted = [...articles].sort((a, b) => {
+                const da = a.createdAt || a.date || '';
+                const db_ = b.createdAt || b.date || '';
+                return da < db_ ? 1 : -1;
+            });
+
+            for (const article of sorted) {
+                const title = article.title || 'Без названия';
+                const emoji = article.emoji || '🐌';
+                const date = article.date || article.createdAt || '';
+                const author = article.author || 'Ули';
+                const tags = article.tags || [];
+                const cover = article.cover || '';
+                const excerpt = truncateText(article.content || '', 150);
+
+                let coverHtml = '';
+                if (cover) {
+                    coverHtml = `<img src="${cover}" alt="${title}" class="preview-cover" loading="lazy" onerror="this.style.display='none'" />`;
+                }
+
+                let tagsHtml = tags.map(t => `<span class="tag">#${t}</span>`).join('');
+
+                html += `
+                            <div class="article-preview" onclick="openArticle('${article.id}')">
+                                ${coverHtml}
+                                <div class="preview-title">${emoji} ${title}</div>
+                                <div class="preview-meta">📅 ${date} · ✍️ ${author}</div>
+                                <div class="preview-excerpt">${excerpt}</div>
+                                ${tagsHtml ? `<div class="preview-tags">${tagsHtml}</div>` : ''}
+                            </div>
+                        `;
+            }
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // ============================================================
+        //  ОТОБРАЖЕНИЕ ОДНОЙ СТАТЬИ (полная страница)
+        // ============================================================
+        function renderSingleArticle(article) {
+            const container = document.getElementById('contentContainer');
+
+            const title = article.title || 'Без названия';
+            const content = article.content || '';
+            const date = article.date || article.createdAt || '';
+            const author = article.author || 'Ули';
+            const tags = article.tags || [];
+            const files = article.files || [];
+            const emoji = article.emoji || '🐌';
+            const cover = article.cover || '';
+
+            const contentHtml = markdownToHtml(content);
+
+            let coverHtml = '';
+            if (cover) {
+                coverHtml = `<img src="${cover}" alt="${title}" class="article-cover" loading="lazy" onerror="this.style.display='none'" />`;
+            }
+
+            let tagsHtml = tags.map(t => `<span class="tag">#${t}</span>`).join('');
+
+            let filesHtml = '';
+            if (files.length > 0) {
+                filesHtml = '<div class="article-files">';
+                for (const f of files) {
+                    const url = f.url || '#';
+                    const name = f.name || 'файл';
+                    const icon = f.icon || '📎';
+                    filesHtml += `<a href="${url}" class="file-link" target="_blank" rel="noopener">${icon} ${name}</a>`;
+                }
+                filesHtml += '</div>';
+            }
+
+            // Обновляем заголовок страницы
+            document.title = `SnailTail · ${title}`;
+
+            container.innerHTML = `
+                        <div class="article-full">
+                            <a href="https://uliigra2.c6t.ru/st" class="back-link">← ко всем статьям</a>
+                            ${coverHtml}
+                            <div class="article-title">${emoji} ${title}</div>
+                            <div class="article-meta">
+                                <span>📅 ${date}</span>
+                                <span>✍️ ${author}</span>
+                            </div>
+                            <div class="article-content">${contentHtml}</div>
+                            ${filesHtml}
+                            ${tagsHtml ? `<div class="article-tags">${tagsHtml}</div>` : ''}
+                            <a href="https://uliigra2.c6t.ru/st" class="back-link" style="margin-top:1.5rem;">← ко всем статьям</a>
+                        </div>
+                    `;
+
+            // Подсветка кода
+            if (typeof hljs !== 'undefined') {
+                document.querySelectorAll('pre code').forEach(el => {
+                    hljs.highlightElement(el);
+                });
+            }
+        }
+
+        // ============================================================
+        //  ОТКРЫТИЕ СТАТЬИ (переход на отдельную страницу)
+        // ============================================================
+        function openArticle(id) {
+            window.location.href = `https://uliigra2.c6t.ru/st?id=${id}`;
+        }
+
+        // ============================================================
+        //  ЗАГРУЗКА ДАННЫХ ИЗ FIRESTORE
+        // ============================================================
+        function loadArticles() {
+            const container = document.getElementById('contentContainer');
+            const params = new URLSearchParams(window.location.search);
+            const articleId = params.get('id');
+
+            // Если есть ID — грузим одну статью
+            if (articleId) {
+                container.innerHTML = `
+                            <div class="loading-message">
+                                <span style="font-size:2rem;">🐌</span> загрузка статьи...
+                            </div>
+                        `;
+
+                db.collection('articles').doc(articleId).get()
+                    .then(doc => {
+                        if (doc.exists) {
+                            const data = doc.data();
+                            if (data.createdAt && data.createdAt.toDate) {
+                                data.createdAt = data.createdAt.toDate().toLocaleDateString('ru-RU', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric'
+                                });
+                            }
+                            if (!data.date && data.createdAt) {
+                                data.date = data.createdAt;
+                            }
+                            renderSingleArticle({ id: doc.id, ...data });
+                        } else {
+                            container.innerHTML = `
+                                        <div style="text-align:center; padding:2rem; background:#2e4d2e; border-radius:24px; border:2px solid #d08a8a;">
+                                            <div style="font-size:3rem;">🐌❓</div>
+                                            <h2 style="color:#fcfad6; margin:1rem 0;">статья не найдена</h2>
+                                            <a href="https://uliigra2.c6t.ru/st" class="back-link">← ко всем статьям</a>
+                                        </div>
+                                    `;
+                            document.title = 'SnailTail · статья не найдена';
+                        }
+                    })
+                    .catch(error => {
+                        container.innerHTML = `
+                                    <div class="empty-message" style="color:#e8c8a0;">
+                                        <span class="big-snail">🐌💔</span>
+                                        ошибка загрузки: ${error.message}<br>
+                                        <button class="btn" style="margin-top:1rem;" onclick="loadArticles()">🔄 попробовать снова</button>
+                                    </div>
+                                `;
+                    });
+                return;
+            }
+
+            // Иначе — список всех статей
+            container.innerHTML = `
+                        <div class="loading-message">
+                            <span style="font-size:2rem;">🐌</span> загрузка статей...
+                        </div>
+                    `;
+
+            db.collection('articles')
+                .orderBy('createdAt', 'desc')
+                .get()
+                .then(snapshot => {
+                    if (snapshot.empty) {
+                        renderArticleList([]);
+                        return;
+                    }
+
+                    const articles = [];
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        if (data.createdAt && data.createdAt.toDate) {
+                            data.createdAt = data.createdAt.toDate().toLocaleDateString('ru-RU', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                            });
+                        }
+                        if (!data.date && data.createdAt) {
+                            data.date = data.createdAt;
+                        }
+                        articles.push({ id: doc.id, ...data });
+                    });
+
+                    renderArticleList(articles);
+                    document.title = 'SnailTail · статьи';
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки:', error);
+                    container.innerHTML = `
+                                <div class="empty-message" style="color:#e8c8a0;">
+                                    <span class="big-snail">🐌💔</span>
+                                    ошибка загрузки: ${error.message}<br>
+                                    <button class="btn" style="margin-top:1rem;" onclick="loadArticles()">🔄 попробовать снова</button>
+                                </div>
+                            `;
+                });
+        }
+
+        // ============================================================
+        //  ЗАПУСК
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            loadArticles();
+
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                loadArticles();
+            });
+        });
+
+        window.loadArticles = loadArticles;
+        window.openArticle = openArticle;
+    </script>
+
+</body>
+</html>
