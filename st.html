@@ -18,7 +18,6 @@
     </script>
 
     <style>
-        /* ===== ОБЩИЙ СТИЛЬ (улиточный) ===== */
         * {
             margin: 0;
             padding: 0;
@@ -78,7 +77,6 @@
             z-index: 1;
         }
 
-        /* ===== ШАПКА ===== */
         .header {
             display: flex;
             align-items: center;
@@ -156,7 +154,6 @@
             background: #5f9a5f;
         }
 
-        /* ===== СТАТЬИ (список) ===== */
         .articles-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -214,6 +211,10 @@
             font-size: 0.95rem;
             line-height: 1.4;
             flex: 1;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
         }
 
         .article-preview .preview-tags {
@@ -234,7 +235,6 @@
             color: #c7e9a8;
         }
 
-        /* ===== СТРАНИЦА СТАТЬИ (полная) ===== */
         .article-full {
             animation: fadeIn 0.4s ease;
         }
@@ -472,7 +472,6 @@
             border-color: #d8f0b5;
         }
 
-        /* ===== ЗАГРУЗКА ===== */
         .loading-message {
             text-align: center;
             font-size: 1.2rem;
@@ -543,7 +542,6 @@
 <body>
 
     <div class="main-container">
-        <!-- ШАПКА -->
         <div class="header">
             <div class="header-title">
                 <span class="snail">🐌</span>
@@ -556,23 +554,18 @@
             </div>
         </div>
 
-        <!-- КОНТЕЙНЕР -->
         <div id="contentContainer">
             <div class="loading-message">
                 <span style="font-size:2rem;">🐌</span> загрузка статей...
             </div>
         </div>
 
-        <!-- ПОДВАЛ -->
         <div class="footer-snails">
             <span>🐌</span><span>📄</span><span>🐌</span><span>🐚</span><span>🐌</span><span>🍀🐌</span>
         </div>
     </div>
 
     <script>
-        // ============================================================
-        //  FIREBASE КОНФИГ
-        // ============================================================
         const firebaseConfig = {
             apiKey: "AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
             authDomain: "kcalls.firebaseapp.com",
@@ -588,168 +581,131 @@
         const db = firebase.firestore();
 
         // ============================================================
-        //  ПАРСЕР MARKDOWN → HTML (ПОЛНОСТЬЮ ПЕРЕПИСАН)
+        //  ПАРСЕР MARKDOWN → HTML (работает с ![](url))
         // ============================================================
         function markdownToHtml(md) {
             if (!md) return '';
 
-            // Разбиваем на строки
-            let lines = md.split('\n');
-            let result = [];
-            let inCodeBlock = false;
-            let codeBlockContent = [];
-            let inList = false;
-            let listItems = [];
+            // Сначала обрабатываем изображения ![](url)
+            // Ищем ![...](...) и заменяем на <img>
+            let html = md.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, function(match, alt, url) {
+                const ext = url.split('.').pop().toLowerCase();
+                const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext);
+                const isAudio = ['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext);
+                const isVideo = ['mp4', 'webm', 'mov', 'avi', 'mkv'].includes(ext);
 
-            function flushList() {
-                if (listItems.length > 0) {
-                    result.push('<ul>');
-                    listItems.forEach(item => {
-                        // Обрабатываем вложенный Markdown внутри списка
-                        result.push('<li>' + processInline(item) + '</li>');
-                    });
-                    result.push('</ul>');
-                    listItems = [];
-                    inList = false;
+                if (isImage) {
+                    return `<img src="${url}" alt="${alt || ''}" loading="lazy" />`;
+                } else if (isAudio) {
+                    return `<audio controls><source src="${url}" /></audio>`;
+                } else if (isVideo) {
+                    return `<video controls><source src="${url}" /></video>`;
+                } else {
+                    return `<a href="${url}" target="_blank" rel="noopener">${alt || url}</a>`;
                 }
-            }
+            });
 
-            function processInline(text) {
-                // Жирный
-                text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-                // Курсив
-                text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
-                // Зачёркивание
-                text = text.replace(/~~(.+?)~~/g, '<del>$1</del>');
-                // Инлайн-код
-                text = text.replace(/`([^`]+)`/g, function(match, code) {
-                    return '<code>' + code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</code>';
-                });
-                // Ссылки
-                text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-                // Изображения (ОСНОВНОЕ — работают!)
-                text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, function(match, alt, url) {
-                    const ext = url.split('.').pop().toLowerCase();
-                    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext);
-                    const isAudio = ['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext);
-                    const isVideo = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'].includes(ext);
+            // Ссылки [текст](url)
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
 
-                    if (isImage) {
-                        return `<img src="${url}" alt="${alt || ''}" loading="lazy" />`;
-                    } else if (isAudio) {
-                        return `<audio controls><source src="${url}" /></audio>`;
-                    } else if (isVideo) {
-                        return `<video controls><source src="${url}" /></video>`;
-                    } else {
-                        return `<a href="${url}" target="_blank" rel="noopener">${alt || url}</a>`;
-                    }
-                });
-                return text;
-            }
+            // Жирный и курсив
+            html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+            // Зачёркивание
+            html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+            // Инлайн-код
+            html = html.replace(/`([^`]+)`/g, function(match, code) {
+                return '<code>' + code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</code>';
+            });
+
+            // Блоки кода
+            html = html.replace(/```([\s\S]*?)```/g, function(match, code) {
+                const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return '<pre><code class="language-plaintext">' + escaped + '</code></pre>';
+            });
+
+            // Заголовки
+            html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+            html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+            // Цитаты
+            html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
+
+            // Списки
+            html = html.replace(/^\- (.*$)/gim, '<li>$1</li>');
+            html = html.replace(/^\+ (.*$)/gim, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>)/gim, function(match) {
+                return '<ul>' + match + '</ul>';
+            });
+
+            // Горизонтальная линия
+            html = html.replace(/^---$/gim, '<hr />');
+
+            // Разбиваем на строки для обработки абзацев
+            let lines = html.split('\n');
+            let result = [];
 
             for (let i = 0; i < lines.length; i++) {
-                let line = lines[i];
+                let line = lines[i].trim();
 
-                // --- Блоки кода ---
-                if (line.trim().startsWith('```')) {
-                    if (!inCodeBlock) {
-                        flushList();
-                        inCodeBlock = true;
-                        codeBlockContent = [];
-                        continue;
-                    } else {
-                        inCodeBlock = false;
-                        let code = codeBlockContent.join('\n');
-                        let escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                        result.push('<pre><code class="language-plaintext">' + escaped + '</code></pre>');
-                        continue;
-                    }
-                }
+                if (line === '') continue;
 
-                if (inCodeBlock) {
-                    codeBlockContent.push(line);
+                // Пропускаем уже обработанные теги
+                if (line.startsWith('<li>') || line.startsWith('</li>') ||
+                    line.startsWith('<ul>') || line.startsWith('</ul>') ||
+                    line.startsWith('<pre>') || line.startsWith('</pre>') ||
+                    line.startsWith('<code') || line.startsWith('</code') ||
+                    line.startsWith('<h') || line.startsWith('</h') ||
+                    line.startsWith('<blockquote>') || line.startsWith('</blockquote>') ||
+                    line.startsWith('<hr') || line.startsWith('<img') ||
+                    line.startsWith('<audio') || line.startsWith('<video') ||
+                    line.startsWith('<a ')) {
+                    result.push(line);
                     continue;
                 }
 
-                // --- Пустые строки ---
-                if (line.trim() === '') {
-                    flushList();
-                    continue;
+                // Обычный текст — оборачиваем в <p>
+                if (!line.match(/^<[a-z]/)) {
+                    result.push('<p>' + line + '</p>');
+                } else {
+                    result.push(line);
                 }
-
-                // --- Заголовки ---
-                if (line.match(/^#{1,3}\s/)) {
-                    flushList();
-                    let match = line.match(/^(#{1,3})\s+(.*)/);
-                    if (match) {
-                        let level = match[1].length;
-                        let text = processInline(match[2]);
-                        result.push('<h' + level + '>' + text + '</h' + level + '>');
-                    }
-                    continue;
-                }
-
-                // --- Цитаты ---
-                if (line.match(/^>\s/)) {
-                    flushList();
-                    let text = line.replace(/^>\s/, '');
-                    result.push('<blockquote>' + processInline(text) + '</blockquote>');
-                    continue;
-                }
-
-                // --- Горизонтальная линия ---
-                if (line.match(/^---$/)) {
-                    flushList();
-                    result.push('<hr />');
-                    continue;
-                }
-
-                // --- Списки ---
-                if (line.match(/^[-+]\s/)) {
-                    let text = line.replace(/^[-+]\s/, '');
-                    if (!inList) {
-                        inList = true;
-                        listItems = [];
-                    }
-                    listItems.push(text);
-                    continue;
-                }
-
-                // --- Обычный текст (абзац) ---
-                flushList();
-                result.push('<p>' + processInline(line) + '</p>');
             }
 
-            // Закрываем последний список
-            flushList();
+            html = result.join('\n');
 
-            return result.join('\n');
+            // Убираем пустые <p></p>
+            html = html.replace(/<p>\s*<\/p>/g, '');
+
+            // Чиним списки
+            html = html.replace(/<ul><ul>/g, '<ul>');
+            html = html.replace(/<\/ul><\/ul>/g, '</ul>');
+            html = html.replace(/<li><ul>/g, '<li><ul>');
+
+            return html;
         }
 
-        // ============================================================
-        //  ОБРЕЗКА ТЕКСТА ДЛЯ ПРЕВЬЮ
-        // ============================================================
         function truncateText(text, maxLength = 120) {
             if (!text) return '';
-            // Убираем Markdown-символы
-            const plain = text.replace(/[#*`>\[\]()!\-+]/g, '').trim();
+            let plain = text.replace(/[#*`>\[\]()!\-+]/g, '').trim();
             if (plain.length <= maxLength) return plain;
             return plain.substring(0, maxLength) + '...';
         }
 
-        // ============================================================
-        //  ОТОБРАЖЕНИЕ СПИСКА СТАТЕЙ
-        // ============================================================
         function renderArticleList(articles) {
             const container = document.getElementById('contentContainer');
 
             if (!articles || articles.length === 0) {
                 container.innerHTML = `
-                            <div class="empty-message">
-                                <span class="big-snail">🐌📭</span>
-                                пока нет статей
-                            </div>
-                        `;
+                    <div class="empty-message">
+                        <span class="big-snail">🐌📭</span>
+                        пока нет статей
+                    </div>
+                `;
                 return;
             }
 
@@ -777,23 +733,20 @@
                 let tagsHtml = tags.map(t => `<span class="tag">#${t}</span>`).join('');
 
                 html += `
-                            <div class="article-preview" onclick="openArticle('${article.id}')">
-                                ${coverHtml}
-                                <div class="preview-title">${emoji} ${title}</div>
-                                <div class="preview-meta">📅 ${date} · ✍️ ${author}</div>
-                                <div class="preview-excerpt">${excerpt}</div>
-                                ${tagsHtml ? `<div class="preview-tags">${tagsHtml}</div>` : ''}
-                            </div>
-                        `;
+                    <div class="article-preview" onclick="openArticle('${article.id}')">
+                        ${coverHtml}
+                        <div class="preview-title">${emoji} ${title}</div>
+                        <div class="preview-meta">📅 ${date} · ✍️ ${author}</div>
+                        <div class="preview-excerpt">${excerpt}</div>
+                        ${tagsHtml ? `<div class="preview-tags">${tagsHtml}</div>` : ''}
+                    </div>
+                `;
             }
 
             html += '</div>';
             container.innerHTML = html;
         }
 
-        // ============================================================
-        //  ОТОБРАЖЕНИЕ ОДНОЙ СТАТЬИ (полная страница)
-        // ============================================================
         function renderSingleArticle(article) {
             const container = document.getElementById('contentContainer');
 
@@ -830,20 +783,20 @@
             document.title = `SnailTail · ${title}`;
 
             container.innerHTML = `
-                        <div class="article-full">
-                            <a href="https://uliigra2.c6t.ru/st" class="back-link">← ко всем статьям</a>
-                            ${coverHtml}
-                            <div class="article-title">${emoji} ${title}</div>
-                            <div class="article-meta">
-                                <span>📅 ${date}</span>
-                                <span>✍️ ${author}</span>
-                            </div>
-                            <div class="article-content">${contentHtml}</div>
-                            ${filesHtml}
-                            ${tagsHtml ? `<div class="article-tags">${tagsHtml}</div>` : ''}
-                            <a href="https://uliigra2.c6t.ru/st" class="back-link" style="margin-top:1.5rem;">← ко всем статьям</a>
-                        </div>
-                    `;
+                <div class="article-full">
+                    <a href="https://uliigra2.c6t.ru/st" class="back-link">← ко всем статьям</a>
+                    ${coverHtml}
+                    <div class="article-title">${emoji} ${title}</div>
+                    <div class="article-meta">
+                        <span>📅 ${date}</span>
+                        <span>✍️ ${author}</span>
+                    </div>
+                    <div class="article-content">${contentHtml}</div>
+                    ${filesHtml}
+                    ${tagsHtml ? `<div class="article-tags">${tagsHtml}</div>` : ''}
+                    <a href="https://uliigra2.c6t.ru/st" class="back-link" style="margin-top:1.5rem;">← ко всем статьям</a>
+                </div>
+            `;
 
             if (typeof hljs !== 'undefined') {
                 document.querySelectorAll('pre code').forEach(el => {
@@ -852,16 +805,10 @@
             }
         }
 
-        // ============================================================
-        //  ОТКРЫТИЕ СТАТЬИ
-        // ============================================================
         function openArticle(id) {
             window.location.href = `https://uliigra2.c6t.ru/st?id=${id}`;
         }
 
-        // ============================================================
-        //  ЗАГРУЗКА ДАННЫХ
-        // ============================================================
         function loadArticles() {
             const container = document.getElementById('contentContainer');
             const params = new URLSearchParams(window.location.search);
@@ -869,10 +816,10 @@
 
             if (articleId) {
                 container.innerHTML = `
-                            <div class="loading-message">
-                                <span style="font-size:2rem;">🐌</span> загрузка статьи...
-                            </div>
-                        `;
+                    <div class="loading-message">
+                        <span style="font-size:2rem;">🐌</span> загрузка статьи...
+                    </div>
+                `;
 
                 db.collection('articles').doc(articleId).get()
                     .then(doc => {
@@ -891,32 +838,32 @@
                             renderSingleArticle({ id: doc.id, ...data });
                         } else {
                             container.innerHTML = `
-                                        <div style="text-align:center; padding:2rem; background:#2e4d2e; border-radius:24px; border:2px solid #d08a8a;">
-                                            <div style="font-size:3rem;">🐌❓</div>
-                                            <h2 style="color:#fcfad6; margin:1rem 0;">статья не найдена</h2>
-                                            <a href="https://uliigra2.c6t.ru/st" class="back-link">← ко всем статьям</a>
-                                        </div>
-                                    `;
+                                <div style="text-align:center; padding:2rem; background:#2e4d2e; border-radius:24px; border:2px solid #d08a8a;">
+                                    <div style="font-size:3rem;">🐌❓</div>
+                                    <h2 style="color:#fcfad6; margin:1rem 0;">статья не найдена</h2>
+                                    <a href="https://uliigra2.c6t.ru/st" class="back-link">← ко всем статьям</a>
+                                </div>
+                            `;
                             document.title = 'SnailTail · статья не найдена';
                         }
                     })
                     .catch(error => {
                         container.innerHTML = `
-                                    <div class="empty-message" style="color:#e8c8a0;">
-                                        <span class="big-snail">🐌💔</span>
-                                        ошибка загрузки: ${error.message}<br>
-                                        <button class="btn" style="margin-top:1rem;" onclick="loadArticles()">🔄 попробовать снова</button>
-                                    </div>
-                                `;
+                            <div class="empty-message" style="color:#e8c8a0;">
+                                <span class="big-snail">🐌💔</span>
+                                ошибка загрузки: ${error.message}<br>
+                                <button class="btn" style="margin-top:1rem;" onclick="loadArticles()">🔄 попробовать снова</button>
+                            </div>
+                        `;
                     });
                 return;
             }
 
             container.innerHTML = `
-                        <div class="loading-message">
-                            <span style="font-size:2rem;">🐌</span> загрузка статей...
-                        </div>
-                    `;
+                <div class="loading-message">
+                    <span style="font-size:2rem;">🐌</span> загрузка статей...
+                </div>
+            `;
 
             db.collection('articles')
                 .orderBy('createdAt', 'desc')
@@ -949,18 +896,15 @@
                 .catch(error => {
                     console.error('Ошибка загрузки:', error);
                     container.innerHTML = `
-                                <div class="empty-message" style="color:#e8c8a0;">
-                                    <span class="big-snail">🐌💔</span>
-                                    ошибка загрузки: ${error.message}<br>
-                                    <button class="btn" style="margin-top:1rem;" onclick="loadArticles()">🔄 попробовать снова</button>
-                                </div>
-                            `;
+                        <div class="empty-message" style="color:#e8c8a0;">
+                            <span class="big-snail">🐌💔</span>
+                            ошибка загрузки: ${error.message}<br>
+                            <button class="btn" style="margin-top:1rem;" onclick="loadArticles()">🔄 попробовать снова</button>
+                        </div>
+                    `;
                 });
         }
 
-        // ============================================================
-        //  ЗАПУСК
-        // ============================================================
         document.addEventListener('DOMContentLoaded', function() {
             loadArticles();
 
