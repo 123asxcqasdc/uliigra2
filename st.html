@@ -581,32 +581,65 @@
         const db = firebase.firestore();
 
         // ============================================================
+        //  БЕЗОПАСНОСТЬ: экранирование и проверка URL
+        // ============================================================
+        function escapeHtml(unsafe) {
+            if (unsafe === null || unsafe === undefined) return '';
+            return String(unsafe)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function safeUrl(url) {
+            if (typeof url !== 'string' || !url.trim()) return null;
+            try {
+                const u = new URL(url, window.location.origin);
+                if (u.protocol === 'http:' || u.protocol === 'https:') {
+                    return u.href;
+                }
+            } catch (e) {}
+            return null;
+        }
+
+        // ============================================================
         //  ПАРСЕР MARKDOWN → HTML (работает с ![](url))
         // ============================================================
         function markdownToHtml(md) {
             if (!md) return '';
 
+            // Сначала экранируем весь ввод, чтобы сырой HTML не проходил
+            md = escapeHtml(md);
+
             // Сначала обрабатываем изображения ![](url)
             // Ищем ![...](...) и заменяем на <img>
             let html = md.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, function(match, alt, url) {
+                const src = safeUrl(url);
+                if (!src) return '';
                 const ext = url.split('.').pop().toLowerCase();
                 const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext);
                 const isAudio = ['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext);
                 const isVideo = ['mp4', 'webm', 'mov', 'avi', 'mkv'].includes(ext);
 
                 if (isImage) {
-                    return `<img src="${url}" alt="${alt || ''}" loading="lazy" />`;
+                    return `<img src="${escapeHtml(src)}" alt="${alt || ''}" loading="lazy" />`;
                 } else if (isAudio) {
-                    return `<audio controls><source src="${url}" /></audio>`;
+                    return `<audio controls><source src="${escapeHtml(src)}" /></audio>`;
                 } else if (isVideo) {
-                    return `<video controls><source src="${url}" /></video>`;
+                    return `<video controls><source src="${escapeHtml(src)}" /></video>`;
                 } else {
-                    return `<a href="${url}" target="_blank" rel="noopener">${alt || url}</a>`;
+                    return `<a href="${escapeHtml(src)}" target="_blank" rel="noopener">${alt || url}</a>`;
                 }
             });
 
             // Ссылки [текст](url)
-            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, function(match, text, url) {
+                const href = safeUrl(url);
+                if (!href) return text;
+                return '<a href="' + escapeHtml(href) + '" target="_blank" rel="noopener">' + text + '</a>';
+            });
 
             // Жирный и курсив
             html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
@@ -616,15 +649,14 @@
             // Зачёркивание
             html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
 
-            // Инлайн-код
+            // Инлайн-код (текст уже экранирован выше)
             html = html.replace(/`([^`]+)`/g, function(match, code) {
-                return '<code>' + code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</code>';
+                return '<code>' + code + '</code>';
             });
 
-            // Блоки кода
+            // Блоки кода (текст уже экранирован выше)
             html = html.replace(/```([\s\S]*?)```/g, function(match, code) {
-                const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                return '<pre><code class="language-plaintext">' + escaped + '</code></pre>';
+                return '<pre><code class="language-plaintext">' + code + '</code></pre>';
             });
 
             // Заголовки
@@ -717,23 +749,24 @@
             });
 
             for (const article of sorted) {
-                const title = article.title || 'Без названия';
-                const emoji = article.emoji || '🐌';
-                const date = article.date || article.createdAt || '';
-                const author = article.author || 'Ули';
-                const tags = article.tags || [];
-                const cover = article.cover || '';
-                const excerpt = truncateText(article.content || '', 150);
+                const title = escapeHtml(article.title || 'Без названия');
+                const emoji = escapeHtml(article.emoji || '🐌');
+                const date = escapeHtml(article.date || article.createdAt || '');
+                const author = escapeHtml(article.author || 'Ули');
+                const tags = (article.tags || []).map(t => escapeHtml(t));
+                const coverUrl = safeUrl(article.cover);
+                const excerpt = escapeHtml(truncateText(article.content || '', 150));
+                const articleId = escapeHtml(article.id || '');
 
                 let coverHtml = '';
-                if (cover) {
-                    coverHtml = `<img src="${cover}" alt="${title}" class="preview-cover" loading="lazy" onerror="this.style.display='none'" />`;
+                if (coverUrl) {
+                    coverHtml = `<img src="${escapeHtml(coverUrl)}" alt="${title}" class="preview-cover" loading="lazy" onerror="this.style.display='none'" />`;
                 }
 
                 let tagsHtml = tags.map(t => `<span class="tag">#${t}</span>`).join('');
 
                 html += `
-                    <div class="article-preview" onclick="openArticle('${article.id}')">
+                    <div class="article-preview" data-id="${articleId}">
                         ${coverHtml}
                         <div class="preview-title">${emoji} ${title}</div>
                         <div class="preview-meta">📅 ${date} · ✍️ ${author}</div>
@@ -750,20 +783,20 @@
         function renderSingleArticle(article) {
             const container = document.getElementById('contentContainer');
 
-            const title = article.title || 'Без названия';
+            const title = escapeHtml(article.title || 'Без названия');
             const content = article.content || '';
-            const date = article.date || article.createdAt || '';
-            const author = article.author || 'Ули';
-            const tags = article.tags || [];
+            const date = escapeHtml(article.date || article.createdAt || '');
+            const author = escapeHtml(article.author || 'Ули');
+            const tags = (article.tags || []).map(t => escapeHtml(t));
             const files = article.files || [];
-            const emoji = article.emoji || '🐌';
-            const cover = article.cover || '';
+            const emoji = escapeHtml(article.emoji || '🐌');
+            const coverUrl = safeUrl(article.cover);
 
             const contentHtml = markdownToHtml(content);
 
             let coverHtml = '';
-            if (cover) {
-                coverHtml = `<img src="${cover}" alt="${title}" class="article-cover" loading="lazy" onerror="this.style.display='none'" />`;
+            if (coverUrl) {
+                coverHtml = `<img src="${escapeHtml(coverUrl)}" alt="${title}" class="article-cover" loading="lazy" onerror="this.style.display='none'" />`;
             }
 
             let tagsHtml = tags.map(t => `<span class="tag">#${t}</span>`).join('');
@@ -772,10 +805,14 @@
             if (files.length > 0) {
                 filesHtml = '<div class="article-files">';
                 for (const f of files) {
-                    const url = f.url || '#';
-                    const name = f.name || 'файл';
-                    const icon = f.icon || '📎';
-                    filesHtml += `<a href="${url}" class="file-link" target="_blank" rel="noopener">${icon} ${name}</a>`;
+                    const fileUrl = safeUrl(f.url);
+                    const name = escapeHtml(f.name || 'файл');
+                    const icon = escapeHtml(f.icon || '📎');
+                    if (fileUrl) {
+                        filesHtml += `<a href="${escapeHtml(fileUrl)}" class="file-link" target="_blank" rel="noopener">${icon} ${name}</a>`;
+                    } else {
+                        filesHtml += `<span class="file-link" style="opacity:.6">${icon} ${name}</span>`;
+                    }
                 }
                 filesHtml += '</div>';
             }
@@ -910,6 +947,14 @@
 
             document.getElementById('refreshBtn').addEventListener('click', function() {
                 loadArticles();
+            });
+
+            const contentContainer = document.getElementById('contentContainer');
+            contentContainer.addEventListener('click', function(event) {
+                const preview = event.target.closest('.article-preview');
+                if (preview && preview.dataset.id) {
+                    openArticle(preview.dataset.id);
+                }
             });
         });
 
