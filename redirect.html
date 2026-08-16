@@ -227,6 +227,17 @@
         return null;
     }
 
+    function safeHttpUrl(raw) {
+        if (typeof raw !== 'string' || !raw.trim()) return null;
+        try {
+            const u = new URL(raw, window.location.origin);
+            if (u.protocol === 'http:' || u.protocol === 'https:') {
+                return u.href;
+            }
+        } catch (e) {}
+        return null;
+    }
+
     async function redirectToUrl() {
         const shortCode = getShortCode();
         const codeDisplay = document.getElementById('codeDisplay');
@@ -258,18 +269,29 @@
             const linkData = snapshot.val();
 
             if (linkData && linkData.url) {
+                const target = safeHttpUrl(linkData.url);
+
                 await database.ref('links/' + shortCode).update({
                     clicks: (linkData.clicks || 0) + 1,
                     lastAccessed: firebase.database.ServerValue.TIMESTAMP
                 });
 
-                statusText.textContent = 'перенаправление...';
-                urlInfo.style.display = 'block';
-                urlInfo.innerHTML = '<strong>переход на:</strong><br>' + linkData.url;
+                if (target) {
+                    statusText.textContent = 'перенаправление...';
+                    urlInfo.style.display = 'block';
+                    urlInfo.textContent = 'переход на: ' + linkData.url;
 
-                setTimeout(() => {
-                    window.location.href = linkData.url;
-                }, 1500);
+                    setTimeout(() => {
+                        window.location.href = target;
+                    }, 1500);
+                } else {
+                    loader.style.display = 'none';
+                    snailLoader.style.display = 'none';
+                    statusText.textContent = 'ссылка заблокирована';
+                    errorBox.style.display = 'block';
+                    errorBox.innerHTML = '<strong>небезопасная ссылка</strong><br>разрешены только http:// и https:// ссылки';
+                    backButton.style.display = 'inline-block';
+                }
             } else {
                 loader.style.display = 'none';
                 snailLoader.style.display = 'none';
