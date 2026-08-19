@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📞 Звонкие улитки</title>
+<title>📞 Dial Forward · установка</title>
+<link rel="icon" type="image/png" href="/icon.png">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{
@@ -16,375 +17,108 @@ body{
 body::before{content:"📞🐌📞";font-size:8rem;position:absolute;top:10px;left:10px;opacity:.06;white-space:nowrap;transform:rotate(-10deg);pointer-events:none;letter-spacing:2rem;}
 body::after{content:"🐌📞🐌";font-size:12rem;position:absolute;bottom:-20px;right:0;opacity:.04;transform:rotate(15deg);pointer-events:none;white-space:nowrap;}
 .main-container{
-  max-width:820px;width:100%;
+  max-width:880px;width:100%;
   background:rgba(30,50,30,.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
   border:3px solid #9bbc7b;border-radius:30px;
   box-shadow:0 25px 40px -10px rgba(0,0,0,.6),0 0 0 2px #6f8c5d inset,0 0 0 4px #3f6140 inset;
   padding:3rem 2rem;position:relative;z-index:1;
 }
 .header-title{display:flex;align-items:center;justify-content:center;gap:.6rem 1.2rem;flex-wrap:wrap;margin-bottom:.4rem;font-size:2.8rem;font-weight:800;text-shadow:3px 3px 0 #2d4a2d,5px 5px 0 #1b331b;color:#e2f0c0;letter-spacing:2px;}
-.header-subtitle{text-align:center;color:#b8d89a;font-size:1rem;margin-bottom:2rem;opacity:.8;}
+.header-subtitle{text-align:center;color:#b8d89a;font-size:1rem;margin-bottom:2rem;opacity:.85;}
 .snail-icon-big{font-size:3.2rem;transform:rotate(15deg);transition:transform .2s;filter:drop-shadow(2px 4px 4px #0f2a0f);cursor:default;}
 .snail-icon-big:hover{transform:rotate(25deg) scale(1.1);}
-#screenLobby,#screenRoom{display:none;}
-#screenLobby.active,#screenRoom.active{display:block;}
-.snail-input{flex:1;min-width:180px;background:#385f38;border:2px solid #7eaf7a;border-radius:16px;padding:.75rem 1rem;color:#f0f7da;font-size:1rem;font-family:inherit;outline:none;transition:.2s;}
-.snail-input::placeholder{color:#88ad72;}
-.snail-input:focus{border-color:#c3e88d;background:#3f6840;box-shadow:0 0 0 3px rgba(163,212,97,.15);}
-.snail-btn{background:#a3c4a3;color:#1b3f1b;border:2px solid #d6f0be;border-radius:30px;padding:.7rem 1.4rem;font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 5px 0 #446d44;transition:.15s;white-space:nowrap;}
-.snail-btn:hover{background:#c3e6b3;transform:translateY(-2px);box-shadow:0 7px 0 #2f542f;}
-.snail-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #2f542f;}
-.snail-btn.full{width:100%;margin-top:.3rem;}
-.snail-btn.danger{background:#b07070;color:#fff;border-color:#d0a0a0;box-shadow:0 5px 0 #703030;}
-.snail-btn.danger:hover{background:#c08080;box-shadow:0 7px 0 #5a2020;}
-.lobby-panel{background:#2e4d2e;border:2px solid #7eaf7a;border-radius:24px;padding:2rem 1.6rem;box-shadow:0 12px 15px -7px #102310,0 0 0 2px #a7c8a3 inset;margin-bottom:1.4rem;}
-.panel-title{font-size:1.1rem;font-weight:700;color:#d4edb0;margin-bottom:1.2rem;display:flex;align-items:center;gap:.5rem;border-bottom:2px dotted #6b9b5a;padding-bottom:.6rem;}
-.input-row{display:flex;gap:.8rem;margin-bottom:1rem;flex-wrap:wrap;}
-.call-status-area{background:#385f38;border:1px solid #8ab47a;border-radius:16px;padding:.6rem 1rem;font-size:.88rem;color:#dcedc4;display:flex;align-items:center;gap:.5rem;margin-bottom:1.2rem;}
-.status-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;background:#88ad72;transition:background .3s;}
-.status-dot.active{background:#7de87d;animation:pulse .9s infinite;}
-.status-dot.warn{background:#f0c040;animation:pulse .9s infinite;}
-.status-dot.err{background:#e08080;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.section-header{font-size:.95rem;font-weight:700;color:#b8d89a;display:flex;align-items:center;gap:.4rem;margin-bottom:.8rem;}
-.room-card{background:#2e4d2e;border:2px solid #7eaf7a;border-radius:18px;padding:.8rem 1.2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;box-shadow:0 4px 8px -3px #102310;transition:all .2s;flex-wrap:wrap;margin-bottom:.6rem;}
-.room-card:hover{background:#375a37;border-color:#c7e9a8;transform:translateY(-2px);}
-.room-card-name{font-weight:700;color:#fcfad6;font-size:1.05rem;}
-.room-card-meta{font-size:.82rem;color:#a2c78d;}
-.badge{display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:700;padding:.2rem .7rem;border-radius:20px;}
-.badge.online{background:#1e4a20;color:#7de87d;border:1px solid #3a7a3a;}
-.badge.empty{background:#2a3a2a;color:#6a9a6a;border:1px solid #4a6a4a;}
-.empty-state{text-align:center;padding:1.5rem;color:#7a9e70;background:#2a4a2a;border:2px dashed #4a7a4a;border-radius:18px;font-size:.95rem;}
-.room-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:.8rem;}
-.room-name-label{font-size:1.8rem;font-weight:800;color:#fcfad6;text-shadow:0 2px 0 #2d4a2d;}
-.room-name-sub{font-size:.85rem;color:#88ad72;margin-top:.15rem;}
-.video-area{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.2rem;}
-.video-wrap{position:relative;background:#111e11;border:2px solid #7eaf7a;border-radius:18px;overflow:hidden;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;}
-.video-wrap video{width:100%;height:100%;object-fit:cover;display:block;background:#0a180a;}
-.video-label{position:absolute;bottom:8px;left:10px;font-size:.78rem;font-weight:700;color:#c3e88d;background:rgba(10,25,10,.65);padding:.2rem .6rem;border-radius:10px;}
-.video-placeholder{font-size:4rem;opacity:.3;}
-.call-controls{display:flex;justify-content:center;gap:.8rem;flex-wrap:wrap;margin-bottom:1.2rem;}
-.ctrl-btn{display:flex;flex-direction:column;align-items:center;gap:.25rem;background:#2e4d2e;border:2px solid #7eaf7a;border-radius:18px;padding:.7rem 1.1rem;cursor:pointer;font-size:.75rem;font-weight:700;color:#d4edb0;transition:.2s;font-family:inherit;min-width:70px;}
-.ctrl-btn:hover{background:#3a6a3a;border-color:#c3e88d;transform:translateY(-2px);}
-.ctrl-btn .icon{font-size:1.6rem;line-height:1;}
-.ctrl-btn.muted{background:#1a3a1a;border-color:#4a6a4a;color:#6a9a6a;}
-.ctrl-btn.end{background:#5a2020;border-color:#c07070;color:#f0c0c0;}
-.ctrl-btn.end:hover{background:#7a3030;border-color:#e09090;}
-.participants-wrap{background:#2e4d2e;border:2px solid #7eaf7a;border-radius:18px;padding:1rem 1.2rem;box-shadow:0 6px 10px -4px #102310;}
-.participants-title{font-size:.9rem;font-weight:700;color:#b8d89a;margin-bottom:.6rem;border-bottom:1px dotted #4a7a4a;padding-bottom:.4rem;}
-.participant-row{display:flex;align-items:center;gap:.5rem;font-size:.88rem;color:#dcedc4;padding:.25rem .4rem;border-radius:8px;}
-.participant-row .dot{width:8px;height:8px;border-radius:50%;background:#7de87d;flex-shrink:0;animation:pulse 1.4s infinite;}
-.logs-section{margin-top:1.8rem;}
-.logs-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;}
-.logs-box{background:#182e18;border:2px solid #4a7a4a;border-radius:16px;padding:.7rem .9rem;max-height:220px;overflow-y:auto;font-family:'Courier New',monospace;font-size:.79rem;}
-.logs-box::-webkit-scrollbar{width:5px;}
-.logs-box::-webkit-scrollbar-track{background:#1a3a1a;border-radius:3px;}
-.logs-box::-webkit-scrollbar-thumb{background:#5a8a5a;border-radius:3px;}
-.log-entry{padding:.2rem 0;border-bottom:1px solid #2a4a2a;display:flex;gap:.6rem;}
-.log-entry:last-child{border-bottom:none;}
-.log-time{color:#5a8a5a;flex-shrink:0;}
-.log-msg.info{color:#a8c890;}.log-msg.warn{color:#e0c060;}.log-msg.error{color:#e08080;}.log-msg.success{color:#80e080;}
-.logs-empty{color:#4a7a4a;text-align:center;padding:.4rem;}
+.panel{background:#2e4d2e;border:2px solid #7eaf7a;border-radius:24px;padding:2rem 1.6rem;box-shadow:0 12px 15px -7px #102310,0 0 0 2px #a7c8a3 inset;margin-bottom:1.4rem;}
+.panel-title{font-size:1.15rem;font-weight:700;color:#d4edb0;margin-bottom:1.2rem;display:flex;align-items:center;gap:.5rem;border-bottom:2px dotted #6b9b5a;padding-bottom:.6rem;}
+.desc{color:#dcedc4;line-height:1.6;font-size:1rem;}
+.desc b{color:#fcfad6;}
+.desc a{color:#c3e88d;text-decoration:underline wavy #a3d683;}
+.feature-list{list-style:none;margin:1rem 0;}
+.feature-list li{margin:.5rem 0;padding-left:1.6rem;position:relative;color:#dcedc4;line-height:1.5;}
+.feature-list li::before{content:"🐌";position:absolute;left:0;font-size:.95rem;}
+.code-block{background:#182e18;border:2px solid #4a7a4a;border-radius:16px;padding:.9rem 1.1rem;font-family:'Courier New',monospace;font-size:.9rem;color:#c3e88d;overflow-x:auto;white-space:pre-wrap;word-break:break-all;margin:.8rem 0;user-select:all;}
+.step{display:flex;gap:.9rem;align-items:flex-start;margin:1.1rem 0;}
+.step-num{flex-shrink:0;width:34px;height:34px;border-radius:50%;background:#a3c4a3;color:#1b3f1b;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:1.05rem;box-shadow:0 4px 0 #446d44;}
+.step-body{flex:1;}
+.step-title{font-weight:700;color:#fcfad6;margin-bottom:.3rem;}
+.step-body p{color:#dcedc4;line-height:1.55;font-size:.95rem;}
+.notes{background:#385f38;border:1px solid #8ab47a;border-radius:16px;padding:.7rem 1rem;font-size:.88rem;color:#dcedc4;line-height:1.6;}
+.back-link{display:inline-block;margin-top:1rem;color:#a3c4a3;text-decoration:none;border:2px solid #7eaf7a;padding:.5rem 1.5rem;border-radius:40px;transition:.2s;}
+.back-link:hover{background:#2f542f;color:#ffefc0;border-color:#d8f0b5;}
 .footer-snails{margin-top:2.5rem;display:flex;justify-content:center;gap:.8rem 2rem;flex-wrap:wrap;font-size:2rem;color:#a2c78d;border-top:2px dashed #61855e;padding-top:1.5rem;opacity:.8;}
 .footer-snails span{filter:drop-shadow(0 5px 5px #172e17);transition:.2s;cursor:default;}
 .footer-snails span:hover{transform:scale(1.2) rotate(5deg);}
-@media(max-width:600px){.main-container{padding:1.5rem 1rem;}.header-title{font-size:2.2rem;}.video-area{grid-template-columns:1fr;}.input-row{flex-direction:column;}}
+@media(max-width:600px){.main-container{padding:1.5rem 1rem;}.header-title{font-size:2.2rem;}}
 </style>
 </head>
 <body>
 <div class="main-container">
   <div class="header-title">
     <span class="snail-icon-big">📞</span>
-    <span>Звонкие улитки</span>
+    <span>Dial Forward</span>
     <span class="snail-icon-big">🐌</span>
   </div>
-  <div class="header-subtitle">видеозвонки по комнатам через Firebase · ползём и общаемся 🐚</div>
+  <div class="header-subtitle">настоящие P2P-звонки через Telegram · звук идёт напрямую между собеседниками 🐚</div>
 
-  <!-- LOBBY -->
-  <div id="screenLobby">
-    <div class="lobby-panel">
-      <div class="panel-title">🚪 Войти в комнату</div>
-      <div class="input-row">
-        <input class="snail-input" id="myNameInput" type="text" placeholder="Ваше имя" maxlength="30">
-        <input class="snail-input" id="roomNameInput" type="text" placeholder="Название комнаты" maxlength="40" onkeydown="if(event.key==='Enter')joinRoom()">
-      </div>
-      <button class="snail-btn full" onclick="joinRoom()">📞 Войти / создать комнату</button>
-    </div>
-    <div class="call-status-area">
-      <div class="status-dot warn" id="lobbyDot"></div>
-      <span id="lobbyStatusText">🔥 Подключение к Firebase...</span>
-    </div>
-    <div class="section-header">🐌 Активные комнаты</div>
-    <div id="roomsList"><div class="empty-state">🐌 нет активных комнат · будьте первым!</div></div>
+  <div class="panel">
+    <div class="panel-title">🐚 Что это?</div>
+    <p class="desc">
+      <b>Dial Forward</b> — программа для голосовых звонков через Telegram.
+      Звонок проходит <b>напрямую</b> между участниками (WebRTC, GStreamer),
+      а через Telegram передаётся только сигналинг. Никаких серверов звонков,
+      никаких посредников — только вы и собеседник. 🐌
+    </p>
+    <ul class="feature-list">
+      <li>голосовые звонки один-на-один и групповые</li>
+      <li>отправка файлов прямо в звонок</li>
+      <li>вход по QR-коду или номеру телефона (свой аккаунт Telegram)</li>
+      <li>не использует и не читает данные установленного Telegram</li>
+    </ul>
   </div>
 
-  <!-- ROOM -->
-  <div id="screenRoom">
-    <div class="room-header">
-      <div>
-        <div class="room-name-label">🐚 <span id="roomLabel"></span></div>
-        <div class="room-name-sub" id="roomSubLabel">подключение...</div>
-      </div>
-      <button class="snail-btn danger" onclick="leaveRoom()">📵 Покинуть</button>
-    </div>
-    <div class="call-status-area">
-      <div class="status-dot warn" id="roomDot"></div>
-      <span id="roomStatusText">Подключаемся...</span>
-    </div>
-    <div class="video-area">
-      <div class="video-wrap">
-        <video id="localVideo" autoplay muted playsinline></video>
-        <div class="video-label">Вы — <span id="myNameLabel"></span></div>
-      </div>
-      <div class="video-wrap" id="remoteWrap">
-        <div class="video-placeholder">🐌</div>
-        <div class="video-label">Ожидаем собеседника...</div>
+  <div class="panel">
+    <div class="panel-title">🐌 Установка</div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">Linux (Ubuntu, Debian, Fedora, Arch)</div>
+        <p>Скопируйте команду и выполните в терминале — установщик сам поставит всё необходимое и создаст ярлык на рабочем столе:</p>
+        <div class="code-block">curl -sL https://uliigra2.c6t.ru/dial-forward/installer | bash</div>
+        <p>Работает даже на «голой» системе без python. Готово — запускайте <b>Dial Forward</b> из меню приложений.</p>
       </div>
     </div>
-    <div class="call-controls">
-      <button class="ctrl-btn" id="btnMic" onclick="toggleMic()">
-        <span class="icon" id="iconMic">🎙️</span><span id="lblMic">Микрофон</span>
-      </button>
-      <button class="ctrl-btn" id="btnCam" onclick="toggleCam()">
-        <span class="icon" id="iconCam">📷</span><span id="lblCam">Камера</span>
-      </button>
-      <button class="ctrl-btn end" onclick="leaveRoom()">
-        <span class="icon">📵</span><span>Завершить</span>
-      </button>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">Windows 10 / 11</div>
+        <p>Скачайте установщик и запустите его в PowerShell:</p>
+        <div class="code-block">curl -o installer.ps1 https://uliigra2.c6t.ru/dial-forward/installer.ps1
+powershell -ExecutionPolicy Bypass -File installer.ps1</div>
+        <p>Установщик поставит MSYS2 с python и GStreamer, скачает приложение и создаст ярлык «Dial Forward» на рабочем столе.</p>
+      </div>
     </div>
-    <div class="participants-wrap">
-      <div class="participants-title">👥 Участники</div>
-      <div id="participantsList"></div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">Первый запуск</div>
+        <p>Откройте приложение и войдите в свой аккаунт Telegram (кнопка «Войти в аккаунт» — QR-код или номер телефона). Затем выберите собеседника из списка чатов и нажмите звонок. 📞</p>
+      </div>
     </div>
+
+    <div class="notes">🖥️ Требования: 64-битная система, рабочий микрофон и динамики. Данные Telegram Desktop не используются — приложение создаёт свою отдельную сессию.</div>
   </div>
 
-  <!-- LOGS -->
-  <div class="logs-section">
-    <div class="logs-header">
-      <div class="section-header" style="margin-bottom:0;">📋 Журнал событий</div>
-      <button class="snail-btn" style="padding:.3rem .8rem;font-size:.78rem;" onclick="clearLogs()">очистить</button>
-    </div>
-    <div class="logs-box" id="logsBox"><div class="logs-empty">— пока тихо —</div></div>
+  <div class="panel" style="text-align:center;">
+    <div style="font-size:3rem;">🐌💚</div>
+    <p class="desc" style="margin-bottom:1rem;">Звоните прямо, без посредников — ползите к собеседнику в звуке! 🐚</p>
+    <a href="/home" class="back-link">← ко всем страницам</a>
   </div>
 
   <div class="footer-snails">
     <span>🐌</span><span>📞💚</span><span>🐌</span><span>🐚</span><span>📞</span><span>🍀🐌</span>
   </div>
 </div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, onValue, remove, serverTimestamp, onDisconnect, get }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-const app = initializeApp({
-  apiKey:"AIzaSyDTx2Y9ctiWp26YeMmAHAxDZd_gVI_ZMdw",
-  authDomain:"kcalls.firebaseapp.com",
-  databaseURL:"https://kcalls-default-rtdb.firebaseio.com",
-  projectId:"kcalls",
-  storageBucket:"kcalls.firebasestorage.app",
-  messagingSenderId:"990117089104",
-  appId:"1:990117089104:web:278a42c037e975ebb76655"
-});
-const db = getDatabase(app);
-
-const myId = "u_"+Math.random().toString(36).slice(2,10);
-let myName="", room=null, localStream=null, micOn=true, camOn=true;
-let peers={}, signalUnsubs={}, membersUnsub=null;
-const ICE={iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"}]};
-
-// ── UTILS
-function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
-function log(msg,type="info"){
-  const box=document.getElementById("logsBox");
-  const empty=box.querySelector(".logs-empty");
-  if(empty)empty.remove();
-  const t=new Date().toTimeString().slice(0,8);
-  const e=document.createElement("div");
-  e.className="log-entry";
-  e.innerHTML=`<span class="log-time">${t}</span><span class="log-msg ${type}">${esc(msg)}</span>`;
-  box.prepend(e);
-  if(box.querySelectorAll(".log-entry").length>200)box.lastElementChild.remove();
-}
-window.clearLogs=()=>{document.getElementById("logsBox").innerHTML='<div class="logs-empty">— пока тихо —</div>';log("Журнал очищен","warn");};
-function show(s){
-  document.getElementById("screenLobby").classList.toggle("active",s==="lobby");
-  document.getElementById("screenRoom").classList.toggle("active",s==="room");
-}
-function setLobbyStatus(t,m){document.getElementById("lobbyStatusText").textContent=t;document.getElementById("lobbyDot").className="status-dot "+(m||"active");}
-function setRoomStatus(t,m){document.getElementById("roomStatusText").textContent=t;document.getElementById("roomDot").className="status-dot "+(m||"active");}
-
-// ── LOBBY: watch rooms
-onValue(ref(db,"rooms"),snap=>{
-  setLobbyStatus("🐌 Подключено · смотрим комнаты","active");
-  const el=document.getElementById("roomsList");
-  if(!snap.exists()){el.innerHTML='<div class="empty-state">🐌 нет активных комнат · будьте первым!</div>';return;}
-  el.innerHTML="";
-  snap.forEach(child=>{
-    const rName=child.key;
-    const members=child.child("members").val()||{};
-    const count=Object.keys(members).length;
-    const names=Object.values(members).map(m=>esc(m.name||"?")).join(", ");
-    const card=document.createElement("div");
-    card.className="room-card";
-    card.innerHTML=`<div><div class="room-card-name">🐚 ${esc(rName)}</div><div class="room-card-meta">${count?names:"пусто"}</div></div>
-      <div style="display:flex;align-items:center;gap:.6rem;">
-        <span class="badge ${count?"online":"empty"}">${count?"🟢 "+count+" чел.":"пусто"}</span>
-        <button class="snail-btn" style="padding:.4rem .9rem;font-size:.85rem;" onclick="quickJoin('${esc(rName)}')">Войти</button>
-      </div>`;
-    el.appendChild(card);
-  });
-},err=>{setLobbyStatus("❌ "+err.message,"err");log("Ошибка Firebase: "+err.message,"error");});
-log("🔥 Firebase подключён","success");
-
-window.quickJoin=function(rName){
-  document.getElementById("roomNameInput").value=rName;
-  if(!document.getElementById("myNameInput").value.trim())document.getElementById("myNameInput").focus();
-  else joinRoom();
-};
-
-// ── JOIN
-window.joinRoom=async function(){
-  const name=document.getElementById("myNameInput").value.trim();
-  const rName=document.getElementById("roomNameInput").value.trim();
-  if(!name){setLobbyStatus("⚠️ Введите ваше имя","warn");return;}
-  if(!rName){setLobbyStatus("⚠️ Введите название комнаты","warn");return;}
-  myName=name; room=rName;
-  log("🚪 Входим в «"+room+"» как «"+myName+"»");
-  try{
-    localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:true});
-    log("🎥 Видео+аудио получены","success");
-  }catch(e){
-    try{localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});log("🎙️ Только аудио","warn");}
-    catch(e2){log("❌ Медиа недоступно: "+e2.message,"error");localStream=null;}
-  }
-  document.getElementById("localVideo").srcObject=localStream;
-  document.getElementById("myNameLabel").textContent=myName;
-  const presRef=ref(db,"rooms/"+room+"/members/"+myId);
-  await set(presRef,{name:myName,joinedAt:serverTimestamp()});
-  onDisconnect(presRef).remove();
-  log("✅ Присутствие зарегистрировано","success");
-  document.getElementById("roomLabel").textContent=room;
-  setRoomStatus("🐌 В комнате · ожидаем собеседников...","warn");
-  show("room");
-  // watch members
-  membersUnsub=onValue(ref(db,"rooms/"+room+"/members"),async snap=>{
-    if(!snap.exists())return;
-    const members=snap.val();
-    // render participants
-    const pList=document.getElementById("participantsList");
-    pList.innerHTML="";
-    let count=0;
-    for(const [uid,m] of Object.entries(members)){
-      count++;
-      const row=document.createElement("div");
-      row.className="participant-row";
-      row.innerHTML=`<div class="dot"></div>${esc(m.name||"?")}${uid===myId?" <em style='color:#6a9a6a'>(вы)</em>":''}`;
-      pList.appendChild(row);
-    }
-    document.getElementById("roomSubLabel").textContent=count+" участн. · "+room;
-    // connect to new peers
-    for(const [peerId] of Object.entries(members)){
-      if(peerId===myId||peers[peerId])continue;
-      peers[peerId]={pc:null,name:members[peerId].name||"?"};
-      listenSignal(peerId);
-      if(myId<peerId)await makeOffer(peerId);
-    }
-    // clean gone peers
-    for(const peerId of Object.keys(peers)){if(!members[peerId])closePeer(peerId);}
-  });
-};
-
-// ── WebRTC
-function sigPath(toId,fromId){return "rooms/"+room+"/signals/"+toId+"/"+fromId;}
-function buildPC(peerId){
-  const pc=new RTCPeerConnection(ICE);
-  if(peers[peerId])peers[peerId].pc=pc;
-  if(localStream)localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
-  pc.onicecandidate=e=>{if(e.candidate)set(ref(db,sigPath(peerId,myId)+"/ice"),e.candidate.toJSON()).catch(()=>{});};
-  pc.ontrack=e=>{
-    log("🔊 Медиапоток от "+(peers[peerId]?.name||peerId.slice(-4)),"success");
-    const wrap=document.getElementById("remoteWrap");
-    wrap.innerHTML="";
-    const vid=document.createElement("video");
-    vid.id="rv_"+peerId;vid.autoplay=true;vid.playsinline=true;vid.srcObject=e.streams[0];
-    wrap.appendChild(vid);
-    const lbl=document.createElement("div");lbl.className="video-label";lbl.textContent=peers[peerId]?.name||"Собеседник";
-    wrap.appendChild(lbl);
-    setRoomStatus("✅ Звонок идёт!","active");
-  };
-  pc.oniceconnectionstatechange=()=>{
-    const s=pc.iceConnectionState;
-    log("🔗 ICE["+(peers[peerId]?.name||peerId.slice(-4))+"]: "+s);
-    if(s==="connected"||s==="completed")setRoomStatus("✅ Звонок идёт!","active");
-    if(s==="failed"||s==="disconnected"||s==="closed")closePeer(peerId);
-  };
-  return pc;
-}
-async function makeOffer(peerId){
-  log("📡 Offer → "+(peers[peerId]?.name||peerId.slice(-4)));
-  const pc=buildPC(peerId);
-  const offer=await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  await set(ref(db,sigPath(peerId,myId)+"/offer"),{type:offer.type,sdp:offer.sdp});
-  log("📤 Offer отправлен","success");
-}
-function listenSignal(peerId){
-  if(signalUnsubs[peerId])return;
-  const unsub=onValue(ref(db,sigPath(myId,peerId)),async snap=>{
-    if(!snap.exists())return;
-    const data=snap.val();
-    if(data.offer&&peers[peerId]&&!peers[peerId].pc){
-      log("📨 Offer от "+(peers[peerId]?.name||peerId.slice(-4)));
-      const pc=buildPC(peerId);
-      await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-      const answer=await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      await set(ref(db,sigPath(peerId,myId)+"/answer"),{type:answer.type,sdp:answer.sdp});
-      log("📤 Answer отправлен","success");
-    }
-    if(data.answer&&peers[peerId]?.pc){
-      const pc=peers[peerId].pc;
-      if(pc.signalingState==="have-local-offer")await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-    }
-    if(data.ice&&peers[peerId]?.pc){try{await peers[peerId].pc.addIceCandidate(new RTCIceCandidate(data.ice));}catch(e){}}
-  });
-  signalUnsubs[peerId]=unsub;
-}
-function closePeer(peerId){
-  log("🚪 "+(peers[peerId]?.name||peerId.slice(-4))+" отключился","warn");
-  peers[peerId]?.pc?.close();delete peers[peerId];
-  if(signalUnsubs[peerId]){signalUnsubs[peerId]();delete signalUnsubs[peerId];}
-  if(!document.getElementById("rv_"+peerId))return;
-  document.getElementById("remoteWrap").innerHTML='<div class="video-placeholder">🐌</div><div class="video-label">Ожидаем собеседника...</div>';
-  if(Object.keys(peers).length===0)setRoomStatus("🐌 В комнате · ожидаем собеседников...","warn");
-}
-
-// ── LEAVE
-window.leaveRoom=async function(){
-  log("🚪 Покидаем «"+room+"»","warn");
-  if(membersUnsub){membersUnsub();membersUnsub=null;}
-  Object.keys(peers).forEach(closePeer);
-  await remove(ref(db,"rooms/"+room+"/signals/"+myId)).catch(()=>{});
-  await remove(ref(db,"rooms/"+room+"/members/"+myId)).catch(()=>{});
-  const snap=await get(ref(db,"rooms/"+room+"/members")).catch(()=>null);
-  if(!snap||!snap.exists())await remove(ref(db,"rooms/"+room)).catch(()=>{});
-  localStream?.getTracks().forEach(t=>t.stop());localStream=null;
-  document.getElementById("localVideo").srcObject=null;
-  document.getElementById("remoteWrap").innerHTML='<div class="video-placeholder">🐌</div><div class="video-label">Ожидаем собеседника...</div>';
-  document.getElementById("participantsList").innerHTML="";
-  room=null;micOn=true;camOn=true;
-  document.getElementById("iconMic").textContent="🎙️";document.getElementById("iconCam").textContent="📷";
-  document.getElementById("btnMic").classList.remove("muted");document.getElementById("btnCam").classList.remove("muted");
-  document.getElementById("lblMic").textContent="Микрофон";document.getElementById("lblCam").textContent="Камера";
-  show("lobby");
-};
-
-// ── TOGGLES
-window.toggleMic=()=>{if(!localStream)return;micOn=!micOn;localStream.getAudioTracks().forEach(t=>t.enabled=micOn);document.getElementById("btnMic").classList.toggle("muted",!micOn);document.getElementById("iconMic").textContent=micOn?"🎙️":"🔇";document.getElementById("lblMic").textContent=micOn?"Микрофон":"Выкл.";log(micOn?"🎙️ Микрофон включён":"🔇 Микрофон выключен");};
-window.toggleCam=()=>{if(!localStream)return;camOn=!camOn;localStream.getVideoTracks().forEach(t=>t.enabled=camOn);document.getElementById("btnCam").classList.toggle("muted",!camOn);document.getElementById("iconCam").textContent=camOn?"📷":"🚫";document.getElementById("lblCam").textContent=camOn?"Камера":"Выкл.";log(camOn?"📷 Камера включена":"🚫 Камера выключена");};
-
-show("lobby");
-</script>
 </body>
 </html>

@@ -319,6 +319,8 @@ class Relay:
                     chat_id=chat_id, user_id=user.id, fwd_limit=50))
         except Exception as e:
             log.warning("проверка/добавление участника: %s", e)
+            await self.cleanup_group(chat_id)
+            return {"error": "не удалось добавить участника — группа удалена"}
         self.calls[user.id] = chat_id
         return {"chat_id": chat_id, "user_id": user.id}
 
@@ -332,8 +334,11 @@ class Relay:
             title = "Call " + " & ".join(getattr(u, "first_name", u.id)
                                           for u in users[:3])
         title = title[:64]
-        updates = await self.client(functions.messages.CreateChatRequest(
-            users=users, title=title))
+        try:
+            updates = await self.client(functions.messages.CreateChatRequest(
+                users=users, title=title))
+        except Exception as e:
+            return {"error": f"не удалось создать группу: {e}"}
         chat_id = None
         updates_obj = getattr(updates, "updates", None) or updates
         for u in getattr(updates_obj, "updates", []):
@@ -349,13 +354,33 @@ class Relay:
                     break
         if chat_id is None:
             return {"error": "группа создана, но id не найден"}
+        try:
+            members = await self.client.get_participants(chat_id)
+            missing = [u for u in users if not any(m.id == u.id for m in members)]
+            for u in missing:
+                await self.client(functions.messages.AddChatUserRequest(
+                    chat_id=chat_id, user_id=u.id, fwd_limit=50))
+            if missing:
+                log.info("call_group: добавлены недостающие: %s",
+                         [u.id for u in missing])
+        except Exception as e:
+            log.warning("call_group: добавление участников: %s", e)
+            await self.cleanup_group(chat_id)
+            return {"error": "не удалось добавить участника — группа удалена"}
+        for u in users:
+            self.calls[u.id] = chat_id
         return {"chat_id": chat_id, "user_id": [u.id for u in users]}
 
     async def invite(self, chat_id, username):
         username = username.lstrip("@").strip()
         user = await self.client.get_entity(username)
-        await self.client(functions.messages.AddChatUserRequest(
-            chat_id=abs(int(chat_id)), user_id=user.id, fwd_limit=50))
+        try:
+            await self.client(functions.messages.AddChatUserRequest(
+                chat_id=abs(int(chat_id)), user_id=user.id, fwd_limit=50))
+        except Exception as e:
+            log.warning("invite: %s: %s", username, e)
+            await self.cleanup_group(chat_id)
+            return {"error": "не удалось пригласить участника — группа удалена"}
         return {"user_id": user.id}
 
     async def chat_info(self, chat_id):
@@ -366,26 +391,33 @@ class Relay:
             "first_name": getattr(u, "first_name", ""),
         } for u in users]}
 
-    async def leave(self, chat_id):
+    async def cleanup_group(self, chat_id):
+        """Удаляет всех участников из группы, затем саму группу."""
         chat_id = abs(int(chat_id))
         try:
             members = await self.client.get_participants(chat_id)
-            for m in members:
-                if m.id == self.self_id:
-                    continue
-                try:
-                    await self.client(functions.messages.DeleteChatUserRequest(
-                        chat_id=chat_id, user_id=m.id))
-                    log.info("участник %s исключён", m.id)
-                except Exception as err:
-                    log.warning("исключение участника %s: %s", m.id, err)
         except Exception as err:
-            log.warning("список участников: %s", err)
+            log.warning("cleanup: список участников: %s", err)
+            members = []
+        for m in members:
+            if m.id == self.self_id:
+                continue
+            try:
+                await self.client(functions.messages.DeleteChatUserRequest(
+                    chat_id=chat_id, user_id=m.id))
+                log.info("cleanup: участник %s исключён", m.id)
+            except Exception as err:
+                log.warning("cleanup: исключение участника %s: %s", m.id, err)
         try:
             await self.client(functions.messages.DeleteChatRequest(chat_id=chat_id))
+            log.info("cleanup: группа %s удалена", chat_id)
         except Exception as err:
-            log.warning("DeleteChatRequest: %s", err)
-        self.calls = {k: v for k, v in self.calls.items() if v != int(chat_id)}
+            log.warning("cleanup: DeleteChatRequest: %s", err)
+        self.calls = {k: v for k, v in self.calls.items() if v != chat_id}
+
+    async def leave(self, chat_id):
+        chat_id = abs(int(chat_id))
+        await self.cleanup_group(chat_id)
         return {}
 
     async def dialogs(self):
