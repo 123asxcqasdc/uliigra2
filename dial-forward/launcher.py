@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""Dial Forward launcher — запускает relay и приложение.
+
+Работает от текущего пользователя: никаких sudo/systemd, пароль не нужен.
+Если relay уже запущен (ws://127.0.0.1:4545 отвечает) — не трогает его.
+При закрытии приложения (или Ctrl+C) останавливает relay, который запустил сам.
+
+Использование:  python launcher.py [аргументы приложения...]
+                python launcher.py --call username
+"""
+import os
+import socket
+import subprocess
+import sys
+import time
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+RELAY_DIR = os.path.join(ROOT, "relay")
+CLIENT_DIR = os.path.join(ROOT, "client")
+WS_ADDR = ("127.0.0.1", 4545)
+
+
+def pick_python():
+    for c in (sys.executable, os.path.join(ROOT, ".venv", "bin", "python")):
+        if c and os.path.exists(c):
+            return c
+    return sys.executable
+
+
+def ws_alive(timeout=2):
+    s = socket.socket()
+    s.settimeout(timeout)
+    try:
+        s.connect(WS_ADDR)
+        return True
+    except OSError:
+        return False
+    finally:
+        s.close()
+
+
+def wait_ws(seconds=40):
+    for _ in range(int(seconds / 0.5)):
+        if ws_alive():
+            return True
+        time.sleep(0.5)
+    return False
+
+
+def main():
+    py = pick_python()
+    relay_was_up = ws_alive()
+    relay_proc = None
+
+    if not relay_was_up:
+        print("[launcher] relay не запущен — стартую...", flush=True)
+        relay_proc = subprocess.Popen(
+            [py, os.path.join(RELAY_DIR, "relay.py")],
+            cwd=RELAY_DIR,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if not wait_ws():
+            print("[launcher] relay не поднялся за 40с — проверьте интернет/Telegram", flush=True)
+            relay_proc.terminate()
+            return 1
+        print("[launcher] relay готов", flush=True)
+    else:
+        print("[launcher] relay уже работает", flush=True)
+
+    if not os.environ.get("DISPLAY") and os.name == "posix":
+        print("[launcher] предупреждение: DISPLAY не задан — окно может не открыться", flush=True)
+
+    print("[launcher] запускаю Dial Forward...", flush=True)
+    app_args = [py, os.path.join(CLIENT_DIR, "app.py")] + sys.argv[1:]
+    try:
+        rc = subprocess.run(app_args, cwd=CLIENT_DIR).returncode
+    finally:
+        if relay_proc is not None and not relay_was_up:
+            print("[launcher] приложение закрыто — останавливаю relay", flush=True)
+            relay_proc.terminate()
+            try:
+                relay_proc.wait(5)
+            except subprocess.TimeoutExpired:
+                relay_proc.kill()
+    print(f"[launcher] выход, код {rc}", flush=True)
+    return rc
+
+
+if __name__ == "__main__":
+    sys.exit(main())

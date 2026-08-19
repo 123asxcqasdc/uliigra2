@@ -1,0 +1,4 @@
+telethon>=1.36
+websockets>=13
+qrcode>=7.4
+pillow>=10
