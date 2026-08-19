@@ -21,7 +21,18 @@ WS_ADDR = ("127.0.0.1", 4545)
 
 
 def pick_python():
-    for c in (sys.executable, os.path.join(ROOT, ".venv", "bin", "python")):
+    if os.name == "nt":
+        candidates = [
+            sys.executable,
+            os.path.join(ROOT, ".venv", "Scripts", "python.exe"),
+            os.path.join("C:", os.sep, "msys64", "mingw64", "bin", "python.exe"),
+        ]
+    else:
+        candidates = [
+            sys.executable,
+            os.path.join(ROOT, ".venv", "bin", "python"),
+        ]
+    for c in candidates:
         if c and os.path.exists(c):
             return c
     return sys.executable

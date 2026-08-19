@@ -11,6 +11,7 @@ import json
 import os
 import queue
 import secrets
+import sys
 import tempfile
 import threading
 import tkinter as tk
@@ -117,7 +118,11 @@ class CallHub:
 
     def _add_peer(self, cid, offerer):
         name = f"p{len(self.peers)}"
-        peer = WebRtcPeer(audio_src="pulsesrc", audio_sink="pulsesink",
+        if sys.platform == "win32":
+            audio_src, audio_sink = "autoaudiosrc", "autoaudiosink"
+        else:
+            audio_src, audio_sink = "pulsesrc", "pulsesink"
+        peer = WebRtcPeer(audio_src=audio_src, audio_sink=audio_sink,
                           name=name, auto_play=offerer)
         to = cid or ""
         peer.on_offer_ready = lambda sdp: run_async(self.session.send_offer(sdp, to=to))

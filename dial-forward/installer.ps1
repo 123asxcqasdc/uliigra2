@@ -3,44 +3,42 @@
 #  Работает на голой системе БЕЗ python:
 #      curl -o installer.ps1 https://uliigra2.c6t.ru/dial-forward/installer.ps1
 #      powershell -ExecutionPolicy Bypass -File installer.ps1
-#  Устанавливает: python, gstreamer, приложение, ярлык на рабочий стол.
+#  Устанавливает: MSYS2 (python+PyGObject+GStreamer), приложение,
+#                 ярлык на рабочий стол.
+#  Почему MSYS2: для PyGObject/GStreamer на Windows нет pip-колёс,
+#  MSYS2 ставит их готовыми бинарными пакетами.
 # ============================================================
 $ErrorActionPreference = "Stop"
 
 $GITHUB_RAW = "https://raw.githubusercontent.com/123asxcqasdc/uliigra2/main/dial-forward"
 $MIRROR_BASE = "https://uliigra2.c6t.ru/dial-forward"
-$GST_VERSION = "1.24.11"
 $APP_DIR = Join-Path $env:USERPROFILE "dial-forward"
+$MSYS_ROOT = "C:\msys64"
+$MINGW_BIN = "$MSYS_ROOT\mingw64\bin"
+$PY_MINGW = "$MINGW_BIN\python.exe"
 
 function Say($m) { Write-Host "[installer] $m" -ForegroundColor Green }
 
-# ---------- 1. python ----------
-Say "Устанавливаю Python..."
-if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
-    winget install --id Python.Python.3.13 -e `
-        --accept-source-agreements --accept-package-agreements | Out-Null
-    # обновить PATH для текущей сессии
+# ---------- 1. MSYS2 + python + PyGObject + GStreamer ----------
+if (-not (Test-Path $PY_MINGW)) {
+    Say "Устанавливаю MSYS2..."
+    winget install --id MSYS2.MSYS2 -e `
+        --accept-source-agreements --accept-package-agreements
+    # обновить PATH текущей сессии
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + `
                 [System.Environment]::GetEnvironmentVariable("Path", "User")
 }
-$PY = (Get-Command python -ErrorAction SilentlyContinue).Source
-if (-not $PY) { $PY = "$env:LOCALAPPDATA\Programs\Python\Python313\python.exe" }
-if (-not (Test-Path $PY)) { throw "Python не найден — установите вручную https://www.python.org/downloads/" }
+if (-not (Test-Path $PY_MINGW)) { throw "MSYS2 не найден по пути $MSYS_ROOT" }
 
-# ---------- 2. gstreamer (runtime) ----------
-Say "Устанавливаю GStreamer $GST_VERSION ..."
-$gstMsi = Join-Path $env:TEMP "gstreamer-runtime.msi"
-try {
-    Invoke-WebRequest "https://gstreamer.freedesktop.org/data/pkg/windows/$GST_VERSION/gstreamer-1.0-runtime-x86_64-$GST_VERSION.msi" `
-        -OutFile $gstMsi -UseBasicParsing
-    Start-Process msiexec -ArgumentList "/i `"$gstMsi`" /qn" -Wait
-    $env:GST_PLUGIN_PATH = "C:\gstreamer\1.0\x86_64\lib\gstreamer-1.0"
-    $env:Path += ";C:\gstreamer\1.0\x86_64\bin"
-} catch {
-    Say "GStreamer MSI не скачался — установите вручную: https://gstreamer.freedesktop.org/download/"
-}
+Say "Ставлю python, PyGObject и GStreamer (пакеты MSYS2)..."
+$pac = "$MSYS_ROOT\usr\bin\bash.exe"
+& $pac -lc "pacman -S --noconfirm --needed mingw-w64-x86_64-python mingw-w64-x86_64-python-pip mingw-w64-x86_64-python-gobject mingw-w64-x86_64-python-tkinter mingw-w64-x86_64-gstreamer mingw-w64-x86_64-gst-plugins-base mingw-w64-x86_64-gst-plugins-good mingw-w64-x86_64-gst-plugins-bad mingw-w64-x86_64-gst-plugins-ugly mingw-w64-x86_64-gst-libav git curl"
 
-# ---------- 3. код приложения ----------
+Say "Устанавливаю python-библиотеки (pip)..."
+& $PY_MINGW -m pip install --upgrade pip
+& $PY_MINGW -m pip install telethon websockets qrcode pillow
+
+# ---------- 2. код приложения ----------
 function Fetch-File($remote, $local) {
     $srcs = @("$GITHUB_RAW/$remote", "$MIRROR_BASE/$remote")
     foreach ($src in $srcs) {
@@ -61,24 +59,25 @@ Fetch-File "relay/relay.py" (Join-Path $APP_DIR "relay\relay.py")
 Fetch-File "launcher.py" (Join-Path $APP_DIR "launcher.py")
 Fetch-File "requirements.txt" (Join-Path $APP_DIR "requirements.txt")
 
-# ---------- 4. venv + библиотеки ----------
-Say "Создаю виртуальное окружение..."
-& $PY -m venv "$APP_DIR\.venv"
-$VenvPy = Join-Path $APP_DIR ".venv\Scripts\python.exe"
-& $VenvPy -m pip install --upgrade pip | Out-Null
-Say "Устанавливаю python-библиотеки..."
-& $VenvPy -m pip install -r (Join-Path $APP_DIR "requirements.txt")
+# ---------- 3. стартовый .bat (среда mingw64) ----------
+$bat = Join-Path $APP_DIR "start.bat"
+@"
+@echo off
+set PATH=$MINGW_BIN;%PATH%
+set GI_TYPELIB_PATH=$MSYS_ROOT\mingw64\lib\girepository-1.0
+set GST_PLUGIN_PATH=$MSYS_ROOT\mingw64\lib\gstreamer-1.0
+"$PY_MINGW" "$APP_DIR\launcher.py" %*
+"@ | Out-File -Encoding ascii $bat
 
-# ---------- 5. ярлык на рабочий стол ----------
+# ---------- 4. ярлык на рабочий стол ----------
 Say "Создаю ярлык на рабочем столе..."
 $desktop = [Environment]::GetFolderPath("Desktop")
 $ws = New-Object -ComObject WScript.Shell
 $lnk = $ws.CreateShortcut((Join-Path $desktop "Dial Forward.lnk"))
-$lnk.TargetPath = Join-Path $APP_DIR ".venv\Scripts\pythonw.exe"
-$lnk.Arguments = "`"$(Join-Path $APP_DIR 'launcher.py')`""
+$lnk.TargetPath = $bat
 $lnk.WorkingDirectory = $APP_DIR
 $lnk.Description = "Dial Forward — P2P звонки через Telegram"
 $lnk.Save()
 
 Say "Готово! Запуск: ярлык «Dial Forward» на рабочем столе"
-Say "или: $VenvPy $APP_DIR\launcher.py"
+Say "или: $APP_DIR\start.bat"

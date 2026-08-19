@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import re
+import sys
 import time
 
 import websockets
@@ -34,14 +35,19 @@ def extract_keys():
     """Официальные ключи MTProto захардкожены; опционально перекрываются
     конфигом установленного Telegram Desktop (tdata/config)."""
     home = os.path.expanduser("~")
-    xdg = os.environ.get("XDG_DATA_HOME", "")
     tdata = []
-    if xdg:
-        tdata.append(os.path.join(xdg, "TelegramDesktop", "tdata"))
-    tdata += [
-        os.path.join(home, ".local", "share", "TelegramDesktop", "tdata"),
-        os.path.join(home, ".var", "app", "org.telegram.desktop", "data", "TelegramDesktop", "tdata"),
-    ]
+    if sys.platform == "win32":
+        ap = os.environ.get("APPDATA", "")
+        if ap:
+            tdata.append(os.path.join(ap, "Telegram Desktop", "tdata"))
+    else:
+        xdg = os.environ.get("XDG_DATA_HOME", "")
+        if xdg:
+            tdata.append(os.path.join(xdg, "TelegramDesktop", "tdata"))
+        tdata += [
+            os.path.join(home, ".local", "share", "TelegramDesktop", "tdata"),
+            os.path.join(home, ".var", "app", "org.telegram.desktop", "data", "TelegramDesktop", "tdata"),
+        ]
     for d in tdata:
         r = read_config_override(d)
         if r:
