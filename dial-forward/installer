@@ -21,25 +21,27 @@ if [ "$(uname -s)" != "Linux" ]; then
   exit 1
 fi
 
+say "Архитектура: $(uname -m) ($(uname -s))"
+
 # ---------- 1. системные пакеты ----------
 install_system_deps() {
   if command -v apt-get >/dev/null 2>&1; then
     say "Debian/Ubuntu — apt"
     sudo apt-get update
-    sudo apt-get install -y python3 python3-venv python3-pip python3-gi python3-gi-cairo \
+    sudo apt-get install -y python3 python3-venv python3-pip python3-gi python3-gi-cairo python3-pil \
       gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0 gir1.2-gst-plugins-bad-1.0 \
       gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
       gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-nice gstreamer1.0-x \
       git curl unzip
   elif command -v dnf >/dev/null 2>&1; then
     say "Fedora/RHEL — dnf"
-    sudo dnf install -y python3 python3-devel python3-pip python3-gobject \
+    sudo dnf install -y python3 python3-devel python3-pip python3-gobject python3-pillow \
       gstreamer1-devel gstreamer1-plugins-base gstreamer1-plugins-good \
       gstreamer1-plugins-bad gstreamer1-plugins-ugly gstreamer1-libav gstreamer1-nice \
       git curl unzip
   elif command -v pacman >/dev/null 2>&1; then
     say "Arch — pacman"
-    sudo pacman -Sy --noconfirm python python-pip python-gobject gst-python \
+    sudo pacman -Sy --noconfirm python python-pip python-gobject python-pillow gst-python \
       gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly \
       gst-libav gst-plugin-pipewire git curl unzip
   else
@@ -70,11 +72,19 @@ fetch_code() {
 
 # ---------- 3. python-окружение ----------
 setup_env() {
-  say "Создаю виртуальное окружение..."
-  python3 -m venv "$APP_DIR/.venv"
+  say "Создаю виртуальное окружение (со системными gi/pillow)..."
+  # --system-site-packages: PyGObject и Pillow ставятся системными пакетами,
+  # потому что pip-колёс для них нет на всех архитектурах (напр. 32-бит).
+  python3 -m venv --system-site-packages "$APP_DIR/.venv"
   "$APP_DIR/.venv/bin/pip" install --upgrade pip >/dev/null
-  say "Устанавливаю python-библиотеки..."
-  "$APP_DIR/.venv/bin/pip" install -r "$APP_DIR/requirements.txt"
+  say "Устанавливаю python-библиотеки (pillow уже из системы)..."
+  if "$APP_DIR/.venv/bin/pip" install -r "$APP_DIR/requirements.txt" 2>/dev/null; then
+    :
+  else
+    warn "pip-установка частично не удалась — ставлю без pillow (системный уже есть)"
+    grep -v "^pillow" "$APP_DIR/requirements.txt" > /tmp/df-req.txt
+    "$APP_DIR/.venv/bin/pip" install -r /tmp/df-req.txt || true
+  fi
 }
 
 # ---------- 4. ярлык на рабочий стол ----------

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """TGRTC relay — Telegram MTProto сигналинг для P2P-звонков.
 
-- берёт api_id/api_hash из установленного Telegram Desktop (tdata/config или бинарник)
-- логинится как пользователь (MTProto, Telethon)
+- ключи MTProto встроены (tdata и Telegram Desktop не используются)
+- логинится как пользователь (MTProto, Telethon) — вход через код/QR
 - по команде создаёт приватную группу и обменивается в ней сигналингом
 - локальный WebSocket API (127.0.0.1:4545) для GUI-клиента
 """
@@ -10,8 +10,6 @@ import asyncio
 import json
 import logging
 import os
-import re
-import sys
 import time
 
 import websockets
@@ -29,54 +27,12 @@ OFFICIAL_API_HASH = "b18441a1ff607e10a989891a5462e627"
 WS_ADDR = ("127.0.0.1", 4545)
 
 
-# ---------- ключи (без Telegram Desktop) ----------
+# ---------- ключи (без tdata и без Telegram Desktop) ----------
 
 def extract_keys():
-    """Официальные ключи MTProto захардкожены; опционально перекрываются
-    конфигом установленного Telegram Desktop (tdata/config)."""
-    home = os.path.expanduser("~")
-    tdata = []
-    if sys.platform == "win32":
-        ap = os.environ.get("APPDATA", "")
-        if ap:
-            tdata.append(os.path.join(ap, "Telegram Desktop", "tdata"))
-    else:
-        xdg = os.environ.get("XDG_DATA_HOME", "")
-        if xdg:
-            tdata.append(os.path.join(xdg, "TelegramDesktop", "tdata"))
-        tdata += [
-            os.path.join(home, ".local", "share", "TelegramDesktop", "tdata"),
-            os.path.join(home, ".var", "app", "org.telegram.desktop", "data", "TelegramDesktop", "tdata"),
-        ]
-    for d in tdata:
-        r = read_config_override(d)
-        if r:
-            return {"api_id": r[0], "api_hash": r[1], "tdata": d, "source": "tdata/config"}
+    """Официальные ключи MTProto встроены. Ничего не читаем из tdata:
+    вход только через код/QR, сессия Telegram Desktop не используется."""
     return {"api_id": OFFICIAL_API_ID, "api_hash": OFFICIAL_API_HASH, "source": "builtin"}
-
-
-def read_config_override(dir_path):
-    path = os.path.join(dir_path, "config")
-    if not os.path.isfile(path):
-        return None
-    try:
-        with open(path, "r", encoding="utf-8", errors="replace") as f:
-            text = f.read()
-    except OSError:
-        return None
-    try:
-        data = json.loads(text)
-        api_id = int(data.get("api_id", 0))
-        api_hash = data.get("api_hash", "")
-        if api_id and api_hash:
-            return api_id, api_hash
-    except (ValueError, TypeError):
-        pass
-    m_id = re.search(r"api_id\s*[=:]?\s*(\d+)", text)
-    m_hash = re.search(r"api_hash\s*[=:]?\s*([0-9a-fA-F]{32})", text)
-    if m_id and m_hash:
-        return int(m_id.group(1)), m_hash.group(1)
-    return None
 
 
 # ---------- DC probing ----------
