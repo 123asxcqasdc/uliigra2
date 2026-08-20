@@ -91,18 +91,22 @@ fetch_code() {
 # ---------- 3. python-окружение ----------
 setup_env() {
   local venv_py="$APP_DIR/.venv/bin/python"
+  local PIP_RETRY="--retries 6 --timeout 20"
   say "Создаю виртуальное окружение..."
   "$PY" -m venv "$APP_DIR/.venv"
-  "$venv_py" -m pip install --upgrade pip >/dev/null
+  "$venv_py" -m pip install --upgrade pip $PIP_RETRY >/dev/null 2>&1 || true
   say "Устанавливаю python-библиотеки (pip)..."
-  if "$venv_py" -m pip install -r "$APP_DIR/requirements.txt" >/tmp/df-pip.log 2>&1; then
+  if "$venv_py" -m pip install $PIP_RETRY -r "$APP_DIR/requirements.txt" >/tmp/df-pip.log 2>&1; then
     :  # всё встало из колёс (amd64/arm64: pygobject и pillow есть на PyPI)
   else
-    warn "pip-колёса недоступны для этой архитектуры — использую системные gi/pillow"
+    warn "pip-колёса не встали — пробую системные gi/pillow (сеть или архитектура)"
     rm -rf "$APP_DIR/.venv"
     "$PY" -m venv --system-site-packages "$APP_DIR/.venv"
     grep -vE "^(pygobject|pillow)" "$APP_DIR/requirements.txt" > /tmp/df-req.txt
-    "$venv_py" -m pip install -r /tmp/df-req.txt || true
+    if ! "$venv_py" -m pip install $PIP_RETRY -r /tmp/df-req.txt >/tmp/df-pip2.log 2>&1; then
+      warn "python-библиотеки (telethon/websockets/qrcode/pystray) не установились — сеть нестабильна"
+      warn "лог: /tmp/df-pip2.log — после установки запустите ещё раз установщик"
+    fi
     if ! "$venv_py" -c 'import gi' >/dev/null 2>&1; then
       install_system "python3-gi python3-gi-cairo python3-pil" "python3-gobject python3-pillow" "python-gobject python-pillow"
     fi
@@ -120,6 +124,10 @@ setup_env() {
   fi
   if ! "$venv_py" -c 'import gi; gi.require_version("Gst", "1.0")' >/dev/null 2>&1; then
     warn "GStreamer так и не подключился. Проверьте вручную: python3 -c 'import gi; gi.require_version(\"Gst\",\"1.0\")'"
+  fi
+  # финальная проверка всех зависимостей
+  if ! "$venv_py" -c 'import gi, pystray, PIL, telethon, websockets, qrcode' >/dev/null 2>&1; then
+    warn "Часть python-библиотек не установилась (плохая сеть?). Перезапустите установщик — он продолжит с того же места."
   fi
 }
 
