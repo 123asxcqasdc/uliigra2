@@ -160,6 +160,8 @@ class DialApp:
         self.root.title("Dial Forward")
         self.root.geometry("640x700")
         self.root.resizable(False, False)
+        self._apply_icon()
+        self._init_tray()
         self.resp_q = queue.Queue()
         self.status_var = tk.StringVar(value="Подключение к relay...")
         self.self_id = None
@@ -198,10 +200,58 @@ class DialApp:
         asyncio.run(run())
 
     def _to_background(self):
-        log("[app] работаю в фоне, входящие принимаются")
-        self.root.iconify()
+        log("[app] работаю в фоне (трей), входящие принимаются")
+        self.root.withdraw()
+
+    def _show_window(self):
+        """Показать окно поверх остальных (входящий звонок, клик по трею)."""
+        self.root.deiconify()
+        self.root.lift()
+        self.root.attributes("-topmost", True)
+        self.root.after(1500, lambda: self.root.attributes("-topmost", False))
+        self.root.focus_force()
+
+    def _init_tray(self):
+        """Трей-иконка (pystray): при закрытии окно полностью скрывается,
+        приложение продолжает принимать входящие звонки."""
+        try:
+            import pystray
+            from PIL import Image
+        except ImportError:
+            self.tray = None
+            log("[app] трей недоступен (нет pystray/PIL) — окно сворачивается")
+            return
+        base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons")
+        path = os.path.join(base, "dial_forward.png")
+        if not os.path.isfile(path):
+            self.tray = None
+            log("[app] трей недоступен (нет иконки)")
+            return
+        image = Image.open(path)
+        menu = pystray.Menu(
+            pystray.MenuItem("Показать", lambda icon, item: self._show_window(),
+                             default=True),
+            pystray.MenuItem("Выйти", lambda icon, item: self._quit()),
+        )
+        self.tray = pystray.Icon("dial-forward", image, "Dial Forward", menu)
+        threading.Thread(target=self.tray.run, daemon=True).start()
+        log("[app] трей готов")
 
     # ---------- UI ----------
+
+    def _apply_icon(self):
+        """Иконка приложения вместо дефолтной (X) — PNG рядом с app.py."""
+        base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons")
+        for name in ("dial_forward.png", "dial_forward_64.png"):
+            path = os.path.join(base, name)
+            if os.path.isfile(path):
+                try:
+                    img = tk.PhotoImage(file=path)
+                    self.root.iconphoto(True, img)
+                    self._icon_ref = img
+                    return
+                except tk.TclError:
+                    pass
 
     def _build(self):
         outer = ttk.Frame(self.root, padding=12)
@@ -449,6 +499,11 @@ class DialApp:
     def _quit(self):
         if self.in_call:
             self.hub.end_call("выход")
+        if getattr(self, "tray", None) is not None:
+            try:
+                self.tray.stop()
+            except Exception:
+                pass
         self.root.destroy()
 
     def _logout(self):
@@ -830,8 +885,7 @@ class DialApp:
         self._log("входящий звонок" + (" (групповой)" if t == "ring" else ""))
         self.inc_title.set(payload.get("title") or "Входящий звонок")
         self._go("incoming")
-        self.root.deiconify()
-        self.root.lift()
+        self._show_window()
         if self.auto_answer:
             self.root.after(300, self._answer_incoming)
 
