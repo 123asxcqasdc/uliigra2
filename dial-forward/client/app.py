@@ -620,7 +620,7 @@ class DialApp:
                 "Обновление",
                 f"Доступна новая версия Dial Forward ({ver}).\n"
                 "Скачать и установить сейчас?"):
-            self.set_progress("Обновление...", maximum=0)
+            self.set_progress("Обновление...", indeterminate=True)
             self._do_update()
         else:
             self.upd_deferred = ver
