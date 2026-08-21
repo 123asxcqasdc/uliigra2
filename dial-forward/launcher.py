@@ -65,9 +65,24 @@ def popen_kwargs():
     return kw
 
 
+def app_already_running():
+    """True, если экземпляр приложения уже работает (порт-замок 4548)."""
+    import socket
+    try:
+        with socket.create_connection(("127.0.0.1", 4548), timeout=2) as c:
+            c.sendall(b"show\n")
+        return True
+    except OSError:
+        return False
+
+
 def main():
     py = pick_python()
     while True:
+        if app_already_running():
+            print("[launcher] Dial Forward уже запущен — показываю окно",
+                  flush=True)
+            return 0
         rc = run_once(py)
         if rc != 75:
             return rc
