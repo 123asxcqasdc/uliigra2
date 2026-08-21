@@ -18,19 +18,20 @@ set GITHUB_RAW=https://raw.githubusercontent.com/123asxcqasdc/uliigra2/main/dial
 set MIRROR_BASE=https://uliigra2.c6t.ru/dial-forward
 set APP_DIR=%USERPROFILE%\dial-forward
 set MSYS_ROOT=C:\msys64
+set MSYS_BASH=%MSYS_ROOT%\usr\bin\bash.exe
 set MINGW_BIN=%MSYS_ROOT%\mingw64\bin
 set PY_MINGW=%MINGW_BIN%\python.exe
 
 echo [installer] Installing Dial Forward (P2P calls over Telegram)
 
 rem ---------- 1. MSYS2 + python + PyGObject + GStreamer ----------
-if exist "%PY_MINGW%" goto have_msys
+if exist "%MSYS_BASH%" goto have_msys
 
 echo [installer] Installing MSYS2 (winget)...
 winget install --id MSYS2.MSYS2 -e --accept-source-agreements --accept-package-agreements
-if exist "%PY_MINGW%" goto have_msys
+if exist "%MSYS_BASH%" goto have_msys
 
-echo [installer] ERROR: MSYS2 not installed (no winget or install failed).
+echo [installer] ERROR: MSYS2 is not installed (no winget or install failed).
 echo [installer] Install MSYS2 manually from https://www.msys2.org into %MSYS_ROOT%
 echo [installer] and run installer.bat again.
 pause
@@ -38,11 +39,18 @@ exit /b 1
 
 :have_msys
 echo [installer] Installing python, PyGObject and GStreamer (MSYS2 packages)...
-"%MSYS_ROOT%\usr\bin\bash.exe" -lc "pacman -S --noconfirm --needed mingw-w64-x86_64-python mingw-w64-x86_64-python-pip mingw-w64-x86_64-python-gobject mingw-w64-x86_64-python-tkinter mingw-w64-x86_64-gstreamer mingw-w64-x86_64-gst-plugins-base mingw-w64-x86_64-gst-plugins-good mingw-w64-x86_64-gst-plugins-bad mingw-w64-x86_64-gst-plugins-ugly mingw-w64-x86_64-gst-libav git curl"
+"%MSYS_BASH%" -lc "pacman -Sy --noconfirm --needed mingw-w64-x86_64-python mingw-w64-x86_64-python-pip mingw-w64-x86_64-python-gobject mingw-w64-x86_64-python-tkinter mingw-w64-x86_64-gstreamer mingw-w64-x86_64-gst-plugins-base mingw-w64-x86_64-gst-plugins-good mingw-w64-x86_64-gst-plugins-bad mingw-w64-x86_64-gst-plugins-ugly mingw-w64-x86_64-gst-libav git curl"
 if not errorlevel 1 goto msys_ok
 echo [installer] WARNING: pacman returned an error - packages may already be installed.
 :msys_ok
 
+if exist "%PY_MINGW%" goto pip_step
+echo [installer] ERROR: %PY_MINGW% not found after pacman.
+echo [installer] Try running: %MSYS_BASH% -lc "pacman -Sy mingw-w64-x86_64-python"
+pause
+exit /b 1
+
+:pip_step
 echo [installer] Installing python libraries (pip)...
 "%PY_MINGW%" -m pip install --upgrade pip
 "%PY_MINGW%" -m pip install telethon websockets qrcode pillow pystray
