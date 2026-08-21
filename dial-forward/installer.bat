@@ -63,17 +63,33 @@ pause
 exit /b 1
 
 :venv_step
-rem MSYS2 python is externally managed (PEP 668): use a venv.
+rem MSYS2 python is externally managed (PEP 668). Try a venv first;
+rem mingw-python may lay it out as Scripts\ or bin\ - check both.
 rem Pillow/PyGObject come from MSYS2 packages, so share site-packages.
 echo [installer] Creating virtual environment...
-if exist "%APP_DIR%\.venv\Scripts\python.exe" goto have_venv
-"%PY_MINGW%" -m venv --system-site-packages "%APP_DIR%\.venv"
-:have_venv
-set VPY=%APP_DIR%\.venv\Scripts\python.exe
+"%PY_MINGW%" -m venv --system-site-packages "%APP_DIR%\.venv" >nul 2>&1
+if exist "%APP_DIR%\.venv\Scripts\python.exe" goto venv_scripts
+if exist "%APP_DIR%\.venv\bin\python.exe" goto venv_bin
 
+rem venv unusable - fall back to system python with PEP 668 override
+echo [installer] WARNING: venv is not usable, using MSYS2 python directly.
+set VPY=%PY_MINGW%
+set PIP_FLAGS=--break-system-packages
+goto have_vpy
+
+:venv_scripts
+set VPY=%APP_DIR%\.venv\Scripts\python.exe
+set PIP_FLAGS=
+goto have_vpy
+
+:venv_bin
+set VPY=%APP_DIR%\.venv\bin\python.exe
+set PIP_FLAGS=
+
+:have_vpy
 echo [installer] Installing python libraries (pip)...
-"%VPY%" -m pip install --upgrade pip
-"%VPY%" -m pip install telethon websockets qrcode pystray
+"%VPY%" -m pip install --upgrade pip %PIP_FLAGS%
+"%VPY%" -m pip install %PIP_FLAGS% telethon websockets qrcode pystray
 if not errorlevel 1 goto pip_ok
 echo [installer] ERROR: python libraries install failed. Check internet and run installer.bat again.
 pause
