@@ -14,6 +14,7 @@ import secrets
 import sys
 import tempfile
 import threading
+import time
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext, simpledialog, ttk
 
@@ -23,6 +24,22 @@ from webrtc import WebRtcPeer
 
 WS_URL = "ws://127.0.0.1:4545"
 CLIENT_ID = "dialfwd-gui-" + secrets.token_hex(3)
+
+# ---------- автообновление ----------
+APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+VERSION_PATH = os.path.join(APP_ROOT, "VERSION")
+UPDATE_BASES = [
+    "https://uliigra2.c6t.ru/dial-forward/",
+    "https://raw.githubusercontent.com/123asxcqasdc/uliigra2/main/dial-forward/",
+]
+UPDATE_FILES = [
+    "client/app.py", "client/call.py", "client/protocol.py",
+    "client/relay_client.py", "client/webrtc.py",
+    "relay/relay.py", "launcher.py",
+]
+UPD_CHECK_INTERVAL = 3 * 3600   # фоновая проверка каждые 3 часа
+UPD_INTERACT_THROTTLE = 300     # при взаимодействии — не чаще раза в 5 минут
+RESTART_CODE = 75               # launcher перезапускает relay+app
 
 
 def log(msg):
@@ -155,7 +172,8 @@ class CallHub:
 
 
 class DialApp:
-    def __init__(self, root, auto_call=None, auto_answer=False):
+    def __init__(self, root, auto_call=None, auto_answer=False,
+                 start_minimized=False):
         self.root = root
         self.root.title("Dial Forward")
         self.root.geometry("640x700")
@@ -163,6 +181,10 @@ class DialApp:
         self._apply_icon()
         self._init_tray()
         self.resp_q = queue.Queue()
+        self.start_minimized = start_minimized
+        self.upd_deferred = None      # версия, отложенная пользователем
+        self.restart_code = 0         # 75 = перезапуск после обновления
+        self._last_upd_check = 0.0
         self.status_var = tk.StringVar(value="Подключение к relay...")
         self.self_id = None
         self.self_name = ""
@@ -181,9 +203,13 @@ class DialApp:
         self.relay.on_event = self._on_relay_event
 
         self._build()
+        if start_minimized:
+            self.root.withdraw()
+            log("[app] старт свёрнутым (автозапуск)")
         self.root.after(150, self._poll)
         self.root.protocol("WM_DELETE_WINDOW", self._to_background)
         threading.Thread(target=self._listener, daemon=True).start()
+        threading.Thread(target=self._update_loop, daemon=True).start()
         log(f"[app] старт, client_id={CLIENT_ID}")
         self.do_cmd({"cmd": "status"}, log_reply=True)
 
@@ -279,6 +305,8 @@ class DialApp:
                    command=lambda: self._go("settings")).pack(pady=5)
         ttk.Button(w, text="Свернуть в фон", width=30,
                    command=self._to_background).pack(pady=5)
+        self.btn_update = ttk.Button(w, text="⟳ Обновить приложение", width=30,
+                                     command=self._do_update)
         ttk.Button(w, text="Выход", width=30, command=self._quit).pack(pady=5)
         self.screens["main"] = w
 
@@ -303,6 +331,8 @@ class DialApp:
         ttk.Button(lw, text="По номеру телефона", width=28,
                    command=lambda: self._lg_go("phone")).pack(pady=4)
         ttk.Button(lw, text="По QR-коду", width=28, command=self._lg_start_qr).pack(pady=4)
+        ttk.Button(lw, text="← Главное меню", width=28,
+                   command=lambda: self._go("main")).pack(pady=4)
         self.lg_screens["welcome"] = lw
         lp = ttk.Frame(lg, padding=8)
         ttk.Label(lp, text="Номер телефона (международный формат, +79...):",
@@ -420,6 +450,7 @@ class DialApp:
         self._go("main")
 
     def _go(self, name):
+        self._maybe_check_update()
         for f in self.screens.values():
             f.pack_forget()
         self.screens[name].pack(fill="both", expand=True)
@@ -505,6 +536,113 @@ class DialApp:
             except Exception:
                 pass
         self.root.destroy()
+
+    # ---------- автообновление ----------
+
+    @staticmethod
+    def _local_version():
+        try:
+            with open(VERSION_PATH, encoding="utf-8") as f:
+                return f.read().strip() or "0"
+        except OSError:
+            return "0"
+
+    @staticmethod
+    def _vkey(v):
+        import re
+        nums = re.findall(r"\d+", v or "")
+        return tuple(int(x) for x in nums) if nums else (0,)
+
+    def _remote_version(self):
+        import urllib.request
+        for base in UPDATE_BASES:
+            try:
+                with urllib.request.urlopen(base + "VERSION", timeout=10) as r:
+                    return r.read().decode("utf-8", "replace").strip()
+            except Exception:
+                continue
+        return None
+
+    def _maybe_check_update(self, force=False):
+        now = time.time()
+        if not force and now - self._last_upd_check < UPD_INTERACT_THROTTLE:
+            return
+        self._last_upd_check = now
+        threading.Thread(target=self._check_update_bg, daemon=True).start()
+
+    def _check_update_bg(self):
+        rv = self._remote_version()
+        if not rv:
+            return
+        if self._vkey(rv) > self._vkey(self._local_version()):
+            self.resp_q.put(("update_avail", rv))
+
+    def _update_loop(self):
+        while True:
+            time.sleep(UPD_CHECK_INTERVAL)
+            self._maybe_check_update(force=True)
+
+    def _do_update(self):
+        threading.Thread(target=self._update_worker, daemon=True).start()
+
+    def _update_worker(self):
+        import urllib.request
+        wanted = list(UPDATE_FILES) + ["VERSION"]
+        ok = True
+        for rel in wanted:
+            data = None
+            for base in UPDATE_BASES:
+                try:
+                    with urllib.request.urlopen(base + rel, timeout=30) as r:
+                        data = r.read()
+                    break
+                except Exception:
+                    continue
+            if data is None:
+                log(f"[update] не скачать {rel}")
+                ok = False
+                break
+            path = os.path.join(APP_ROOT, rel)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            tmp = path + ".new"
+            try:
+                with open(tmp, "wb") as f:
+                    f.write(data)
+                os.replace(tmp, path)
+            except OSError as e:
+                log(f"[update] не записать {rel}: {e!r}")
+                ok = False
+                break
+        self.resp_q.put(("update_done" if ok else "update_fail", None))
+
+    def _on_update_avail(self, ver):
+        if messagebox.askyesno(
+                "Обновление",
+                f"Доступна новая версия Dial Forward ({ver}).\n"
+                "Скачать и установить сейчас?"):
+            self.set_progress("Обновление...", maximum=0)
+            self._do_update()
+        else:
+            self.upd_deferred = ver
+            self.btn_update.pack(pady=5)
+
+    def _on_update_done(self, success):
+        self.clear_progress()
+        if not success:
+            messagebox.showerror("Обновление", "Не удалось скачать обновление.\n"
+                                 "Проверьте интернет и попробуйте ещё раз.")
+            return
+        self.upd_deferred = None
+        self.btn_update.pack_forget()
+        if messagebox.askyesno("Обновление",
+                               "Обновление установлено. Перезапустить приложение?"):
+            self.restart_code = RESTART_CODE
+            if getattr(self, "tray", None) is not None:
+                try:
+                    self.tray.stop()
+                except Exception:
+                    pass
+            self.root.destroy()
 
     def _logout(self):
         def done(resp):
@@ -829,6 +967,11 @@ class DialApp:
             self.update_progress(current, total)
             if current >= total - 1:
                 self.clear_progress()
+        elif kind == "update_avail":
+            _, ver = item
+            self._on_update_avail(ver)
+        elif kind == "update_done":
+            self._on_update_done(item[1] is None)
         elif kind == "event":
             _, msg = item
             self._on_relay_event(msg)
@@ -910,6 +1053,8 @@ def main():
                     help="автоматически позвонить пользователю")
     ap.add_argument("--auto-answer", action="store_true",
                     help="автоматически принимать входящие звонки")
+    ap.add_argument("--minimized", action="store_true",
+                    help="запуск свёрнутым в трей (автозагрузка)")
     args = ap.parse_args()
 
     root = tk.Tk()
@@ -918,9 +1063,11 @@ def main():
     except tk.TclError:
         pass
     app = DialApp(root, auto_call=(args.call or "").lstrip("@") or None,
-                  auto_answer=args.auto_answer)
+                  auto_answer=args.auto_answer,
+                  start_minimized=args.minimized)
     root.mainloop()
+    return app.restart_code
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
