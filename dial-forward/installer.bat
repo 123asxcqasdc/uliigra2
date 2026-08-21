@@ -39,34 +39,45 @@ exit /b 1
 
 :have_msys
 echo [installer] Installing python and GStreamer (MSYS2 packages)...
-"%MSYS_BASH%" -lc "pacman -Sy --noconfirm --needed mingw-w64-x86_64-python mingw-w64-x86_64-gstreamer mingw-w64-x86_64-gst-plugins-base mingw-w64-x86_64-gst-plugins-good mingw-w64-x86_64-gst-plugins-bad mingw-w64-x86_64-gst-plugins-ugly mingw-w64-x86_64-gst-libav git curl"
+set PACMAN_PKGS=mingw-w64-x86_64-python mingw-w64-x86_64-gstreamer mingw-w64-x86_64-gst-plugins-base mingw-w64-x86_64-gst-plugins-good mingw-w64-x86_64-gst-plugins-bad mingw-w64-x86_64-gst-plugins-ugly mingw-w64-x86_64-gst-libav git curl
+set /a TRY=0
+:pac_try
+set /a TRY+=1
+"%MSYS_BASH%" -lc "pacman -Sy --noconfirm --needed %PACMAN_PKGS%"
 if not errorlevel 1 goto msys_ok
-echo [installer] WARNING: pacman returned an error - packages may already be installed.
+if %TRY% geq 3 goto msys_fail
+echo [installer] pacman failed (attempt %TRY%/3), retrying...
+goto pac_try
+:msys_fail
+echo [installer] WARNING: pacman failed after 3 attempts - continuing.
+echo [installer] Downloaded packages are cached, run installer.bat again to resume.
 :msys_ok
 
 rem extra packages one-by-one: a missing target must not block the rest
-for %%p in (mingw-w64-x86_64-python-pip mingw-w64-x86_64-python-gobject mingw-w64-x86_64-tk) do "%MSYS_BASH%" -lc "pacman -S --noconfirm --needed %%p"
+for %%p in (mingw-w64-x86_64-python-pip mingw-w64-x86_64-python-gobject mingw-w64-x86_64-tk mingw-w64-x86_64-python-pillow) do "%MSYS_BASH%" -lc "pacman -S --noconfirm --needed %%p"
 
-if exist "%PY_MINGW%" goto pip_step
+if exist "%PY_MINGW%" goto venv_step
 echo [installer] ERROR: %PY_MINGW% not found after pacman.
 echo [installer] Try running: %MSYS_BASH% -lc "pacman -Sy mingw-w64-x86_64-python"
 pause
 exit /b 1
 
-:pip_step
-"%PY_MINGW%" -m pip --version >nul 2>&1
-if not errorlevel 1 goto have_pip
-echo [installer] Bootstrapping pip via ensurepip...
-"%PY_MINGW%" -m ensurepip --upgrade
-:have_pip
+:venv_step
+rem MSYS2 python is externally managed (PEP 668): use a venv.
+rem Pillow/PyGObject come from MSYS2 packages, so share site-packages.
+echo [installer] Creating virtual environment...
+if exist "%APP_DIR%\.venv\Scripts\python.exe" goto have_venv
+"%PY_MINGW%" -m venv --system-site-packages "%APP_DIR%\.venv"
+:have_venv
+set VPY=%APP_DIR%\.venv\Scripts\python.exe
+
 echo [installer] Installing python libraries (pip)...
-"%PY_MINGW%" -m pip install --upgrade pip
-"%PY_MINGW%" -m pip install telethon websockets qrcode pillow pystray
+"%VPY%" -m pip install --upgrade pip
+"%VPY%" -m pip install telethon websockets qrcode pystray
 if not errorlevel 1 goto pip_ok
-echo [installer] ERROR: python libraries install failed. Check internet and run again.
+echo [installer] ERROR: python libraries install failed. Check internet and run installer.bat again.
 pause
 exit /b 1
-
 :pip_ok
 
 rem ---------- 2. app code ----------
@@ -94,7 +105,7 @@ echo @echo off> "%APP_DIR%\start.bat"
 >>"%APP_DIR%\start.bat" echo set PATH=%MINGW_BIN%;%%PATH%%
 >>"%APP_DIR%\start.bat" echo set GI_TYPELIB_PATH=%MSYS_ROOT%\mingw64\lib\girepository-1.0
 >>"%APP_DIR%\start.bat" echo set GST_PLUGIN_PATH=%MSYS_ROOT%\mingw64\lib\gstreamer-1.0
->>"%APP_DIR%\start.bat" echo "%PY_MINGW%" "%APP_DIR%\launcher.py" %%*
+>>"%APP_DIR%\start.bat" echo "%VPY%" "%APP_DIR%\launcher.py" %%*
 
 rem ---------- 4. desktop shortcut with icon ----------
 echo [installer] Creating desktop shortcut...
