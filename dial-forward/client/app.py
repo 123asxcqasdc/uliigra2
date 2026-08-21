@@ -40,6 +40,34 @@ UPDATE_FILES = [
 UPD_CHECK_INTERVAL = 3 * 3600   # фоновая проверка каждые 3 часа
 UPD_INTERACT_THROTTLE = 300     # при взаимодействии — не чаще раза в 5 минут
 RESTART_CODE = 75               # launcher перезапускает relay+app
+APP_LOCK_PORT = 4548            # single-instance: локальный порт-замок
+
+
+def acquire_app_lock():
+    """Вернёт слушающий сокет, если мы первый экземпляр; иначе None."""
+    import socket
+    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        srv.bind(("127.0.0.1", APP_LOCK_PORT))
+        srv.listen(4)
+        return srv
+    except OSError:
+        try:
+            srv.close()
+        except OSError:
+            pass
+        return None
+
+
+def notify_running_app():
+    """Попросить уже запущенный экземпляр показать окно."""
+    import socket
+    try:
+        with socket.create_connection(("127.0.0.1", APP_LOCK_PORT),
+                                      timeout=2) as c:
+            c.sendall(b"show\n")
+    except OSError:
+        pass
 
 
 def log(msg):
@@ -173,7 +201,7 @@ class CallHub:
 
 class DialApp:
     def __init__(self, root, auto_call=None, auto_answer=False,
-                 start_minimized=False):
+                 start_minimized=False, lock_srv=None):
         self.root = root
         self.root.title("Dial Forward")
         self.root.geometry("640x700")
@@ -185,6 +213,7 @@ class DialApp:
         self.upd_deferred = None      # версия, отложенная пользователем
         self.restart_code = 0         # 75 = перезапуск после обновления
         self._last_upd_check = 0.0
+        self.lock_srv = lock_srv
         self.status_var = tk.StringVar(value="Подключение к relay...")
         self.self_id = None
         self.self_name = ""
@@ -210,6 +239,8 @@ class DialApp:
         self.root.protocol("WM_DELETE_WINDOW", self._to_background)
         threading.Thread(target=self._listener, daemon=True).start()
         threading.Thread(target=self._update_loop, daemon=True).start()
+        if lock_srv is not None:
+            threading.Thread(target=self._lock_listen, daemon=True).start()
         log(f"[app] старт, client_id={CLIENT_ID}")
         self.do_cmd({"cmd": "status"}, log_reply=True)
 
@@ -581,6 +612,22 @@ class DialApp:
         while True:
             time.sleep(UPD_CHECK_INTERVAL)
             self._maybe_check_update(force=True)
+
+    def _lock_listen(self):
+        """Слушаем порт-замок: второй экземпляр просит показать окно."""
+        srv = self.lock_srv
+        while True:
+            try:
+                conn, _ = srv.accept()
+            except OSError:
+                break
+            with conn:
+                try:
+                    data = conn.recv(64)
+                except OSError:
+                    continue
+            if b"show" in data:
+                self.resp_q.put(("show_window", None))
 
     def _do_update(self):
         threading.Thread(target=self._update_worker, daemon=True).start()
@@ -972,6 +1019,8 @@ class DialApp:
             self._on_update_avail(ver)
         elif kind == "update_done":
             self._on_update_done(item[1] is None)
+        elif kind == "show_window":
+            self._show_window()
         elif kind == "event":
             _, msg = item
             self._on_relay_event(msg)
@@ -1057,6 +1106,12 @@ def main():
                     help="запуск свёрнутым в трей (автозагрузка)")
     args = ap.parse_args()
 
+    lock = acquire_app_lock()
+    if lock is None:
+        log("[app] Dial Forward уже запущен — показываю существующее окно")
+        notify_running_app()
+        return 0
+
     root = tk.Tk()
     try:
         ttk.Style().theme_use("clam")
@@ -1064,7 +1119,7 @@ def main():
         pass
     app = DialApp(root, auto_call=(args.call or "").lstrip("@") or None,
                   auto_answer=args.auto_answer,
-                  start_minimized=args.minimized)
+                  start_minimized=args.minimized, lock_srv=lock)
     root.mainloop()
     return app.restart_code
 
