@@ -58,8 +58,23 @@ def wait_ws(seconds=40):
     return False
 
 
+def popen_kwargs():
+    kw = {}
+    if os.name == "nt":
+        kw["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    return kw
+
+
 def main():
     py = pick_python()
+    while True:
+        rc = run_once(py)
+        if rc != 75:
+            return rc
+        print("[launcher] обновление установлено — перезапускаю...", flush=True)
+
+
+def run_once(py):
     relay_was_up = ws_alive()
     relay_proc = None
 
@@ -68,7 +83,8 @@ def main():
         relay_proc = subprocess.Popen(
             [py, os.path.join(RELAY_DIR, "relay.py")],
             cwd=RELAY_DIR,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            **popen_kwargs())
         if not wait_ws():
             print("[launcher] relay не поднялся за 40с — проверьте интернет/Telegram", flush=True)
             relay_proc.terminate()
@@ -83,10 +99,14 @@ def main():
     print("[launcher] запускаю Dial Forward...", flush=True)
     app_args = [py, os.path.join(CLIENT_DIR, "app.py")] + sys.argv[1:]
     try:
-        rc = subprocess.run(app_args, cwd=CLIENT_DIR).returncode
+        rc = subprocess.run(app_args, cwd=CLIENT_DIR,
+                            **popen_kwargs()).returncode
     finally:
         if relay_proc is not None and not relay_was_up:
-            print("[launcher] приложение закрыто — останавливаю relay", flush=True)
+            if rc == 75:
+                print("[launcher] перезапуск — перезапускаю relay", flush=True)
+            else:
+                print("[launcher] приложение закрыто — останавливаю relay", flush=True)
             relay_proc.terminate()
             try:
                 relay_proc.wait(5)
