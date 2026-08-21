@@ -107,6 +107,8 @@ call :fetch "relay/relay.py" "%APP_DIR%\relay\relay.py"
 call :fetch "launcher.py" "%APP_DIR%\launcher.py"
 call :fetch "requirements.txt" "%APP_DIR%\requirements.txt"
 call :fetch "icons/dial_forward.png" "%APP_DIR%\client\icons\dial_forward.png"
+call :fetch "icons/dial_forward.ico" "%APP_DIR%\client\icons\dial_forward.ico"
+call :fetch "VERSION" "%APP_DIR%\VERSION"
 if not errorlevel 1 goto dl_ok
 
 :dlfail
@@ -123,16 +125,27 @@ echo @echo off> "%APP_DIR%\start.bat"
 >>"%APP_DIR%\start.bat" echo set GST_PLUGIN_PATH=%MSYS_ROOT%\mingw64\lib\gstreamer-1.0
 >>"%APP_DIR%\start.bat" echo "%VPY%" "%APP_DIR%\launcher.py" %%*
 
-rem ---------- 4. desktop shortcut with icon ----------
-echo [installer] Creating desktop shortcut...
-powershell -NoProfile -Command "$ws=New-Object -ComObject WScript.Shell;$d=[Environment]::GetFolderPath('Desktop');$l=$ws.CreateShortcut((Join-Path $d 'Dial Forward.lnk'));$l.TargetPath='%APP_DIR%\start.bat';$l.WorkingDirectory='%APP_DIR%';$l.IconLocation='%APP_DIR%\client\icons\dial_forward.png';$l.Description='Dial Forward - P2P calls over Telegram';$l.Save()"
-if not errorlevel 1 goto lnk_ok
-echo [installer] WARNING: shortcut was not created - run %APP_DIR%\start.bat instead.
-:lnk_ok
+rem ---------- 4. run.vbs: launch start.bat with NO console window ----------
+echo Set sh=CreateObject("WScript.Shell")> "%APP_DIR%\run.vbs"
+>>"%APP_DIR%\run.vbs" echo sh.CurrentDirectory="%APP_DIR%"
+>>"%APP_DIR%\run.vbs" echo a="":If WScript.Arguments.Count^>0 Then a=" " ^& WScript.Arguments(0)
+>>"%APP_DIR%\run.vbs" echo sh.Run Chr(34)^&"%APP_DIR%\start.bat"^&Chr(34)^&a,0,False
+
+rem ---------- 5. shortcuts: desktop + start menu + autostart ----------
+echo [installer] Creating shortcuts...
+call :mklnk "%APP_DIR%\run.vbs" "" "Dial Forward.lnk" desktop
+call :mklnk "%APP_DIR%\run.vbs" "" "Dial Forward.lnk" startmenu
+call :mklnk "%APP_DIR%\run.vbs" "--minimized" "Dial Forward.lnk" startup
 
 echo [installer] Done! Run: 'Dial Forward' shortcut on your desktop
 echo [installer] or: %APP_DIR%\start.bat
 pause
+exit /b 0
+
+rem ---------- mklnk subroutine: %1 target, %2 args, %3 name, %4 folder ----------
+:mklnk
+powershell -NoProfile -Command "$ws=New-Object -ComObject WScript.Shell;$d=[Environment]::GetFolderPath('Desktop');if('%~4' -eq 'startmenu'){$d=[Environment]::GetFolderPath('StartMenu')+'\Programs'}else{if('%~4' -eq 'startup'){$d=[Environment]::GetFolderPath('Startup')}};$l=$ws.CreateShortcut((Join-Path $d '%~3'));$l.TargetPath='%~1';if('%~2'){$l.Arguments='%~2'};$l.WorkingDirectory='%APP_DIR%';$l.IconLocation='%APP_DIR%\client\icons\dial_forward.ico,0';$l.Description='Dial Forward - P2P calls over Telegram';$l.Save()"
+if errorlevel 1 echo [installer] WARNING: shortcut '%~3' (%~4) was not created.
 exit /b 0
 
 rem ---------- download subroutine: %1 remote path, %2 local file ----------
