@@ -38,11 +38,14 @@ pause
 exit /b 1
 
 :have_msys
-echo [installer] Installing python, PyGObject and GStreamer (MSYS2 packages)...
-"%MSYS_BASH%" -lc "pacman -Sy --noconfirm --needed mingw-w64-x86_64-python mingw-w64-x86_64-python-pip mingw-w64-x86_64-python-gobject mingw-w64-x86_64-python-tkinter mingw-w64-x86_64-gstreamer mingw-w64-x86_64-gst-plugins-base mingw-w64-x86_64-gst-plugins-good mingw-w64-x86_64-gst-plugins-bad mingw-w64-x86_64-gst-plugins-ugly mingw-w64-x86_64-gst-libav git curl"
+echo [installer] Installing python and GStreamer (MSYS2 packages)...
+"%MSYS_BASH%" -lc "pacman -Sy --noconfirm --needed mingw-w64-x86_64-python mingw-w64-x86_64-gstreamer mingw-w64-x86_64-gst-plugins-base mingw-w64-x86_64-gst-plugins-good mingw-w64-x86_64-gst-plugins-bad mingw-w64-x86_64-gst-plugins-ugly mingw-w64-x86_64-gst-libav git curl"
 if not errorlevel 1 goto msys_ok
 echo [installer] WARNING: pacman returned an error - packages may already be installed.
 :msys_ok
+
+rem extra packages one-by-one: a missing target must not block the rest
+for %%p in (mingw-w64-x86_64-python-pip mingw-w64-x86_64-python-gobject mingw-w64-x86_64-tk) do "%MSYS_BASH%" -lc "pacman -S --noconfirm --needed %%p"
 
 if exist "%PY_MINGW%" goto pip_step
 echo [installer] ERROR: %PY_MINGW% not found after pacman.
@@ -51,6 +54,11 @@ pause
 exit /b 1
 
 :pip_step
+"%PY_MINGW%" -m pip --version >nul 2>&1
+if not errorlevel 1 goto have_pip
+echo [installer] Bootstrapping pip via ensurepip...
+"%PY_MINGW%" -m ensurepip --upgrade
+:have_pip
 echo [installer] Installing python libraries (pip)...
 "%PY_MINGW%" -m pip install --upgrade pip
 "%PY_MINGW%" -m pip install telethon websockets qrcode pillow pystray
