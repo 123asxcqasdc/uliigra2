@@ -2,10 +2,15 @@
 """Клиент relay: WS-команды (короткие соединения) + постоянный приём событий."""
 import asyncio
 import json
+import time
 
 import websockets
 
 from protocol import decode
+
+
+def _ts():
+    return time.strftime("%H:%M:%S")
 
 
 class RelayClient:
@@ -19,7 +24,9 @@ class RelayClient:
 
     async def cmd(self, c: str, **kw) -> dict:
         try:
-            async with websockets.connect(self.url, max_size=8 << 20) as ws:
+            t0 = time.monotonic()
+            async with websockets.connect(self.url, max_size=8 << 20,
+                                          open_timeout=5) as ws:
                 await ws.send(json.dumps({"cmd": c, **kw}))
                 while True:
                     raw = await asyncio.wait_for(ws.recv(), 40)
@@ -27,9 +34,14 @@ class RelayClient:
                     if "event" in msg:
                         self._dispatch(msg)
                     else:
+                        print(f"[{_ts()}][relay_client] cmd({c}) -> "
+                              f"{'ok' if msg.get('ok') else 'FAIL ' + str(msg.get('error'))} "
+                              f"за {(time.monotonic() - t0) * 1000:.0f} мс",
+                              flush=True)
                         return msg
         except Exception as e:
-            print(f"[relay_client] cmd({c}): {e!r}", flush=True)
+            print(f"[{_ts()}][relay_client] cmd({c}): {type(e).__name__}: {e}",
+                  flush=True)
             raise
 
     # ---- события (постоянное соединение) ----
@@ -52,18 +64,31 @@ class RelayClient:
                 print(f"[relay_client] обработка сообщения: {e!r}", flush=True)
 
     async def listen(self):
+        attempt = 0
         while True:
             try:
-                async with websockets.connect(self.url, max_size=8 << 20) as ws:
-                    print("[relay_client] listen: подключён", flush=True)
+                async with websockets.connect(self.url, max_size=8 << 20,
+                                              open_timeout=5,
+                                              ping_interval=20) as ws:
+                    if attempt:
+                        print(f"[{_ts()}][relay_client] listen: подключён "
+                              f"после {attempt} неудач", flush=True)
+                    else:
+                        print(f"[{_ts()}][relay_client] listen: подключён",
+                              flush=True)
+                    attempt = 0
                     async for raw in ws:
                         try:
                             self._dispatch(json.loads(raw))
                         except json.JSONDecodeError:
                             pass
             except Exception as e:
-                print(f"[relay_client] listen: ошибка {e!r}", flush=True)
-                await asyncio.sleep(3)
+                attempt += 1
+                delay = min(3 * attempt, 15)
+                print(f"[{_ts()}][relay_client] listen: ошибка "
+                      f"{type(e).__name__}: {e} — повтор через {delay}с "
+                      f"(попытка {attempt})", flush=True)
+                await asyncio.sleep(delay)
 
     # ---- хелперы ----
 
