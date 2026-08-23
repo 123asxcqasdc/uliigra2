@@ -69,9 +69,20 @@ say "python: $PY ($($PY --version 2>&1))"
 
 # ---------- 2. код приложения ----------
 fetch_file() {  # fetch_file <remote_path> <local_path>
-  if ! curl -fsSL --max-time 30 "$GITHUB_RAW/$1" -o "$2"; then
-    curl -fsSL --max-time 30 "$MIRROR_BASE/$1" -o "$2"
+  if ! curl -fsSL --max-time 30 --retry 4 --retry-delay 2 \
+       "$GITHUB_RAW/$1" -o "$2"; then
+    curl -fsSL --max-time 30 --retry 4 --retry-delay 2 \
+         "$MIRROR_BASE/$1" -o "$2"
   fi
+}
+
+stop_instance() {
+  # мягко останавливаем ранее запущенное приложение,
+  # чтобы после установки работал свежий код (а не старый из памяти)
+  pkill -f "$APP_DIR/launcher.py" 2>/dev/null || true
+  pkill -f "$APP_DIR/client/app.py" 2>/dev/null || true
+  pkill -f "$APP_DIR/relay/relay.py" 2>/dev/null || true
+  sleep 1
 }
 
 fetch_code() {
@@ -175,9 +186,12 @@ EOF
 }
 
 say "Dial Forward installer"
+stop_instance
 fetch_code
+say "Версия: $(cat "$APP_DIR/VERSION" 2>/dev/null || echo '?')"
 setup_env
 create_shortcut
 create_autostart
 say "Готово! Запуск: $APP_DIR/.venv/bin/python $APP_DIR/launcher.py"
 say "или через меню приложений: Dial Forward"
+say "Обновления приложение проверяет само и предложит скачать."
