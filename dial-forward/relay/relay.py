@@ -79,11 +79,45 @@ class Relay:
         self.code_hash = None
         self.calls = {}
         self.seen_ids = {}
+        self.qr = None
+        self.qr_refresh_count = 0
+        self._last_conn_state = None   # для broadcast только при изменении
 
     async def start(self):
-        asyncio.create_task(self._connect())
+        asyncio.create_task(self._connection_loop())
 
-    async def _connect(self):
+    def _conn_state(self):
+        """Текущее состояние канала к Telegram."""
+        try:
+            connected = bool(self.client and self.client.is_connected())
+        except Exception:
+            connected = False
+        return {"connected": connected,
+                "authorized": self.self_id is not None}
+
+    async def _push_conn_state(self, force=False):
+        st = self._conn_state()
+        key = (st["connected"], st["authorized"])
+        if force or key != self._last_conn_state:
+            self._last_conn_state = key
+            log.info("conn state -> connected=%s authorized=%s", *key)
+            await self.broadcast({"event": "conn", **st})
+
+    async def _connection_loop(self):
+        """Живёт всегда: подключает Telegram и чинит разрывы соединения."""
+        while True:
+            await self._connect_once()
+            # следим за соединением; при разрыве — переподключаемся
+            while True:
+                await asyncio.sleep(5)
+                st = self._conn_state()
+                if not st["connected"]:
+                    log.warning("telegram disconnect обнаружен — переподключаюсь")
+                    await self.broadcast({"event": "tg_disconnected"})
+                    break
+                await self._push_conn_state()
+
+    async def _connect_once(self):
         while True:
             fixed_dc = None
             if self.client is not None and self.client.session.auth_key:
@@ -96,6 +130,8 @@ class Relay:
             dc_id, ip, port = dc
             ipv6 = ":" in ip
             if self.client is None:
+                log.info("создаю TelegramClient (dc %s %s:%s ipv6=%s)",
+                         dc_id, ip, port, ipv6)
                 self.client = TelegramClient(
                     "tgrtc.session", self.keys["api_id"], self.keys["api_hash"],
                     connection=ConnectionTcpObfuscated,
@@ -104,11 +140,16 @@ class Relay:
                 async def handler(event: NewMessage.Event):
                     await self.on_new_message(event)
             try:
+                log.info("подключаюсь к Telegram [%s] %s:%s...", dc_id, ip, port)
+                t0 = time.monotonic()
                 self.client.session.set_dc(dc_id, ip, port)
                 await self.client.connect()
+                log.info("telegram connect ok за %.1fs (dc %s)",
+                         time.monotonic() - t0, dc_id)
                 break
             except Exception as e:
-                log.warning("telegram connect failed: %s — retry in 10s", e)
+                log.warning("telegram connect failed: %s (%s) — retry in 10s",
+                            type(e).__name__, e)
                 name = type(e).__name__
                 if (self.self_id is None and self.client is not None
                         and "AuthKeyNotFound" in name):
@@ -118,10 +159,12 @@ class Relay:
             if await self.client.is_user_authorized():
                 await self.after_login()
             else:
+                self.qr_refresh_count = 0
                 await self.broadcast({"event": "need_login"})
         except Exception as e:
             log.exception("auth check failed")
             await self.broadcast({"event": "fatal", "error": str(e)})
+        await self._push_conn_state(force=True)
 
     async def _reset_session(self):
         """Удаляет битую (оборванную на рукопожатии) сессию, пока вход не завершён."""
@@ -141,6 +184,8 @@ class Relay:
     async def after_login(self):
         me = await self._retry(self.client.get_me)
         self.self_id = me.id
+        self.qr = None
+        self.qr_refresh_count = 0
         log.info("logged in as %s (%s)", me.first_name, me.id)
         await self.broadcast({"event": "logged_in", "self_id": me.id, "first_name": me.first_name})
 
@@ -201,10 +246,29 @@ class Relay:
     async def login_qr(self):
         if self.client is None or not self.client.is_connected():
             return {"error": "подключение к Telegram ещё идёт, попробуйте через пару секунд"}
+        self.qr_refresh_count = 0
         qr = await self.client.qr_login()
         self.qr = qr
+        log.info("qr login: токен выдан")
         asyncio.create_task(self._wait_qr(qr))
         return {"url": qr.url}
+
+    async def _qr_refresh(self):
+        """Тихо перевыпускает QR, если пользователь ещё не отсканировал."""
+        if self.qr_refresh_count >= 10:
+            log.warning("qr: лимит перевыпусков исчерпан")
+            await self.broadcast({"event": "qr_expired"})
+            return
+        self.qr_refresh_count += 1
+        try:
+            log.info("qr: перевыпуск #%d", self.qr_refresh_count)
+            qr = await self.client.qr_login()
+            self.qr = qr
+            await self.broadcast({"event": "qr_new", "url": qr.url})
+            asyncio.create_task(self._wait_qr(qr))
+        except Exception as e:
+            log.exception("qr refresh failed")
+            await self.broadcast({"event": "qr_error", "error": str(e)})
 
     async def _wait_qr(self, qr):
         try:
@@ -214,8 +278,8 @@ class Relay:
             self.qr_password = True
             await self.broadcast({"event": "qr_password_needed"})
         except asyncio.TimeoutError:
-            if self.self_id is None:
-                await self.broadcast({"event": "qr_expired"})
+            if self.self_id is None and self.qr is qr:
+                await self._qr_refresh()          # автообновление вместо ошибки
         except Exception as e:
             if self.self_id is None:
                 log.exception("qr login failed")
@@ -252,6 +316,10 @@ class Relay:
     async def logout(self):
         await self.client.log_out()
         self.self_id = None
+        self.qr = None
+        self.qr_refresh_count = 0
+        self._last_conn_state = None
+        log.info("logged out")
         return {}
 
     async def resolve(self, username):
@@ -488,7 +556,7 @@ class Relay:
 
     async def handle_cmd(self, cmd: str, data: dict) -> dict:
         handlers = {
-            "ping": lambda: {},
+            "ping": lambda: self._conn_state(),
             "status": self.status,
             "login_phone": lambda: self.login_phone(data.get("phone", "")),
             "login_qr": self.login_qr,
@@ -524,7 +592,9 @@ class Relay:
 
 async def ws_handler(relay: Relay, ws):
     relay.clients.add(ws)
-    log.info("gui connected")
+    peer = getattr(ws, "remote_address", None)
+    log.info("gui connected %s (клиентов: %d)", peer, len(relay.clients))
+    await relay._push_conn_state(force=True)
     try:
         async for raw in ws:
             try:
@@ -533,14 +603,20 @@ async def ws_handler(relay: Relay, ws):
                 await ws.send(json.dumps({"ok": False, "error": "bad json"}))
                 continue
             cmd = req.get("cmd", "")
-            log.info("cmd: %s", cmd)
+            t0 = time.monotonic()
             resp = await relay.handle_cmd(cmd, req)
+            dt = (time.monotonic() - t0) * 1000
+            if resp.get("ok"):
+                log.info("cmd %s -> ok (%.0f ms)", cmd, dt)
+            else:
+                log.warning("cmd %s -> FAIL %s (%.0f ms)",
+                            cmd, resp.get("error"), dt)
             await ws.send(json.dumps(resp))
-    except websockets.exceptions.ConnectionClosed:
-        pass
+    except websockets.exceptions.ConnectionClosed as e:
+        log.info("gui %s connection closed: %s", peer, e)
     finally:
         relay.clients.discard(ws)
-        log.info("gui disconnected")
+        log.info("gui disconnected %s (клиентов: %d)", peer, len(relay.clients))
 
 
 async def main():
