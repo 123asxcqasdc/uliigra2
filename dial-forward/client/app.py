@@ -241,6 +241,7 @@ class DialApp:
         threading.Thread(target=self._update_loop, daemon=True).start()
         if lock_srv is not None:
             threading.Thread(target=self._lock_listen, daemon=True).start()
+        self.root.after(1000, self._conn_watchdog)
         log(f"[app] старт, client_id={CLIENT_ID}")
         self.do_cmd({"cmd": "status"}, log_reply=True)
 
@@ -321,6 +322,18 @@ class DialApp:
 
         # ---- главное меню ----
         w = ttk.Frame(sc, padding=8)
+        # --- индикатор подключения ---
+        conn = ttk.Frame(w)
+        conn.pack(pady=(2, 6))
+        self.conn_dot = tk.Canvas(conn, width=18, height=18,
+                                  highlightthickness=0)
+        self._dot_item = self.conn_dot.create_oval(3, 3, 15, 15,
+                                                   fill="#9e9e9e", outline="")
+        self.conn_dot.pack(side="left", padx=(0, 7))
+        self.conn_text = tk.StringVar(value="Подключение к релею...")
+        self.conn_label = ttk.Label(conn, textvariable=self.conn_text,
+                                    font=("Sans", 11, "bold"))
+        self.conn_label.pack(side="left")
         ttk.Label(w, textvariable=self.status_var, foreground="#b00000",
                   wraplength=520, justify="center").pack(pady=8)
         self.btn_login_menu = ttk.Button(w, text="Войти в аккаунт", width=30,
@@ -754,6 +767,21 @@ class DialApp:
         ev = msg.get("event")
         if ev == "progress":
             self.resp_q.put(("progress", msg))
+        elif ev == "conn":
+            if not msg.get("connected"):
+                self._set_conn("orange", "Telegram подключается...")
+            elif msg.get("authorized"):
+                name = getattr(self, "self_name", "") or ""
+                self._set_conn("green", f"Онлайн: {name}" if name else "Онлайн")
+            else:
+                self._set_conn("blue", "Telegram онлайн — войдите в аккаунт")
+        elif ev == "tg_disconnected":
+            self._set_conn("orange", "Telegram переподключается...")
+        elif ev == "qr_new":
+            url = msg.get("url")
+            if url:
+                self._lg_show_qr(url)
+                self.lg_qr_status.set("QR обновлён автоматически — отсканируйте заново")
         elif ev == "logged_in":
             self.self_id = msg.get("self_id")
             self.self_name = msg.get("first_name") or str(self.self_id)
@@ -780,6 +808,38 @@ class DialApp:
         self.logw.insert("end", text + "\n")
         self.logw.see("end")
         self.logw.configure(state="disabled")
+
+    # ---------- индикатор подключения ----------
+
+    CONN_COLORS = {"gray": "#9e9e9e", "red": "#e53935", "orange": "#fb8c00",
+                   "blue": "#1e88e5", "green": "#43a047"}
+
+    def _set_conn(self, color, text):
+        col = self.CONN_COLORS.get(color, self.CONN_COLORS["gray"])
+        try:
+            self.conn_dot.itemconfigure(self._dot_item, fill=col)
+        except Exception:
+            pass
+        self.conn_text.set(text)
+        try:
+            self.conn_label.configure(foreground=col)
+        except Exception:
+            pass
+
+    def _conn_watchdog(self):
+        """Раз в 10с тихо пингует релей и обновляет индикатор."""
+        def done(resp):
+            if not resp.get("connected") and resp.get("error"):
+                self._set_conn("red", "Нет соединения с релеем")
+            elif not resp.get("connected"):
+                self._set_conn("orange", "Telegram подключается...")
+            elif resp.get("authorized"):
+                name = getattr(self, "self_name", "") or ""
+                self._set_conn("green", f"Онлайн: {name}" if name else "Онлайн")
+            else:
+                self._set_conn("blue", "Telegram онлайн — войдите в аккаунт")
+            self.root.after(10000, self._conn_watchdog)
+        self.do_cmd({"cmd": "ping"}, on_done=done)
 
     # ---------- команды relay ----------
 
