@@ -1,0 +1,61 @@
+name: build-windows-msi
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dial-forward/client/**'
+      - 'dial-forward/relay/**'
+      - 'dial-forward/launcher.py'
+      - 'dial-forward/VERSION'
+      - 'dial-forward/msi/**'
+      - 'dial-forward/pyinstaller/**'
+      - 'dial-forward/requirements.txt'
+      - '.github/workflows/build-windows-msi.yml'
+  workflow_dispatch:
+
+jobs:
+  msi:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install build deps + GStreamer wheels
+        working-directory: dial-forward
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller
+          python -m pip install -r requirements.txt
+          python -m pip install "gstreamer-meta==1.28.6"
+
+      - name: Bundle with PyInstaller
+        working-directory: dial-forward/pyinstaller
+        run: python -m PyInstaller --noconfirm --clean DialForward.spec
+
+      - name: Build MSI (WiX)
+        working-directory: dial-forward
+        shell: pwsh
+        run: |
+          $v = (Get-Content VERSION).Trim()
+          .\msi\build_msi.ps1 -Bundle "pyinstaller\dist\DialForward" -Artifact "DialForward.msi" -ProductVersion $v
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DialForward.msi
+          path: dial-forward/DialForward.msi
+          if-no-files-found: error
+
+      - name: Commit MSI back to repo
+        run: |
+          cd dial-forward
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add DialForward.msi
+          git diff --cached --quiet && echo "MSI unchanged" || { git commit -m "ci: build DialForward.msi $(cat VERSION)"; git push origin main; }
