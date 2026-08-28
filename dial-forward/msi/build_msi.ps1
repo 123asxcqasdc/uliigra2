@@ -10,15 +10,15 @@ Param(
 $ErrorActionPreference = "Stop"
 
 $Wix = Join-Path $env:TEMP "wix311"
-if (-not (Test-Path "$Wix\bin\candle.exe")) {
+if (-not (Test-Path "$Wix\heat.exe")) {
     Write-Host "Downloading WiX Toolset v3.11..."
     Invoke-WebRequest "https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip" `
         -OutFile "$env:TEMP\wix311.zip"
     Expand-Archive "$env:TEMP\wix311.zip" -DestinationPath $Wix -Force
 }
-$Heat  = "$Wix\bin\heat.exe"
-$Candle= "$Wix\bin\candle.exe"
-$Light = "$Wix\bin\light.exe"
+$Heat  = "$Wix\heat.exe"
+$Candle= "$Wix\candle.exe"
+$Light = "$Wix\light.exe"
 
 # --- 1. harvest the bundle folder (files land directly in INSTALLDIR) ---
 Write-Host "Heat: harvesting $Bundle ..."
