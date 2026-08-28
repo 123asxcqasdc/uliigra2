@@ -14,6 +14,14 @@ import subprocess
 import sys
 import time
 
+# под pythonw.exe stdout/stderr равны None — print() падает
+for _n in ("stdout", "stderr"):
+    if getattr(sys, _n, None) is None:
+        try:
+            setattr(sys, _n, open(os.devnull, "w", encoding="utf-8"))
+        except OSError:
+            pass
+
 ROOT = os.path.dirname(os.path.abspath(__file__))
 RELAY_DIR = os.path.join(ROOT, "relay")
 CLIENT_DIR = os.path.join(ROOT, "client")
