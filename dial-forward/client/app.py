@@ -18,6 +18,14 @@ import time
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext, simpledialog, ttk
 
+# под pythonw.exe stdout/stderr равны None — print() падает
+for _n in ("stdout", "stderr"):
+    if getattr(sys, _n, None) is None:
+        try:
+            setattr(sys, _n, open(os.devnull, "w", encoding="utf-8"))
+        except OSError:
+            pass
+
 from call import CallSession, run_async
 from relay_client import RelayClient
 from webrtc import WebRtcPeer
@@ -28,6 +36,20 @@ CLIENT_ID = "dialfwd-gui-" + secrets.token_hex(3)
 # ---------- автообновление ----------
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VERSION_PATH = os.path.join(APP_ROOT, "VERSION")
+
+
+def _here_dir():
+    """Каталог, рядом с которым лежат icons/settings/VERSION.
+    В dev — client/; в PyInstaller-frozen — каталог ресурсов (_MEIPASS/_internal)."""
+    if getattr(sys, "frozen", False):
+        return getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+def _res(*parts):
+    return os.path.join(_here_dir(), *parts)
+
+
 UPDATE_BASES = [
     "https://uliigra2.c6t.ru/dial-forward/",
     "https://raw.githubusercontent.com/123asxcqasdc/uliigra2/main/dial-forward/",
@@ -279,7 +301,7 @@ class DialApp:
             self.tray = None
             log("[app] трей недоступен (нет pystray/PIL) — окно сворачивается")
             return
-        base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons")
+        base = _res("icons")
         path = os.path.join(base, "dial_forward.png")
         if not os.path.isfile(path):
             self.tray = None
@@ -299,7 +321,7 @@ class DialApp:
 
     def _apply_icon(self):
         """Иконка приложения вместо дефолтной (X) — PNG рядом с app.py."""
-        base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons")
+        base = _res("icons")
         for name in ("dial_forward.png", "dial_forward_64.png"):
             path = os.path.join(base, name)
             if os.path.isfile(path):
@@ -615,6 +637,9 @@ class DialApp:
         threading.Thread(target=self._check_update_bg, daemon=True).start()
 
     def _check_update_bg(self):
+        if getattr(sys, "frozen", False):
+            # MSI-сборка: обновление = переустановка нового MSI, не патчи
+            return
         rv = self._remote_version()
         if not rv:
             return
@@ -717,7 +742,7 @@ class DialApp:
 
     @staticmethod
     def _settings_path():
-        return os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.json")
+        return _res("settings.json")
 
     def _load_settings(self):
         try:
@@ -1155,6 +1180,57 @@ class DialApp:
         self.do_cmd({"cmd": "dialogs"}, on_done=fetch, log_reply=False)
 
 
+def _relay_bin_dir():
+    """Каталог, где лежит Relay.exe/relay.py (рядом с бандлом или в dev)."""
+    if getattr(sys, "frozen", False):
+        # PyInstaller --onedir: exe в корне папки DialForward, Relay.exe рядом
+        return os.path.dirname(sys.executable)
+    return os.path.join(APP_ROOT, "relay")
+
+
+def _ensure_relay():
+    """Поднимает relay, если он ещё не слушает ws://127.0.0.1:4545."""
+    import subprocess
+    if _ws_alive():
+        log("[app] relay уже работает")
+        return
+    base = _relay_bin_dir()
+    if getattr(sys, "frozen", False):
+        here = os.path.dirname(sys.executable)
+        relay = [os.path.join(here, "Relay.exe")]
+        cwd = here
+    else:
+        relay = [sys.executable, os.path.join(base, "relay.py")]
+        cwd = base
+    log("[app] запускаю relay...")
+    p = subprocess.Popen(relay, cwd=cwd, stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL)
+    for _ in range(80):
+        if _ws_alive():
+            log("[app] relay готов")
+            return p
+        time.sleep(0.5)
+    log("[app] relay не поднялся за 40с")
+    try:
+        p.terminate()
+    except Exception:
+        pass
+    return None
+
+
+def _ws_alive(timeout=2):
+    import socket
+    s = socket.socket()
+    s.settimeout(timeout)
+    try:
+        s.connect(("127.0.0.1", 4545))
+        return True
+    except OSError:
+        return False
+    finally:
+        s.close()
+
+
 def main():
     import argparse
     ap = argparse.ArgumentParser(description="Dial Forward")
@@ -1171,6 +1247,8 @@ def main():
         log("[app] Dial Forward уже запущен — показываю существующее окно")
         notify_running_app()
         return 0
+
+    _ensure_relay()
 
     root = tk.Tk()
     try:
