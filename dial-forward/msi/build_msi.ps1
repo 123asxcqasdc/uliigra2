@@ -30,10 +30,10 @@ if ($LASTEXITCODE -ne 0) { throw "heat failed" }
 $Template = @"
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" Name="Dial Forward" Language="1033" Version="$ProductVersion"
+  <Product Id="*" Name="Dial Forward" Language="1033" Version="$ProductVersion" Codepage="65001"
            Manufacturer="Dial Forward"
            UpgradeCode="D1A1F000-0000-4000-9000-A1F0D1A1F000">
-    <Package InstallerVersion="500" Compressed="yes" InstallScope="perUser" Codepage="65001"
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perUser"
              Description="Dial Forward - P2P calls over Telegram"
              Manufacturer="Dial Forward" />
     <MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
