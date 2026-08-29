@@ -54,4 +54,6 @@ jobs:
       - name: Commit MSI back to repo
         shell: bash
         working-directory: dial-forward
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python ci_push_msi.py
