@@ -30,7 +30,7 @@ if ($LASTEXITCODE -ne 0) { throw "heat failed" }
 $Template = @"
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" Name="Dial Forward" Language="1033" Version="$ProductVersion" Codepage="65001"
+  <Product Id="*" Name="Dial Forward" Language="1033" Version="$ProductVersion"
            Manufacturer="Dial Forward"
            UpgradeCode="D1A1F000-0000-4000-9000-A1F0D1A1F000">
     <Package InstallerVersion="500" Compressed="yes" InstallScope="perUser"
@@ -50,7 +50,7 @@ $Template = @"
             <Shortcut Id="S_Main" Name="Dial Forward"
                       Target="[INSTALLDIR]DialForward.exe"
                       WorkingDirectory="INSTALLDIR" Icon="DF.ICO"
-                      Description="Запустить Dial Forward" />
+                      Description="Launch Dial Forward" />
             <RegistryValue Root="HKCU" Key="Software\DialForward" Name="installed"
                            Type="integer" Value="1" KeyPath="yes" />
             <RemoveFolder Id="R_AppMenuDir" On="uninstall" />
