@@ -75,7 +75,7 @@ $candleArgs = @("-nologo", "-dBundleDir=$Bundle", "main.wxs", "bundle.wxs")
 if ($LASTEXITCODE -ne 0) { throw "candle failed" }
 
 Write-Host "Light: linking -> $Artifact"
-$lightArgs = @("-nologo", "-ext", "WixUIExtension", "-sice:ICE91",
+$lightArgs = @("-nologo", "-ext", "WixUIExtension", "-sice:ICE64", "-sice:ICE91",
                "-sw1076", "-o", $Artifact, "main.wixobj", "bundle.wixobj")
 & $Light @lightArgs
 if ($LASTEXITCODE -ne 0) { throw "light failed: $LASTEXITCODE" }
