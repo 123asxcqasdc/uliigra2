@@ -52,9 +52,6 @@ jobs:
           if-no-files-found: error
 
       - name: Commit MSI back to repo
-        run: |
-          cd dial-forward
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add DialForward.msi
-          git diff --cached --quiet && echo "MSI unchanged" || { git commit -m "ci: build DialForward.msi $(cat VERSION)"; git push origin main; }
+        shell: bash
+        working-directory: dial-forward
+        run: python ci_push_msi.py
