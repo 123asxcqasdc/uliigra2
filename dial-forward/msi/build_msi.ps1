@@ -70,7 +70,8 @@ Set-Content -Path "main.wxs" -Value $Template -Encoding UTF8
 
 # --- 3. compile & link ---
 Write-Host "Candle: compiling..."
-& $Candle -nologo -dV "BundleDir=$Bundle" main.wxs bundle.wxs
+$candleArgs = @("-nologo", "-d", "BundleDir=$Bundle", "main.wxs", "bundle.wxs")
+& $Candle @candleArgs
 if ($LASTEXITCODE -ne 0) { throw "candle failed" }
 
 Write-Host "Light: linking -> $Artifact"
