@@ -33,10 +33,10 @@ $Template = @"
   <Product Id="*" Name="Dial Forward" Language="1033" Version="$ProductVersion"
            Manufacturer="Dial Forward"
            UpgradeCode="D1A1F000-0000-4000-9000-A1F0D1A1F000">
-    <Package InstallerVersion="500" Compressed="yes" InstallScope="perUser"
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perUser" Codepage="65001"
              Description="Dial Forward - P2P calls over Telegram"
              Manufacturer="Dial Forward" />
-    <MajorUpgrade DowngradeErrorMessage="Версия уже установлена (или новее)." />
+    <MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
     <Media Id="1" Cabinet="data.cab" EmbedCab="yes" />
     <Property Id="ARPPRODUCTICON" Value="DF.ICO" />
     <Icon Id="DF.ICO" SourceFile="icons\dial_forward.ico" />
