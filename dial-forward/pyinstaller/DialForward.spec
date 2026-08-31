@@ -24,6 +24,36 @@ gst_bins = []
 for _p in gst_pkgs:
     gst_bins += collect_dynamic_libs(_p)
 
+# --- Strip unnecessary heavy GStreamer plugins / codecs -------------
+# We only need the WebRTC call path (webrtc, sctp, dtls, srtp, nice,
+# rtpmanager, sdp, opus, vpx). Everything below is not used by a call
+# and just bloats the bundle, most with dedicated heavy codecs.
+_unwanted = {
+    # encoders / codecs NOT used by a WebRTC call (vpx/vp8/vp9 kept on purpose)
+    "svtav1enc", "rav1e", "x264", "x265", "nvcodec", "vaapi",
+    "avcodec", "avformat", "avutil", "swscale", "swresample", "dav1d",
+    "openh264", "aom", "avif", "turbojpeg", "openh26", "nvjpeg",
+    # media playback / documents not needed for a call
+    "rsvg", "pango", "harfbuzz", "soup",
+    # cloud / network services we don't use
+    "aws", "reqwest", "quinn", "speechmatics", "elevenlabs", "demucs",
+    "whisper", "transcriber", "pmt", "libsrt",
+    # CD/DVD burning
+    "burn",
+    # display-only / game/desktop capture
+    "d3dshader", "d3d12", "gamecapture",
+    # SRT streaming & IceCast
+    "rsrtsp", "icecast",
+    # subtitle/closed-caption
+    "closedcaption",
+}
+def _keep(tup):
+    name = (tup[0] if isinstance(tup, tuple) else tup).lower()
+    base = name.split("\\")[-1].split("/")[-1]
+    return not (any(_u in base for _u in _unwanted))
+gst_bins = [b for b in gst_bins if _keep(b[0])]
+gst_datas = [d for d in gst_datas if _keep(d[0])]
+
 # --- shared data for both executables ------------------------------
 shared_datas = gst_datas + [
     ("../VERSION", "."),
