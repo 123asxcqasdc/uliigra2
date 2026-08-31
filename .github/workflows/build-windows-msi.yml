@@ -41,15 +41,25 @@ jobs:
         working-directory: dial-forward/pyinstaller/dist/DialForward
         shell: pwsh
         run: |
-          "TOTAL_MB=$([math]::Round((Get-ChildItem -Recurse -File | Measure-Object Length -Sum).Sum/1MB,1))"
+          $out = "$env:GITHUB_WORKSPACE/dial-forward/pyinstaller/dist/size_report.txt"
+          "TOTAL_MB=$([math]::Round((Get-ChildItem -Recurse -File | Measure-Object Length -Sum).Sum/1MB,1))" | Set-Content -Encoding utf8 $out
           Get-ChildItem -Directory | ForEach-Object {
             $m = [math]::Round((Get-ChildItem $_.FullName -Recurse -File | Measure-Object Length -Sum).Sum/1MB,1)
             $n = (Get-ChildItem $_.FullName -Recurse -File).Count
-            "DIR $($_.Name) MB=$m FILES=$n"
+            "DIR $($_.Name) MB=$m FILES=$n" | Add-Content -Encoding utf8 $out
           }
-          $big = Get-ChildItem -Recurse -File | Sort-Object Length -Descending | Select-Object -First 25
-          "BIGGEST"
-          foreach ($f in $big) { "`t{0,8:N1} MB  {1}" -f ($f.Length/1MB), $f.FullName.Substring("$PWD\".Length) }
+          "BIGGEST" | Add-Content -Encoding utf8 $out
+          Get-ChildItem -Recurse -File | Sort-Object Length -Descending | Select-Object -First 40 | ForEach-Object {
+            "{0,8:N1} MB  {1}" -f ($_.Length/1MB), $_.Name | Add-Content -Encoding utf8 $out
+          }
+          Get-Content $out
+
+      - name: Upload size report
+        uses: actions/upload-artifact@v4
+        with:
+          name: size_report.txt
+          path: dial-forward/pyinstaller/dist/size_report.txt
+          if-no-files-found: error
 
       - name: Build MSI (WiX)
         working-directory: dial-forward
