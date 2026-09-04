@@ -46,6 +46,7 @@ _unwanted = {
     "rsrtsp", "icecast",
     # subtitle/closed-caption
     "closedcaption",
+    "d3d11",
 }
 def _keep(tup):
     name = (tup[0] if isinstance(tup, tuple) else tup).lower()
@@ -138,7 +139,7 @@ exe_relay = EXE(
 # ===================================================================
 coll = COLLECT(
     exe_gui, exe_relay,
-    a_gui.binaries + a_relay.binaries,
-    a_gui.datas + a_relay.datas,
+    [b for b in (a_gui.binaries + a_relay.binaries) if _keep(b[0])],
+    [d for d in (a_gui.datas + a_relay.datas) if _keep(d[0])],
     strip=False, upx=True, name="DialForward",
 )
