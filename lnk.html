@@ -190,7 +190,12 @@
         <div class="result-title">ваша короткая ссылка:</div>
         <div class="short-url-box">
             <input type="text" id="shortUrl" readonly onclick="this.select()">
-            <button class="copy-btn" onclick="copyToClipboard()">копировать</button>
+            <button class="copy-btn" onclick="copyToClipboard(this, 'shortUrl')">копировать</button>
+        </div>
+        <div class="result-title" style="margin-top: 1.2rem;">ссылка через uli.c6t.ru:</div>
+        <div class="short-url-box">
+            <input type="text" id="shortUrlUli" readonly onclick="this.select()">
+            <button class="copy-btn" onclick="copyToClipboard(this, 'shortUrlUli')">копировать</button>
         </div>
         <div class="info-text" id="infoText"></div>
     </div>
@@ -280,8 +285,10 @@
             });
 
             const shortUrl = baseUrl + 'redirect?' + shortCode;
+            const uliShortUrl = 'https://uli.c6t.ru/r?' + shortCode;
             shortUrlInput.value = shortUrl;
-            infoText.innerHTML = `пример перехода: <a href="${shortUrl}" target="_blank">${baseUrl}redirect?${shortCode}</a>`;
+            document.getElementById('shortUrlUli').value = uliShortUrl;
+            infoText.innerHTML = `пример перехода через uli.c6t.ru: <a href="${uliShortUrl}" target="_blank">${uliShortUrl}</a>`;
             resultDiv.classList.add('show');
 
             document.getElementById('customCode').value = '';
@@ -292,16 +299,15 @@
         }
     }
 
-    function copyToClipboard() {
-        const shortUrl = document.getElementById('shortUrl');
+    function copyToClipboard(btn, id) {
+        const shortUrl = document.getElementById(id);
         shortUrl.select();
         document.execCommand('copy');
 
-        const copyBtn = document.querySelector('.copy-btn');
-        const originalText = copyBtn.textContent;
-        copyBtn.textContent = 'скопировано!';
+        const originalText = btn.textContent;
+        btn.textContent = 'скопировано!';
         setTimeout(() => {
-            copyBtn.textContent = originalText;
+            btn.textContent = originalText;
         }, 2000);
     }
 
