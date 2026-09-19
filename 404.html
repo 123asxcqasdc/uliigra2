@@ -1,62 +1,33 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <link rel="icon" type="image/png" href="/icon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>404 - Улитки не нашли</title>
+
+    <!-- ФАВИКОНКА -->
+    <link rel="icon" type="image/png" href="/icon.png">
+    <link rel="stylesheet" href="/shared.css">
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background-color: #0a1f0a;
-            color: #c8e6c9;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background-image: 
-                radial-gradient(circle at 15% 50%, rgba(16, 64, 16, 0.4) 0%, transparent 20%),
-                radial-gradient(circle at 85% 30%, rgba(32, 96, 32, 0.3) 0%, transparent 20%);
-            padding: 20px;
-        }
-
-        .container {
+        .main-container {
             max-width: 800px;
             text-align: center;
-            padding: 60px 40px;
-            background-color: rgba(13, 43, 13, 0.85);
-            border-radius: 20px;
-            border: 1px solid #1b5e20;
-            box-shadow: 
-                0 10px 30px rgba(0, 20, 0, 0.7),
-                inset 0 0 20px rgba(27, 94, 32, 0.2);
-            position: relative;
         }
 
-        .container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 5px;
-            background: linear-gradient(90deg, #1b5e20, #2e7d32, #1b5e20);
+        .header-title {
+            font-size: 2.6rem;
+        }
+
+        .snail-icon-big {
+            font-size: 3rem;
         }
 
         .error-code {
             font-size: 120px;
             font-weight: 800;
-            color: #2e7d32;
-            text-shadow: 
-                0 0 10px rgba(46, 125, 50, 0.5),
-                0 0 20px rgba(27, 94, 32, 0.3);
+            color: #9bbc7b;
+            text-shadow: 3px 3px 0 #2d4a2d, 5px 5px 0 #1b331b;
             line-height: 1;
             margin-bottom: 20px;
             letter-spacing: 5px;
@@ -65,45 +36,46 @@
         .error-message {
             font-size: 24px;
             line-height: 1.6;
-            margin: 50px 0;
+            margin: 2rem 0;
             color: #e8f5e9;
             padding: 0 20px;
         }
 
         .footer-note {
-            margin-top: 40px;
+            margin-top: 2.5rem;
             font-size: 16px;
-            color: #81c784;
-            opacity: 0.7;
+            color: #a2c78d;
+            opacity: 0.8;
             font-style: italic;
         }
 
         @media (max-width: 600px) {
-            .error-code {
-                font-size: 80px;
-            }
-            
-            .error-message {
-                font-size: 20px;
-            }
-            
-            .container {
-                padding: 40px 25px;
-            }
+            .header-title { font-size: 2rem; }
+            .error-code { font-size: 80px; }
+            .error-message { font-size: 20px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="error-code">404</div>
-        
-        <div class="error-message">
-            Улитки не находят данной страницы на серверах...
-        </div>
-        
-        <div class="footer-note">
-            Наши улитки продолжают поиски...
-        </div>
+<div class="main-container">
+    <div class="header-title">
+        <span class="snail-icon-big">🐌</span>
+        <span style="background: transparent; filter: none;">404</span>
+        <span class="snail-icon-big">🐌</span>
     </div>
+
+    <div class="error-code">404</div>
+
+    <div class="error-message">
+        Улитки не находят данной страницы на серверах...
+    </div>
+
+    <a href="/home" class="back-link">← ко всем страницам</a>
+
+    <!-- подвал с декоративными улитками -->
+    <div class="footer-snails">
+        <span>🐌</span><span>🐌💚</span><span>🐌</span><span>🐚</span><span>🐌</span><span>🍀🐌</span>
+    </div>
+</div>
 </body>
 </html>

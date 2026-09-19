@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SnailTail · статьи</title>
     <link rel="icon" type="image/png" href="https://uliigra2.c6t.ru/icon.png" />
+    <link rel="stylesheet" href="/shared.css" />
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
@@ -18,60 +19,13 @@
     </script>
 
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
-            background-color: #1b3b1b;
-            background-image: radial-gradient(circle at 30% 40%, #2b5a2b 0%, #0e2f0e 90%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 2rem 1.5rem;
-            color: #f0f7da;
-        }
-
-        body::before {
-            content: "🐌🐌🐌";
-            font-size: 8rem;
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            opacity: 0.06;
-            white-space: nowrap;
-            transform: rotate(-10deg);
-            pointer-events: none;
-            letter-spacing: 2rem;
-            z-index: 0;
-        }
-
-        body::after {
-            content: "🐌🐌🐌";
-            font-size: 12rem;
-            position: fixed;
-            bottom: -20px;
-            right: 0;
-            opacity: 0.05;
-            transform: rotate(15deg);
-            pointer-events: none;
-            white-space: nowrap;
-            z-index: 0;
+            justify-content: flex-start;
         }
 
         .main-container {
             max-width: 1000px;
-            width: 100%;
             background: rgba(30, 50, 30, 0.75);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            border: 3px solid #9bbc7b;
-            border-radius: 30px;
-            box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 2px #6f8c5d inset, 0 0 0 4px #3f6140 inset;
             padding: 2rem 2rem 3rem;
             position: relative;
             z-index: 1;
@@ -89,14 +43,9 @@
         }
 
         .header-title {
-            display: flex;
-            align-items: center;
             gap: 0.6rem;
             font-size: 2.8rem;
-            font-weight: 800;
-            text-shadow: 3px 3px 0 #2d4a2d, 5px 5px 0 #1b331b;
-            color: #e2f0c0;
-            letter-spacing: 2px;
+            margin-bottom: 0;
         }
 
         .header-title .snail {
@@ -455,14 +404,8 @@
         }
 
         .back-link {
-            display: inline-block;
             margin: 1rem 0 0.5rem;
-            color: #a3c4a3;
-            text-decoration: none;
-            border: 2px solid #7eaf7a;
             padding: 0.4rem 1.5rem;
-            border-radius: 40px;
-            transition: 0.2s;
             font-weight: 600;
         }
 
@@ -498,26 +441,9 @@
 
         .footer-snails {
             margin-top: 2.5rem;
-            display: flex;
-            justify-content: center;
-            gap: 0.8rem 2rem;
-            flex-wrap: wrap;
             font-size: 2rem;
-            color: #a2c78d;
-            border-top: 2px dashed #61855e;
             padding-top: 1.5rem;
             opacity: 0.7;
-        }
-
-        .footer-snails span {
-            filter: drop-shadow(0 5px 5px #172e17);
-            transition: 0.2s;
-            cursor: default;
-        }
-
-        .footer-snails span:hover {
-            transform: scale(1.2) rotate(5deg);
-            color: #e2ffb3;
         }
 
         @media (max-width: 600px) {

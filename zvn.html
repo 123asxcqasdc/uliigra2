@@ -5,27 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>📞 Dial Forward · установка</title>
 <link rel="icon" type="image/png" href="/icon.png">
+<link rel="stylesheet" href="/shared.css">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{
-  font-family:'Segoe UI',Roboto,system-ui,sans-serif;
-  background-color:#1b3b1b;
-  background-image:radial-gradient(circle at 30% 40%,#2b5a2b 0%,#0e2f0e 90%);
-  min-height:100vh;display:flex;flex-direction:column;align-items:center;
-  padding:2rem 1.5rem;position:relative;color:#f0f7da;
-}
-body::before{content:"📞🐌📞";font-size:8rem;position:absolute;top:10px;left:10px;opacity:.06;white-space:nowrap;transform:rotate(-10deg);pointer-events:none;letter-spacing:2rem;}
-body::after{content:"🐌📞🐌";font-size:12rem;position:absolute;bottom:-20px;right:0;opacity:.04;transform:rotate(15deg);pointer-events:none;white-space:nowrap;}
-.main-container{
-  max-width:880px;width:100%;
-  background:rgba(30,50,30,.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-  border:3px solid #9bbc7b;border-radius:30px;
-  box-shadow:0 25px 40px -10px rgba(0,0,0,.6),0 0 0 2px #6f8c5d inset,0 0 0 4px #3f6140 inset;
-  padding:3rem 2rem;position:relative;z-index:1;
-}
-.header-title{display:flex;align-items:center;justify-content:center;gap:.6rem 1.2rem;flex-wrap:wrap;margin-bottom:.4rem;font-size:2.8rem;font-weight:800;text-shadow:3px 3px 0 #2d4a2d,5px 5px 0 #1b331b;color:#e2f0c0;letter-spacing:2px;}
+body{justify-content:flex-start;}
+body::before{content:"📞🐌📞";opacity:.06;}
+body::after{content:"🐌📞🐌";opacity:.04;}
+.main-container{max-width:880px;padding:3rem 2rem;position:relative;z-index:1;}
+.header-title{margin-bottom:.4rem;font-size:2.8rem;}
 .header-subtitle{text-align:center;color:#b8d89a;font-size:1rem;margin-bottom:2rem;opacity:.85;}
-.snail-icon-big{font-size:3.2rem;transform:rotate(15deg);transition:transform .2s;filter:drop-shadow(2px 4px 4px #0f2a0f);cursor:default;}
+.snail-icon-big{font-size:3.2rem;cursor:default;}
 .snail-icon-big:hover{transform:rotate(25deg) scale(1.1);}
 .panel{background:#2e4d2e;border:2px solid #7eaf7a;border-radius:24px;padding:2rem 1.6rem;box-shadow:0 12px 15px -7px #102310,0 0 0 2px #a7c8a3 inset;margin-bottom:1.4rem;}
 .panel-title{font-size:1.15rem;font-weight:700;color:#d4edb0;margin-bottom:1.2rem;display:flex;align-items:center;gap:.5rem;border-bottom:2px dotted #6b9b5a;padding-bottom:.6rem;}
@@ -42,12 +30,8 @@ body::after{content:"🐌📞🐌";font-size:12rem;position:absolute;bottom:-20p
 .step-title{font-weight:700;color:#fcfad6;margin-bottom:.3rem;}
 .step-body p{color:#dcedc4;line-height:1.55;font-size:.95rem;}
 .notes{background:#385f38;border:1px solid #8ab47a;border-radius:16px;padding:.7rem 1rem;font-size:.88rem;color:#dcedc4;line-height:1.6;}
-.back-link{display:inline-block;margin-top:1rem;color:#a3c4a3;text-decoration:none;border:2px solid #7eaf7a;padding:.5rem 1.5rem;border-radius:40px;transition:.2s;}
-.back-link:hover{background:#2f542f;color:#ffefc0;border-color:#d8f0b5;}
-.footer-snails{margin-top:2.5rem;display:flex;justify-content:center;gap:.8rem 2rem;flex-wrap:wrap;font-size:2rem;color:#a2c78d;border-top:2px dashed #61855e;padding-top:1.5rem;opacity:.8;}
-.footer-snails span{filter:drop-shadow(0 5px 5px #172e17);transition:.2s;cursor:default;}
-.footer-snails span:hover{transform:scale(1.2) rotate(5deg);}
-@media(max-width:600px){.main-container{padding:1.5rem 1rem;}.header-title{font-size:2.2rem;}}
+.footer-snails{margin-top:2.5rem;padding-top:1.5rem;}
+@media(max-width:600px){.header-title{font-size:2.2rem;}}
 </style>
 </head>
 <body>
