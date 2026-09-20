@@ -205,6 +205,78 @@
             border: 1px solid #5f8b5f;
             margin-bottom: 1rem;
         }
+        
+        .card-item { cursor: grab; }
+        .card-item.dragging {
+            cursor: grabbing;
+            opacity: 0.6;
+            border-style: dashed;
+        }
+        .card-item.drag-over {
+            border-color: #ffd47a;
+            box-shadow: 0 0 0 3px rgba(255, 212, 122, 0.4);
+        }
+        .card-actions button.move-up, .card-actions button.move-down {
+            background: #3f603f;
+        }
+        
+        .github-panel {
+            background: #102a1a;
+            border: 2px solid #6b956b;
+            border-radius: 24px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+        .github-panel h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            color: #c8e6a8;
+        }
+        .github-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 1rem;
+            align-items: end;
+        }
+        .github-row .field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+        .github-row label {
+            font-size: 0.9rem;
+            color: #b4da9e;
+        }
+        .github-row input {
+            width: 100%;
+            background: #1f3a1f;
+            border: 2px solid #9bbc7b;
+            border-radius: 20px;
+            padding: 0.6rem 1rem;
+            color: #f0ffda;
+            font-size: 0.95rem;
+        }
+        .github-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 1.2rem;
+        }
+        .github-note {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: #9fc98a;
+            line-height: 1.5;
+        }
+        #gitStatus { color: #d4f0b0; font-size: 0.9rem; }
+        
+        @media (max-width: 900px) {
+            .github-row { grid-template-columns: 1fr 1fr; }
+            .form-row { grid-template-columns: 1fr 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -215,13 +287,14 @@
     
     <!-- панель инструментов -->
     <div class="toolbar">
+        <button class="btn" id="importCfgBtn"><span>↻</span> импорт homeconfig.txt</button>
         <button class="btn" id="addSampleBtn"><span>➕</span> добавить пример</button>
+        <button class="btn warning" id="sortBtn"><span>🔄</span> сортировать по имени</button>
         <button class="btn secondary" id="exportBtn"><span>📥</span> экспорт в файл</button>
         <div class="file-import">
             <label for="fileInput">📤 импорт файла</label>
             <input type="file" id="fileInput" accept=".txt,.json,text/plain">
         </div>
-        <button class="btn warning" id="sortBtn"><span>🔄</span> сортировать по имени</button>
     </div>
     
     <!-- список карточек -->
@@ -263,6 +336,40 @@
         <button class="btn secondary" id="copyRawBtn"><span>📋</span> скопировать в буфер</button>
         <span style="margin-left: 1rem; color: #b8d9a0;" id="copyNotify"></span>
     </div>
+
+    <!-- панель экспорта в GitHub -->
+    <div class="github-panel">
+        <h3><span>🐙</span> экспорт в репозиторий GitHub</h3>
+        <div class="github-row">
+            <div class="field">
+                <label>персональный токен (Personal Access Token)</label>
+                <input type="password" id="gitToken" placeholder="ghp_... или github_pat_..." autocomplete="off">
+            </div>
+            <div class="field">
+                <label>репозиторий</label>
+                <input type="text" id="gitRepo" value="123asxcqasdc/uliigra2" placeholder="owner/repo">
+            </div>
+            <div class="field">
+                <label>ветка</label>
+                <input type="text" id="gitBranch" value="main" placeholder="main">
+            </div>
+            <div class="field">
+                <label>файл</label>
+                <input type="text" id="gitPath" value="homeconfig.txt" placeholder="homeconfig.txt">
+            </div>
+        </div>
+        <div class="github-actions">
+            <button class="btn secondary" id="gitSaveBtn"><span>💾</span> запомнить настройки</button>
+            <button class="btn" id="gitExportBtn"><span>🚀</span> экспорт на GitHub</button>
+            <span id="gitStatus"></span>
+        </div>
+        <div class="github-note">
+            🐙 Токен сохраняется только в вашем браузере (localStorage) и никуда не отправляется, кроме GitHub.
+            Создать: GitHub → Settings → Developer settings → Personal access tokens →
+            «Fine-grained» (право Contents: Read and write на репозиторий) или классический с правом <code>repo</code>.
+            После экспорта сайт обновится через ~1 минуту (GitHub Pages).
+        </div>
+    </div>
     
     <div class="footer-snails">
         <span>🐌</span><span>🐚</span><span>🐌</span><span>🍃</span><span>🐌</span>
@@ -293,9 +400,179 @@
         const sortBtn = document.getElementById('sortBtn');
         const copyRawBtn = document.getElementById('copyRawBtn');
         
+        // github
+        const importCfgBtn = document.getElementById('importCfgBtn');
+        const gitToken = document.getElementById('gitToken');
+        const gitRepo = document.getElementById('gitRepo');
+        const gitBranch = document.getElementById('gitBranch');
+        const gitPath = document.getElementById('gitPath');
+        const gitSaveBtn = document.getElementById('gitSaveBtn');
+        const gitExportBtn = document.getElementById('gitExportBtn');
+        const gitStatus = document.getElementById('gitStatus');
+        
+        // настройки github в localStorage
+        const GIT_KEY = 'homeedit_github_settings';
+        const CONFIG_URL = 'https://uliigra2.c6t.ru/homeconfig.txt';
+        
         // ---------- вспомогательные функции ----------
         function escapeHtml(unsafe) {
             return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+        
+        // уведомление в панели сырых данных
+        function notify(text, ms) {
+            copyNotify.textContent = text;
+            setTimeout(() => { if (copyNotify.textContent === text) copyNotify.textContent = ''; }, ms || 2500);
+        }
+        
+        // парсинг текста конфига (JSON-объекты через разделитель "!")
+        function parseConfigText(content) {
+            const parts = content.split('!').filter(p => p.trim() !== '');
+            const imported = [];
+            for (let part of parts) {
+                try {
+                    const parsed = JSON.parse(part);
+                    if (parsed && typeof parsed === 'object' && parsed.pic !== undefined) {
+                        imported.push(parsed);
+                    }
+                } catch (err) {
+                    console.warn('Пропущен некорректный объект:', part);
+                }
+            }
+            return imported;
+        }
+        
+        // применение импортированного массива
+        function applyCards(imported) {
+            if (imported && imported.length > 0) {
+                cards = imported;
+                updateAll();
+                return true;
+            }
+            return false;
+        }
+        
+        // автоматический импорт с сайта (homeconfig.txt)
+        async function importFromHomeconfig() {
+            try {
+                const resp = await fetch(CONFIG_URL, { cache: 'no-store' });
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                const text = await resp.text();
+                const imported = parseConfigText(text);
+                if (applyCards(imported)) {
+                    notify(`✅ импортировано из homeconfig.txt: ${imported.length} карточек`);
+                } else {
+                    notify('⚠️ в homeconfig.txt нет данных');
+                }
+            } catch (e) {
+                console.warn('Не удалось загрузить homeconfig.txt:', e);
+                notify('⚠️ не удалось загрузить homeconfig.txt');
+            }
+        }
+        
+        // перемещение карточки
+        function moveCard(index, dir) {
+            const newIndex = index + dir;
+            if (newIndex < 0 || newIndex >= cards.length) return;
+            const item = cards.splice(index, 1)[0];
+            cards.splice(newIndex, 0, item);
+            updateAll();
+            notify('↕️ порядок изменён');
+        }
+        
+        // base64 для содержимого файла
+        function toBase64(str) {
+            const bytes = new TextEncoder().encode(str);
+            let binary = '';
+            bytes.forEach(b => binary += String.fromCharCode(b));
+            return btoa(binary);
+        }
+        
+        // ---- настройки github ----
+        function loadGitSettings() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(GIT_KEY) || '{}');
+                if (saved.token) gitToken.value = saved.token;
+                if (saved.repo) gitRepo.value = saved.repo;
+                if (saved.branch) gitBranch.value = saved.branch;
+                if (saved.path) gitPath.value = saved.path;
+            } catch (e) {}
+        }
+        
+        function saveGitSettings() {
+            localStorage.setItem(GIT_KEY, JSON.stringify({
+                token: gitToken.value.trim(),
+                repo: gitRepo.value.trim(),
+                branch: gitBranch.value.trim(),
+                path: gitPath.value.trim()
+            }));
+            notify('💾 настройки github сохранены');
+        }
+        
+        // экспорт конфига в репозиторий github
+        async function exportToGithub() {
+            const raw = generateRawText();
+            if (!raw) {
+                notify('❌ нет данных для экспорта');
+                return;
+            }
+            const token = gitToken.value.trim();
+            const repo = gitRepo.value.trim();
+            const branch = gitBranch.value.trim() || 'main';
+            const path = gitPath.value.trim() || 'homeconfig.txt';
+            if (!token) { notify('❌ укажите персональный токен GitHub'); return; }
+            if (!repo) { notify('❌ укажите репозиторий (owner/repo)'); return; }
+            
+            const headers = {
+                'Authorization': 'token ' + token,
+                'Accept': 'application/vnd.github+json'
+            };
+            const apiUrl = 'https://api.github.com/repos/' + repo + '/contents/' + path;
+            
+            gitStatus.textContent = '🚀 отправка на GitHub...';
+            
+            try {
+                // получаем sha существующего файла (если есть)
+                let sha = null;
+                try {
+                    const getResp = await fetch(apiUrl + '?ref=' + encodeURIComponent(branch), { headers });
+                    if (getResp.ok) {
+                        const meta = await getResp.json();
+                        sha = meta.sha;
+                    }
+                } catch (e) {}
+                
+                const body = {
+                    message: '⚙️ обновление homeconfig.txt через редактор',
+                    content: toBase64(raw),
+                    branch: branch
+                };
+                if (sha) body.sha = sha;
+                
+                const putResp = await fetch(apiUrl, {
+                    method: 'PUT',
+                    headers: headers,
+                    body: JSON.stringify(body)
+                });
+                
+                if (putResp.ok) {
+                    gitStatus.textContent = '✅ отправлено на GitHub! сайт обновится через ~1 минуту';
+                } else {
+                    const errData = await putResp.json().catch(() => ({}));
+                    let msg = (errData && errData.message) || ('HTTP ' + putResp.status);
+                    if (putResp.status === 401 || putResp.status === 403) {
+                        msg = 'токен не подошёл или нет прав (нужен Contents: write)';
+                    } else if (putResp.status === 404) {
+                        msg = 'репозиторий или ветка не найдены';
+                    }
+                    gitStatus.textContent = '❌ ошибка: ' + msg;
+                }
+                setTimeout(() => gitStatus.textContent = '', 8000);
+            } catch (err) {
+                console.error(err);
+                gitStatus.textContent = '❌ ошибка сети: ' + err.message;
+                setTimeout(() => gitStatus.textContent = '', 8000);
+            }
         }
         
         // обновление сырого вывода и перерисовка карточек
@@ -325,6 +602,7 @@
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'card-item';
                 cardDiv.dataset.index = index;
+                cardDiv.draggable = true;
                 
                 // безопасные значения для отображения
                 const safePic = card.pic || '🐌';
@@ -351,6 +629,8 @@
                         <input type="text" class="edit-link" value="${escapeHtml(safeLink)}" placeholder="https://...">
                     </div>
                     <div class="card-actions">
+                        <button class="move-up" data-index="${index}" title="выше">↑</button>
+                        <button class="move-down" data-index="${index}" title="ниже">↓</button>
                         <button class="save-card" data-index="${index}">💾 сохранить</button>
                         <button class="delete-card" data-index="${index}">🗑️ удалить</button>
                     </div>
@@ -389,7 +669,60 @@
                     setTimeout(() => copyNotify.textContent = '', 1500);
                 });
             });
+            
+            document.querySelectorAll('.move-up').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    moveCard(parseInt(e.target.dataset.index, 10), -1);
+                });
+            });
+            document.querySelectorAll('.move-down').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    moveCard(parseInt(e.target.dataset.index, 10), 1);
+                });
+            });
         }
+        
+        // ---------- перетаскивание карточек для изменения порядка ----------
+        let dragIndex = null;
+        
+        container.addEventListener('dragstart', (e) => {
+            const card = e.target.closest('.card-item');
+            if (!card) return;
+            dragIndex = parseInt(card.dataset.index, 10);
+            card.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', String(dragIndex));
+        });
+        
+        container.addEventListener('dragend', (e) => {
+            const card = e.target.closest('.card-item');
+            if (card) card.classList.remove('dragging');
+            container.querySelectorAll('.card-item.drag-over').forEach(c => c.classList.remove('drag-over'));
+            dragIndex = null;
+        });
+        
+        container.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const target = e.target.closest('.card-item');
+            container.querySelectorAll('.card-item.drag-over').forEach(c => c.classList.remove('drag-over'));
+            if (target && dragIndex !== null) target.classList.add('drag-over');
+        });
+        
+        container.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const target = e.target.closest('.card-item');
+            container.querySelectorAll('.card-item.drag-over').forEach(c => c.classList.remove('drag-over'));
+            if (!target || dragIndex === null) return;
+            const targetIndex = parseInt(target.dataset.index, 10);
+            if (dragIndex !== targetIndex) {
+                const item = cards.splice(dragIndex, 1)[0];
+                cards.splice(targetIndex, 0, item);
+                updateAll();
+                notify('↕️ порядок изменён');
+            }
+            dragIndex = null;
+        });
         
         // ---------- добавление новой карточки ----------
         addBtn.addEventListener('click', (e) => {
@@ -506,12 +839,20 @@
             });
         });
         
-        // инициализация с парой примеров (чтобы не было пусто)
+        // ---------- импорт с сайта / выгрузка на github ----------
+        importCfgBtn.addEventListener('click', importFromHomeconfig);
+        gitSaveBtn.addEventListener('click', saveGitSettings);
+        gitExportBtn.addEventListener('click', exportToGithub);
+        
+        // инициализация с парой примеров (чтобы не было пусто),
+        // затем автоматический импорт текущего homeconfig.txt с сайта
         cards = [
             { pic: '🏠', name: 'Главная', des: 'домашняя страница', link: '/' },
             { pic: '📞', name: 'Контакты', des: 'как нас найти', link: '/contacts' },
         ];
+        loadGitSettings();
         updateAll();
+        importFromHomeconfig();
     })();
 </script>
 </body>
