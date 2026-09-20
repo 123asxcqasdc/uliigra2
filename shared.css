@@ -119,6 +119,25 @@ body::after {
     transform: translateY(-2px);
 }
 
+.header-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem 1.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+}
+
+.header-row .home-link,
+.header-row .header-title,
+.header-row h1 {
+    margin-bottom: 0;
+}
+
+.header .home-link {
+    margin-bottom: 0;
+}
+
 .footer-snails {
     margin-top: 3rem;
     display: flex;
