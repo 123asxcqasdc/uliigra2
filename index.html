@@ -9,7 +9,7 @@
     <script>
         const params = new URLSearchParams(window.location.search);
         if (params.has('app')) {
-            window.location.replace('/game');
+            window.location.replace('/game' + window.location.search);
         } else {
             window.location.replace('/home');
         }
