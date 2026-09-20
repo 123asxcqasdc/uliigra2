@@ -8,15 +8,17 @@
     <!-- ФАВИКОНКА -->
     <link rel="icon" type="image/png" href="/icon.png">
 
+    <!-- ОБЩИЕ СТИЛИ -->
+    <link rel="stylesheet" href="/shared.css">
+
     <!-- META-ТЕГИ (будут динамически обновляться) -->
     <meta property="og:title" content="Ули · зелёные улитки">
     <meta property="og:description" content="Страница с ссылками на проекты">
-    <meta property="og:image" content="/preview-default.png">
-    <meta property="og:url" content="https://uliigra2.c6t.ru/">
-    <meta name="twitter:card" content="summary_large_image">
+    <meta property="og:url" content="https://uliigra2.c6t.ru/home">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Ули · зелёные улитки">
     <meta name="twitter:description" content="Страница с ссылками на проекты">
-    <meta name="twitter:image" content="/preview-default.png">
 
     <style>
         * {
@@ -342,6 +344,7 @@
     <div class="footer-snails">
         <span>🐌</span><span>🐌💚</span><span>🐌</span><span>🐚</span><span>🐌</span><span>🍀🐌</span>
     </div>
+    <div class="footer-copyright">© Ули 2025–2026</div>
 </div>
 
 <script>
@@ -357,16 +360,14 @@
         }
 
         // Функция обновления мета-тегов для превью
-        function updateMetaTags(title, description, imageUrl = '/preview-default.png') {
+        function updateMetaTags(title, description) {
             // OG tags
             document.querySelector('meta[property="og:title"]')?.setAttribute('content', title);
             document.querySelector('meta[property="og:description"]')?.setAttribute('content', description);
-            document.querySelector('meta[property="og:image"]')?.setAttribute('content', imageUrl);
             
             // Twitter tags
             document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', title);
             document.querySelector('meta[name="twitter:description"]')?.setAttribute('content', description);
-            document.querySelector('meta[name="twitter:image"]')?.setAttribute('content', imageUrl);
             
             // Заголовок страницы
             document.title = title;
@@ -479,8 +480,7 @@
                         // Обновляем мета-теги для соцсетей
                         updateMetaTags(
                             `Ули · ${foundItem.name}`,
-                            foundItem.des || 'зелёная улитка',
-                            '/preview-default.png'
+                            foundItem.des || 'зелёная улитка'
                         );
                     } else {
                         // Карточка не найдена - показываем сообщение
