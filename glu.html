@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/shared.css">
+
+    <!-- META-ТЕГИ ДЛЯ ПРЕДПРОСМОТРА -->
+    <meta property="og:title" content="Ули · галерея улиток">
+    <meta property="og:description" content="Картинки улиток со всего мира 🐌💚">
+    <meta property="og:url" content="https://uliigra2.c6t.ru/glu">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Ули · галерея улиток">
+    <meta name="twitter:description" content="Картинки улиток со всего мира 🐌💚">
+
+    <link rel="icon" type="image/png" href="/icon.png">
+    <title>Ули · галерея улиток</title>
+    <style>
+        .gallery-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        .gallery-count {
+            color: #bede9a;
+            font-size: 1rem;
+            letter-spacing: 1px;
+        }
+
+        .gallery-search {
+            background: rgba(20, 40, 20, 0.55);
+            border: 2px solid #7eaf7a;
+            border-radius: 40px;
+            color: #f0f7da;
+            padding: 0.5rem 1.2rem;
+            font-size: 0.95rem;
+            min-width: 200px;
+            width: auto;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .gallery-search:focus {
+            border-color: #d8f0b5;
+            background: rgba(30, 55, 30, 0.7);
+        }
+
+        .gallery-search::placeholder {
+            color: #7f9f7f;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 1.2rem;
+        }
+
+        .gallery-card {
+            position: relative;
+            display: block;
+            background: rgba(30, 50, 30, 0.5);
+            border: 2px solid #7eaf7a;
+            border-radius: 18px;
+            overflow: hidden;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+
+        .gallery-card .gallery-img {
+            display: block;
+            text-decoration: none;
+        }
+
+        .gallery-copy {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 34px;
+            height: 34px;
+            border: 2px solid #7eaf7a;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.55);
+            color: #e2f0c0;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .gallery-copy:hover {
+            background: #386d38;
+            border-color: #d8f0b5;
+            transform: scale(1.08);
+        }
+
+        .gallery-card:hover {
+            border-color: #d8f0b5;
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.6);
+        }
+
+        .gallery-card img {
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            object-fit: cover;
+            display: block;
+            background: #122612;
+        }
+
+        .gallery-caption {
+            padding: 0.6rem 0.8rem;
+            font-size: 0.85rem;
+            color: #dff0c0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .gallery-empty {
+            grid-column: 1 / -1;
+            text-align: center;
+            color: #8aaa7a;
+            font-size: 1.1rem;
+            padding: 2.5rem 0;
+        }
+
+        @media (max-width: 600px) {
+            .gallery-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="main-container">
+    <div class="header-row">
+        <a class="home-link" href="/home">🐌 УЛИ</a>
+        <div class="header-title">
+            <span class="snail-icon-big">🐌</span>
+            <span>ГАЛЕРЕЯ УЛИТОК</span>
+            <span class="snail-icon-big">🐌</span>
+        </div>
+    </div>
+
+    <div class="gallery-toolbar">
+        <span id="galleryCount" class="gallery-count">загружаем ракушки...</span>
+        <input id="gallerySearch" class="gallery-search" type="search" placeholder="🔍 найти улитку...">
+    </div>
+
+    <div id="galleryGrid" class="gallery-grid"></div>
+
+    <div class="footer-snails">
+        <span>🐌</span><span>🐌💚</span><span>🐌</span><span>🐚</span><span>🐌</span><span>🍀🐌</span>
+    </div>
+    <div class="footer-copyright">© Ули 2025–2026</div>
+</div>
+
+<script>
+    const DATABASE_URL = "https://sstore-a5e9a-default-rtdb.firebaseio.com";
+    const grid = document.getElementById('galleryGrid');
+    const countEl = document.getElementById('galleryCount');
+    const searchEl = document.getElementById('gallerySearch');
+
+    let snails = [];
+
+    async function loadGallery() {
+        try {
+            const resp = await fetch(`${DATABASE_URL}/images.json`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+
+            const items = [];
+            if (data) {
+                for (const format in data) {
+                    const group = data[format];
+                    if (typeof group === 'object' && group !== null) {
+                        for (const key in group) {
+                            const it = group[key];
+                            if (it?.url) {
+                                items.push({ url: it.url, title: it.title || '', source: it.source || '' });
+                            }
+                        }
+                    }
+                }
+            }
+            snails = items;
+            renderAll();
+        } catch (e) {
+            countEl.textContent = 'не удалось загрузить улиток';
+            grid.innerHTML = '<div class="gallery-empty">улитки пока в ракушках... 🐌</div>';
+            console.error(e);
+        }
+    }
+
+    function copySnailUrl(url, btn) {
+        const done = () => {
+            const prev = btn.textContent;
+            btn.textContent = '✅';
+            setTimeout(() => { btn.textContent = prev; }, 1200);
+        };
+        if (navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText(url)
+                .then(done)
+                .catch(() => { fallbackCopy(url); done(); });
+        } else {
+            fallbackCopy(url);
+            done();
+        }
+    }
+
+    function fallbackCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(ta);
+    }
+
+    function makeCard(snail) {
+        const card = document.createElement('div');
+        card.className = 'gallery-card';
+
+        const imgLink = document.createElement('a');
+        imgLink.className = 'gallery-img';
+        imgLink.href = snail.url;
+        imgLink.target = '_blank';
+        imgLink.rel = 'noopener';
+
+        const img = document.createElement('img');
+        img.loading = 'lazy';
+        img.src = snail.url;
+        img.alt = snail.title || 'улитка';
+        imgLink.appendChild(img);
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'gallery-copy';
+        copyBtn.title = 'копировать ссылку на картинку';
+        copyBtn.textContent = '📋';
+        copyBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            copySnailUrl(snail.url, copyBtn);
+        });
+
+        const caption = document.createElement('div');
+        caption.className = 'gallery-caption';
+        caption.textContent = snail.title || 'улитка';
+
+        card.append(imgLink, copyBtn, caption);
+        return card;
+    }
+
+    function renderAll() {
+        countEl.textContent = `найдено улиток: ${snails.length}`;
+        const q = searchEl.value.trim().toLowerCase();
+        const filtered = q
+            ? snails.filter(s => `${s.title} ${s.source}`.toLowerCase().includes(q))
+            : snails;
+
+        grid.innerHTML = '';
+        if (filtered.length === 0) {
+            grid.innerHTML = '<div class="gallery-empty">таких улиток не нашли 🐌💨</div>';
+            return;
+        }
+
+        const frag = document.createDocumentFragment();
+        filtered.forEach(s => frag.appendChild(makeCard(s)));
+        grid.appendChild(frag);
+    }
+
+    searchEl.addEventListener('input', renderAll);
+    loadGallery();
+</script>
+</body>
+</html>
