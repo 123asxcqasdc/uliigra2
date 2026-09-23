@@ -69,6 +69,7 @@
             overflow: hidden;
             text-decoration: none;
             transition: 0.2s;
+            cursor: zoom-in;
         }
 
         .gallery-card .gallery-img {
@@ -128,6 +129,102 @@
             padding: 2.5rem 0;
         }
 
+        .lightbox {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(8, 18, 8, 0.94);
+        }
+
+        .lightbox.open {
+            display: flex;
+        }
+
+        .lightbox-img-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            padding: 2.5rem 5rem 3.5rem;
+            cursor: zoom-out;
+        }
+
+        .lightbox-img-wrap img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.85);
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 0.9rem;
+            right: 0.9rem;
+            width: 42px;
+            height: 42px;
+            border: 2px solid #7eaf7a;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.55);
+            color: #e2f0c0;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            z-index: 2;
+        }
+
+        .lightbox-close:hover {
+            background: #386d38;
+            border-color: #d8f0b5;
+        }
+
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 48px;
+            height: 48px;
+            border: 2px solid #7eaf7a;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.55);
+            color: #e2f0c0;
+            font-size: 1.6rem;
+            line-height: 1;
+            cursor: pointer;
+            transition: 0.2s;
+            z-index: 2;
+        }
+
+        .lightbox-nav:hover {
+            background: #386d38;
+            border-color: #d8f0b5;
+        }
+
+        .lightbox-prev { left: 0.9rem; }
+        .lightbox-next { right: 0.9rem; }
+
+        .lightbox-caption {
+            position: absolute;
+            bottom: 1rem;
+            left: 0;
+            right: 0;
+            text-align: center;
+            padding: 0 1rem;
+            color: #e2f0c0;
+            font-size: 0.95rem;
+            letter-spacing: 0.5px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+            z-index: 2;
+        }
+
         @media (max-width: 600px) {
             .gallery-grid {
                 grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -160,6 +257,16 @@
     <div class="footer-copyright">© Ули 2025–2026</div>
 </div>
 
+<div id="lightbox" class="lightbox">
+    <button class="lightbox-close" id="lightboxClose" title="закрыть">✕</button>
+    <button class="lightbox-nav lightbox-prev" id="lightboxPrev" title="назад">‹</button>
+    <div class="lightbox-img-wrap" id="lightboxImgWrap">
+        <img id="lightboxImg" alt="улитка">
+    </div>
+    <button class="lightbox-nav lightbox-next" id="lightboxNext" title="дальше">›</button>
+    <div class="lightbox-caption" id="lightboxCaption"></div>
+</div>
+
 <script>
     const DATABASE_URL = "https://sstore-a5e9a-default-rtdb.firebaseio.com";
     const grid = document.getElementById('galleryGrid');
@@ -167,6 +274,7 @@
     const searchEl = document.getElementById('gallerySearch');
 
     let snails = [];
+    let currentList = [];
 
     async function loadGallery() {
         try {
@@ -228,17 +336,14 @@
         const card = document.createElement('div');
         card.className = 'gallery-card';
 
-        const imgLink = document.createElement('a');
-        imgLink.className = 'gallery-img';
-        imgLink.href = snail.url;
-        imgLink.target = '_blank';
-        imgLink.rel = 'noopener';
+        const imgWrap = document.createElement('div');
+        imgWrap.className = 'gallery-img';
 
         const img = document.createElement('img');
         img.loading = 'lazy';
         img.src = snail.url;
         img.alt = snail.title || 'улитка';
-        imgLink.appendChild(img);
+        imgWrap.appendChild(img);
 
         const copyBtn = document.createElement('button');
         copyBtn.className = 'gallery-copy';
@@ -254,27 +359,95 @@
         caption.className = 'gallery-caption';
         caption.textContent = snail.title || 'улитка';
 
-        card.append(imgLink, copyBtn, caption);
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('.gallery-copy')) return;
+            openLightbox(currentList.indexOf(snail));
+        });
+
+        card.append(imgWrap, copyBtn, caption);
         return card;
     }
 
     function renderAll() {
         countEl.textContent = `найдено улиток: ${snails.length}`;
         const q = searchEl.value.trim().toLowerCase();
-        const filtered = q
+        currentList = q
             ? snails.filter(s => `${s.title} ${s.source}`.toLowerCase().includes(q))
             : snails;
 
         grid.innerHTML = '';
-        if (filtered.length === 0) {
+        if (currentList.length === 0) {
             grid.innerHTML = '<div class="gallery-empty">таких улиток не нашли 🐌💨</div>';
             return;
         }
 
         const frag = document.createDocumentFragment();
-        filtered.forEach(s => frag.appendChild(makeCard(s)));
+        currentList.forEach(s => frag.appendChild(makeCard(s)));
         grid.appendChild(frag);
     }
+
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+    const lightboxCaption = document.getElementById('lightboxCaption');
+    const lightboxImgWrap = document.getElementById('lightboxImgWrap');
+    let lightIndex = -1;
+
+    function openLightbox(i) {
+        if (i < 0 || i >= currentList.length) return;
+        lightIndex = i;
+        const snail = currentList[lightIndex];
+        lightboxImg.src = snail.url;
+        lightboxImg.alt = snail.title || 'улитка';
+        lightboxCaption.textContent = snail.title || 'улитка';
+        lightbox.classList.add('open');
+    }
+
+    function closeLightbox() {
+        lightbox.classList.remove('open');
+        lightboxImg.src = '';
+        lightIndex = -1;
+    }
+
+    function navLightbox(dir) {
+        if (currentList.length === 0) return;
+        lightIndex = (lightIndex + dir + currentList.length) % currentList.length;
+        const snail = currentList[lightIndex];
+        lightboxImg.src = snail.url;
+        lightboxImg.alt = snail.title || 'улитка';
+        lightboxCaption.textContent = snail.title || 'улитка';
+    }
+
+    document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+    document.getElementById('lightboxPrev').addEventListener('click', (e) => {
+        e.stopPropagation();
+        navLightbox(-1);
+    });
+    document.getElementById('lightboxNext').addEventListener('click', (e) => {
+        e.stopPropagation();
+        navLightbox(1);
+    });
+
+    lightboxImgWrap.addEventListener('click', closeLightbox);
+
+    document.addEventListener('keydown', (e) => {
+        if (!lightbox.classList.contains('open')) return;
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowLeft') navLightbox(-1);
+        if (e.key === 'ArrowRight') navLightbox(1);
+    });
+
+    let touchX = null;
+    lightbox.addEventListener('touchstart', (e) => {
+        touchX = e.touches[0].clientX;
+    });
+    lightbox.addEventListener('touchend', (e) => {
+        if (touchX === null) return;
+        const dx = e.changedTouches[0].clientX - touchX;
+        touchX = null;
+        if (Math.abs(dx) > 50) {
+            navLightbox(dx < 0 ? 1 : -1);
+        }
+    });
 
     searchEl.addEventListener('input', renderAll);
     loadGallery();
