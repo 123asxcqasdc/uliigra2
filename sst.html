@@ -770,7 +770,7 @@ async function uploadFile(file, customName) {
             <div class="copy-hint">📋 нажмите на код, чтобы скопировать</div>
             <div class="fast-link-block">
                 <div class="fast-link-label">⚡ быстрая ссылка для скачивания:</div>
-                <a class="fast-link" href="https://uli.c6t.ru/d?code=${code}" target="_blank" rel="noopener">uli.c6t.ru/d?code=${code}</a>
+                <a class="fast-link" href="https://uli.c6t.ru/d?code=${code}" target="_blank">uli.c6t.ru/d?code=${code}</a>
             </div>
         `;
         chunkProgress.textContent = `✅ ${totalChunks} кусков загружено`;
@@ -916,7 +916,7 @@ async function openByCode(code) {
             <div class="file-meta">${formatSize(size)} · ${dateStr} · ${totalChunks} кусков</div>
             <a href="${downloadUrl}" download="${escapeHtml(name)}" class="download-link">⬇️ скачать файл</a>
             <div style="margin-top:0.8rem;">
-                <a class="fast-link" href="https://uli.c6t.ru/d?code=${codeUpper}" target="_blank" rel="noopener">⚡ быстрая загрузка: uli.c6t.ru/d?code=${codeUpper}</a>
+                <a class="fast-link" href="https://uli.c6t.ru/d?code=${codeUpper}" target="_blank">⚡ быстрая загрузка: uli.c6t.ru/d?code=${codeUpper}</a>
             </div>
         `;
 
