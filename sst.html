@@ -415,6 +415,37 @@
             margin-top: 0.2rem;
         }
 
+        .fast-link-block {
+            margin-top: 0.8rem;
+            background: #1b331b;
+            border: 2px dashed #7eaf7a;
+            border-radius: 14px;
+            padding: 0.6rem 1rem;
+        }
+
+        .fast-link-label {
+            font-size: 0.8rem;
+            color: #a0bf90;
+        }
+
+        .fast-link {
+            display: inline-block;
+            margin-top: 0.3rem;
+            color: #c7f0b1;
+            font-family: monospace;
+            font-size: 0.9rem;
+            text-decoration: none;
+            border-bottom: 1px dashed #7eaf7a;
+            padding: 0.1rem 0.2rem;
+            word-break: break-all;
+            transition: 0.2s;
+        }
+
+        .fast-link:hover {
+            color: #e2ffb3;
+            border-bottom-color: #e2ffb3;
+        }
+
         .file-info {
             background: #1b331b;
             border-radius: 12px;
@@ -737,6 +768,10 @@ async function uploadFile(file, customName) {
             <div class="upload-success-text">✅ файл загружен! 🐌</div>
             <div class="code-display" onclick="copyCode('${code}')">🔑 ${code}</div>
             <div class="copy-hint">📋 нажмите на код, чтобы скопировать</div>
+            <div class="fast-link-block">
+                <div class="fast-link-label">⚡ быстрая ссылка для скачивания:</div>
+                <a class="fast-link" href="https://uli.c6t.ru/d?code=${code}" target="_blank" rel="noopener">uli.c6t.ru/d?code=${code}</a>
+            </div>
         `;
         chunkProgress.textContent = `✅ ${totalChunks} кусков загружено`;
         fileInfo.innerHTML = `Файл: <span>${escapeHtml(fileName)}</span> · Размер: <span>${formatSize(file.size)}</span> · Готово! 🎉`;
@@ -880,6 +915,9 @@ async function openByCode(code) {
             <div class="file-name">${escapeHtml(name)}</div>
             <div class="file-meta">${formatSize(size)} · ${dateStr} · ${totalChunks} кусков</div>
             <a href="${downloadUrl}" download="${escapeHtml(name)}" class="download-link">⬇️ скачать файл</a>
+            <div style="margin-top:0.8rem;">
+                <a class="fast-link" href="https://uli.c6t.ru/d?code=${codeUpper}" target="_blank" rel="noopener">⚡ быстрая загрузка: uli.c6t.ru/d?code=${codeUpper}</a>
+            </div>
         `;
 
         showToast(`🐌 файл «${name}» найден!`);
