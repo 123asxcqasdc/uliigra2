@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#1b3b1b">
+    <link rel="icon" type="image/png" href="/icon.png">
+    <link rel="stylesheet" href="/shared.css">
+
+    <!-- превью в соцсетях -->
+    <meta property="og:title" content="Ули · кодировщик">
+    <meta property="og:description" content="Base64, URL и hex — закодировать и раскодировать текст 🧬">
+    <meta property="og:url" content="https://uliigra2.c6t.ru/b64">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Ули · кодировщик">
+    <meta name="twitter:description" content="Base64, URL и hex — закодировать и раскодировать текст 🧬">
+
+    <title>Ули · кодировщик</title>
+    <style>
+        .main-container {
+            max-width: 900px;
+        }
+
+        .header-title {
+            font-size: 2.4rem;
+        }
+
+        .snail-icon-big {
+            font-size: 3rem;
+        }
+
+        /* ---- Переключатель режимов ---- */
+        .modes {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .mode-btn {
+            padding: 0.55rem 1.3rem;
+            border-radius: 40px;
+            border: 2px solid #7eaf7a;
+            background: rgba(47, 84, 47, 0.5);
+            color: #c7e0b0;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .mode-btn:hover {
+            background: #2f542f;
+            color: #ffefc0;
+        }
+
+        .mode-btn.active {
+            background: #a3c4a3;
+            color: #1b3f1b;
+            border-color: #d8f0b5;
+            box-shadow: 0 0 18px rgba(163, 196, 163, 0.45);
+        }
+
+        /* ---- Поля ---- */
+        .fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.2rem;
+        }
+
+        @media (max-width: 720px) {
+            .fields { grid-template-columns: 1fr; }
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .field-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.5rem;
+        }
+
+        .field-head label {
+            color: #dcedc4;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .counter {
+            font-size: 0.75rem;
+            color: #8aaa7a;
+            font-variant-numeric: tabular-nums;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 240px;
+            resize: vertical;
+            padding: 0.9rem 1.1rem;
+            background: #213f21;
+            border: 2px solid #7eaf7a;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #f0f7da;
+            font-family: 'PT Mono', 'Consolas', 'Monaco', monospace;
+            transition: 0.2s;
+            word-break: break-all;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #c7f0b1;
+            background: #294a29;
+            box-shadow: 0 0 0 3px rgba(167, 200, 163, 0.3);
+        }
+
+        textarea::placeholder {
+            color: #7c9a6c;
+        }
+
+        /* ---- Кнопки действий ---- */
+        .actions {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.85rem 1.6rem;
+            border-radius: 30px;
+            border: none;
+            background: #a3c4a3;
+            color: #1b3f1b;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: 0.15s;
+            box-shadow: 0 5px 0 #446d44;
+            min-height: 46px;
+        }
+
+        .btn:hover {
+            background: #c3e6b3;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 0 #2f542f;
+        }
+
+        .btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #2f542f;
+        }
+
+        .btn.secondary {
+            background: #4f7a4f;
+            color: #eaffda;
+        }
+
+        .btn.secondary:hover {
+            background: #5f8f5c;
+        }
+
+        .btn.ghost {
+            background: transparent;
+            color: #c7e0b0;
+            border: 2px solid #7eaf7a;
+            box-shadow: none;
+        }
+
+        .btn.ghost:hover {
+            background: #2f542f;
+            color: #ffefc0;
+            transform: translateY(-2px);
+            box-shadow: none;
+        }
+
+        .note {
+            margin-top: 1.3rem;
+            font-size: 0.8rem;
+            color: #b3d49b;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .footer-snails {
+            margin-top: 2.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .header-title { font-size: 1.7rem; }
+            .snail-icon-big { font-size: 2.1rem; }
+            textarea { min-height: 160px; }
+            .btn { flex: 1 1 40%; padding: 0.8rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="header-row">
+        <a class="home-link" href="/home">🐌 УЛИ</a>
+        <div class="header-title">
+            <span class="snail-icon-big">🧬</span>
+            <span>КОДИРОВЩИК</span>
+            <span class="snail-icon-big">🐌</span>
+        </div>
+    </div>
+
+    <div class="modes">
+        <button class="mode-btn active" data-mode="b64" onclick="setMode('b64')">Base64</button>
+        <button class="mode-btn" data-mode="url" onclick="setMode('url')">URL</button>
+        <button class="mode-btn" data-mode="hex" onclick="setMode('hex')">Hex</button>
+    </div>
+
+    <div class="fields">
+        <div class="field">
+            <div class="field-head">
+                <label for="inputText">исходный текст</label>
+                <span class="counter" id="inCount">0 симв.</span>
+            </div>
+            <textarea id="inputText" placeholder="введите текст..." spellcheck="false"></textarea>
+        </div>
+        <div class="field">
+            <div class="field-head">
+                <label for="outputText">результат</label>
+                <span class="counter" id="outCount">0 симв.</span>
+            </div>
+            <textarea id="outputText" placeholder="здесь появится результат..." spellcheck="false"></textarea>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button class="btn" onclick="doEncode()" id="encBtn">закодировать ↓</button>
+        <button class="btn secondary" onclick="doDecode()" id="decBtn">раскодировать ↑</button>
+        <button class="btn ghost" onclick="swapText()">поменять ⇅</button>
+        <button class="btn ghost" onclick="copyOutput(this)">копировать</button>
+        <button class="btn ghost" onclick="clearAll()">очистить</button>
+    </div>
+
+    <div class="note" id="note">UTF-8 · работает прямо в браузере, ничего никуда не отправляется</div>
+
+    <div class="footer-snails">
+        <span>🐌</span><span>🐌💚</span><span>🐌</span><span>🐚</span><span>🐌</span><span>🍀🐌</span>
+    </div>
+    <div class="footer-copyright">© Ули 2025–2026</div>
+</div>
+
+<script>
+    let mode = 'b64';
+
+    const MODE_NAMES = { b64: 'Base64', url: 'URL', hex: 'Hex' };
+
+    /* ---------- Кодеры/декодеры (все через UTF-8) ---------- */
+
+    function utf8Bytes(str) {
+        return new TextEncoder().encode(str);
+    }
+
+    function bytesToUtf8(bytes) {
+        return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    }
+
+    function bytesToBinary(bytes) {
+        let bin = '';
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+            bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+        }
+        return bin;
+    }
+
+    function b64Encode(str) {
+        return btoa(bytesToBinary(utf8Bytes(str)));
+    }
+
+    function b64Decode(str) {
+        let s = str.replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
+        while (s.length % 4) s += '=';
+        const bin = atob(s);
+        const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+        return bytesToUtf8(bytes);
+    }
+
+    function urlEncode(str) {
+        return encodeURIComponent(str);
+    }
+
+    function urlDecode(str) {
+        return decodeURIComponent(str.replace(/\+/g, ' '));
+    }
+
+    function hexEncode(str) {
+        return Array.from(utf8Bytes(str))
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
+    }
+
+    function hexDecode(str) {
+        const clean = str.replace(/0x/gi, '').replace(/[^0-9a-fA-F]/g, '');
+        if (clean.length % 2 !== 0) throw new Error('нечётное число hex-символов');
+        const bytes = new Uint8Array(clean.length / 2);
+        for (let i = 0; i < bytes.length; i++) {
+            bytes[i] = parseInt(clean.substr(i * 2, 2), 16);
+        }
+        return bytesToUtf8(bytes);
+    }
+
+    const CODECS = {
+        b64: { encode: b64Encode, decode: b64Decode, hint: 'Base64 · с поддержкой base64url' },
+        url: { encode: urlEncode, decode: urlDecode, hint: 'URL · encodeURIComponent' },
+        hex: { encode: hexEncode, decode: hexDecode, hint: 'Hex · байты UTF-8 в hex' }
+    };
+
+    /* ---------- UI ---------- */
+
+    const inputEl = document.getElementById('inputText');
+    const outputEl = document.getElementById('outputText');
+    const inCount = document.getElementById('inCount');
+    const outCount = document.getElementById('outCount');
+    const noteEl = document.getElementById('note');
+
+    function updateCounts() {
+        inCount.textContent = inputEl.value.length + ' симв.';
+        outCount.textContent = outputEl.value.length + ' симв.';
+    }
+
+    function setMode(m) {
+        mode = m;
+        document.querySelectorAll('.mode-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.mode === m);
+        });
+        document.getElementById('encBtn').textContent = 'закодировать в ' + MODE_NAMES[m] + ' ↓';
+        document.getElementById('decBtn').textContent = 'раскодировать из ' + MODE_NAMES[m] + ' ↑';
+        noteEl.textContent = CODECS[m].hint + ' · всё считается в браузере';
+    }
+
+    function setNote(text, isError) {
+        noteEl.textContent = text;
+        noteEl.style.color = isError ? '#ffb0a0' : '#b3d49b';
+    }
+
+    function doEncode() {
+        const text = inputEl.value;
+        if (!text) { setNote('введите текст для кодирования', true); return; }
+        try {
+            outputEl.value = CODECS[mode].encode(text);
+            updateCounts();
+            setNote('готово: закодировано в ' + MODE_NAMES[mode]);
+        } catch (e) {
+            setNote('ошибка кодирования: ' + e.message, true);
+        }
+    }
+
+    function doDecode() {
+        const text = inputEl.value.trim();
+        if (!text) { setNote('введите текст для раскодирования', true); return; }
+        try {
+            outputEl.value = CODECS[mode].decode(text);
+            updateCounts();
+            setNote('готово: раскодировано из ' + MODE_NAMES[mode]);
+        } catch (e) {
+            setNote('не удалось раскодировать: проверьте, что это ' + MODE_NAMES[mode], true);
+        }
+    }
+
+    function swapText() {
+        const tmp = inputEl.value;
+        inputEl.value = outputEl.value;
+        outputEl.value = tmp;
+        updateCounts();
+    }
+
+    function copyOutput(btn) {
+        if (!outputEl.value) { setNote('результат пуст', true); return; }
+        outputEl.select();
+        navigator.clipboard.writeText(outputEl.value).catch(() => document.execCommand('copy'));
+        const old = btn.textContent;
+        btn.textContent = 'скопировано!';
+        setTimeout(() => { btn.textContent = old; }, 1500);
+    }
+
+    function clearAll() {
+        inputEl.value = '';
+        outputEl.value = '';
+        updateCounts();
+        setNote(CODECS[mode].hint + ' · всё считается в браузере');
+        inputEl.focus();
+    }
+
+    inputEl.addEventListener('input', updateCounts);
+    outputEl.addEventListener('input', updateCounts);
+
+    setMode('b64');
+    updateCounts();
+</script>
+</body>
+</html>

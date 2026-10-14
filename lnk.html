@@ -9,12 +9,12 @@
     <link rel="stylesheet" href="/shared.css">
     <!-- превью в соцсетях -->
     <meta property="og:title" content="Ули · Сократитель ссылок">
-    <meta property="og:description" content="Создай свою короткую ссылку и следи за переходами">
+    <meta property="og:description" content="Создай короткую ссылку и QR-код — следи за переходами">
     <meta property="og:url" content="https://uliigra2.c6t.ru/lnk">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Ули · Сократитель ссылок">
-    <meta name="twitter:description" content="Создай свою короткую ссылку и следи за переходами">
+    <meta name="twitter:description" content="Создай короткую ссылку и QR-код — следи за переходами">
     
     <style>
         .main-container {
@@ -167,6 +167,40 @@
             padding-top: 1.5rem;
         }
 
+        .divider {
+            margin: 2.5rem 0;
+            border: none;
+            border-top: 2px dashed #61855e;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #dff0c0;
+            letter-spacing: 1px;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .qr-wrap {
+            margin-top: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .qr-img {
+            width: 200px;
+            height: 200px;
+            max-width: 60vw;
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 8px;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+            image-rendering: pixelated;
+        }
+
         @media (max-width: 600px) {
             .header-title { font-size: 1.8rem; }
             .snail-icon-big { font-size: 2.2rem; }
@@ -209,6 +243,24 @@
             <button class="copy-btn" onclick="copyToClipboard(this, 'shortUrlUli')">копировать</button>
         </div>
         <div class="info-text" id="infoText"></div>
+        <div class="qr-wrap" id="qrShortWrap">
+            <div class="result-title" style="margin-bottom: 0;">QR-код ссылки uli.c6t.ru:</div>
+            <img id="qrShort" class="qr-img" alt="QR-код короткой ссылки">
+            <button class="copy-btn" onclick="downloadQR('qrShort', 'uli-qr')">скачать QR (PNG)</button>
+        </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section-title">QR-код любой ссылки</div>
+    <div class="input-group">
+        <label>ссылка или текст</label>
+        <input type="text" id="qrInput" placeholder="https://example.com или любой текст" maxlength="2000">
+    </div>
+    <button onclick="makeQr()">сделать QR-код</button>
+    <div class="qr-wrap" id="qrBox" style="display: none;">
+        <img id="qrImg" class="qr-img" alt="QR-код">
+        <button class="copy-btn" onclick="downloadQR('qrImg', 'uli-qr')">скачать QR (PNG)</button>
     </div>
 
     <div class="footer-snails">
@@ -219,6 +271,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 
 <script>
     const firebaseConfig = {
@@ -303,6 +356,10 @@
             infoText.innerHTML = `пример перехода через uli.c6t.ru: <a href="${uliShortUrl}" target="_blank">${uliShortUrl}</a>`;
             resultDiv.classList.add('show');
 
+            renderQR(document.getElementById('qrShort'), uliShortUrl);
+            document.getElementById('qrShortWrap').style.display =
+                document.getElementById('qrShort').src ? 'flex' : 'none';
+
             document.getElementById('customCode').value = '';
 
         } catch (error) {
@@ -323,11 +380,56 @@
         }, 2000);
     }
 
+    function renderQR(imgEl, text) {
+        if (typeof qrcode !== 'function') {
+            console.error('QR-библиотека не загрузилась');
+            return false;
+        }
+        try {
+            const qr = qrcode(0, 'M');
+            qr.addData(text);
+            qr.make();
+            imgEl.src = qr.createDataURL(10, 4);
+            return true;
+        } catch (error) {
+            console.error('Ошибка создания QR:', error);
+            return false;
+        }
+    }
+
+    function makeQr() {
+        const value = document.getElementById('qrInput').value.trim();
+        if (!value) {
+            alert('введите ссылку или текст');
+            return;
+        }
+        const box = document.getElementById('qrBox');
+        if (renderQR(document.getElementById('qrImg'), value)) {
+            box.style.display = 'flex';
+        } else {
+            alert('не удалось создать QR-код');
+        }
+    }
+
+    function downloadQR(id, name) {
+        const img = document.getElementById(id);
+        if (!img || !img.src) return;
+        const a = document.createElement('a');
+        a.href = img.src;
+        a.download = name + '.png';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    }
+
     document.getElementById('longUrl').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') createShortLink();
     });
     document.getElementById('customCode').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') createShortLink();
+    });
+    document.getElementById('qrInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') makeQr();
     });
 </script>
 </body>
