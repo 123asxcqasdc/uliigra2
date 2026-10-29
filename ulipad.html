@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🐌 УЛИТОПАД</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            background: #1a2e1a;
+        }
+
+        #background-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        #background-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ФОН -->
+    <div id="background-container">
+        <img src="https://avatars.mds.yandex.net/i?id=3b1c4a377265df0b608d0724b0c1f2cc_l-4452215-images-thumbs&n=13" alt="Фон УЛИТОПАДА">
+    </div>
+
+    <!-- ХОЛСТ -->
+    <div id="canvas-container">
+        <canvas id="snailCanvas"></canvas>
+    </div>
+
+    <script>
+        // ============================================================
+        // КОНФИГУРАЦИЯ — УЛИТОПАД!
+        // ============================================================
+        const DATABASE_URL = "https://sstore-a5e9a-default-rtdb.firebaseio.com";
+
+        const CONFIG = {
+            speed: 0.4,
+            minSize: 120,
+            maxSize: 220,
+            spawnInterval: 600,
+            spawnAttempts: 200,
+            collisionMargin: 1.5,
+            initialBurst: 10,
+            queueSize: 20,
+        };
+
+        // ============================================================
+        // DOM-ЭЛЕМЕНТЫ
+        // ============================================================
+        const canvas = document.getElementById('snailCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let W, H;
+        let snails = [];
+        let snailImages = [];
+        let isReady = false;
+        let animId = null;
+        let spawnTimer = null;
+        let usedImagesQueue = [];
+
+        // ============================================================
+        // РАЗМЕР ХОЛСТА
+        // ============================================================
+        function resizeCanvas() {
+            W = window.innerWidth;
+            H = window.innerHeight;
+            canvas.width = W;
+            canvas.height = H;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // ============================================================
+        // ЗАГРУЗКА URL ИЗ FIREBASE
+        // ============================================================
+        async function fetchImageUrls() {
+            try {
+                const resp = await fetch(`${DATABASE_URL}/images.json`);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data = await resp.json();
+                
+                const urls = [];
+                if (data) {
+                    for (const format in data) {
+                        const group = data[format];
+                        if (typeof group === 'object' && group !== null) {
+                            for (const key in group) {
+                                if (group[key]?.url) {
+                                    urls.push(group[key].url);
+                                }
+                            }
+                        }
+                    }
+                }
+                return urls;
+            } catch (e) {
+                console.error('Ошибка загрузки из Firebase:', e);
+                return [];
+            }
+        }
+
+        // ============================================================
+        // ПОЛУЧЕНИЕ УНИКАЛЬНОЙ КАРТИНКИ
+        // ============================================================
+        function getUniqueImage() {
+            if (snailImages.length === 0) return null;
+            if (snailImages.length === 1) return snailImages[0];
+
+            const usedOnScreen = new Set(snails.map(s => s.img));
+            const available = snailImages.filter(img => !usedOnScreen.has(img));
+            
+            if (available.length > 0) {
+                const img = available[Math.floor(Math.random() * available.length)];
+                usedImagesQueue.push(img);
+                if (usedImagesQueue.length > CONFIG.queueSize) {
+                    usedImagesQueue.shift();
+                }
+                return img;
+            }
+
+            if (usedImagesQueue.length > 0) {
+                const img = usedImagesQueue.shift();
+                if (!usedOnScreen.has(img)) {
+                    return img;
+                }
+                return snailImages[Math.floor(Math.random() * snailImages.length)];
+            }
+
+            return snailImages[Math.floor(Math.random() * snailImages.length)];
+        }
+
+        // ============================================================
+        // ФОНОВАЯ ЗАГРУЗКА ИЗОБРАЖЕНИЙ
+        // ============================================================
+        function startBackgroundLoading(urls) {
+            if (urls.length === 0) {
+                console.warn('Нет картинок улиток');
+                return;
+            }
+
+            // Перемешиваем URL
+            for (let i = urls.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [urls[i], urls[j]] = [urls[j], urls[i]];
+            }
+
+            let index = 0;
+
+            function loadNext() {
+                if (index >= urls.length) {
+                    console.log(`✅ Загружено ${snailImages.length} картинок`);
+                    return;
+                }
+
+                const url = urls[index];
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                
+                img.onload = () => {
+                    snailImages.push(img);
+                    
+                    if (snailImages.length === 1 && !isReady) {
+                        startSnailArmy();
+                    }
+                    
+                    index++;
+                    setTimeout(loadNext, 20);
+                };
+                
+                img.onerror = () => {
+                    console.warn('Не загружено:', url);
+                    index++;
+                    setTimeout(loadNext, 20);
+                };
+                
+                img.src = url;
+            }
+
+            loadNext();
+        }
+
+        // ============================================================
+        // УЛИТКИ
+        // ============================================================
+        function checkCollision(x, y, size, ignoreIndex = -1) {
+            const margin = CONFIG.collisionMargin;
+            for (let i = 0; i < snails.length; i++) {
+                if (i === ignoreIndex) continue;
+                const s = snails[i];
+                const dx = x - s.x;
+                const dy = y - s.y;
+                const minDist = (size + s.size) / 2 * margin;
+                if (dx * dx + dy * dy < minDist * minDist) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function createSnail() {
+            const img = getUniqueImage();
+            if (!img) return;
+
+            const size = CONFIG.minSize + Math.random() * (CONFIG.maxSize - CONFIG.minSize);
+            const speed = CONFIG.speed;
+            const x = -size - Math.random() * 200;
+
+            let y = Math.random() * (H - size);
+            let attempts = 0;
+            let found = false;
+            
+            while (attempts < CONFIG.spawnAttempts) {
+                if (!checkCollision(x, y, size)) {
+                    found = true;
+                    break;
+                }
+                y = Math.random() * (H - size);
+                attempts++;
+            }
+
+            if (!found) return;
+
+            snails.push({ img, x, y, size, speed });
+        }
+
+        function drawSnail(s) {
+            ctx.save();
+            ctx.translate(s.x, s.y);
+            ctx.drawImage(s.img, -s.size/2, -s.size/2, s.size, s.size);
+            ctx.restore();
+        }
+
+        function animate() {
+            if (!isReady) return;
+            
+            ctx.clearRect(0, 0, W, H);
+
+            for (let i = snails.length - 1; i >= 0; i--) {
+                const s = snails[i];
+                s.x += s.speed;
+                if (s.x > W + s.size + 50) {
+                    usedImagesQueue.push(s.img);
+                    if (usedImagesQueue.length > CONFIG.queueSize * 2) {
+                        usedImagesQueue.shift();
+                    }
+                    snails.splice(i, 1);
+                    continue;
+                }
+                drawSnail(s);
+            }
+
+            animId = requestAnimationFrame(animate);
+        }
+
+        function startSnailArmy() {
+            if (isReady) return;
+            
+            console.log('🚀 УЛИТОПАД запущен!');
+            isReady = true;
+
+            for (let i = 0; i < CONFIG.initialBurst; i++) {
+                setTimeout(() => { createSnail(); }, i * 120);
+            }
+
+            spawnTimer = setInterval(() => {
+                createSnail();
+            }, CONFIG.spawnInterval);
+
+            animate();
+        }
+
+        // ============================================================
+        // ЗАПУСК
+        // ============================================================
+        async function init() {
+            const urls = await fetchImageUrls();
+            if (urls.length === 0) {
+                console.warn('⚠️ Нет картинок улиток');
+                return;
+            }
+
+            console.log(`📥 Найдено ${urls.length} URL картинок`);
+            startBackgroundLoading(urls);
+        }
+
+        init().catch(e => {
+            console.error(e);
+        });
+    </script>
+</body>
+</html>

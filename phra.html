@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#1b3b1b">
+    <link rel="icon" type="image/png" href="/icon.png">
+    <link rel="stylesheet" href="/shared.css">
+
+    <!-- превью в соцсетях -->
+    <meta property="og:title" content="Ули · улитко-приколы">
+    <meta property="og:description" content="Свежие приколы про улиток — по одному в день 🐌">
+    <meta property="og:url" content="https://uliigra2.c6t.ru/phra">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Ули · улитко-приколы">
+    <meta name="twitter:description" content="Свежие приколы про улиток — по одному в день 🐌">
+
+    <title>Ули · улитко-приколы</title>
+    <style>
+        .main-container {
+            max-width: 720px;
+            text-align: center;
+        }
+
+        .header-title {
+            font-size: 2.3rem;
+        }
+
+        .snail-icon-big {
+            font-size: 3rem;
+        }
+
+        .joke-card {
+            position: relative;
+            background: #213f21;
+            border: 2px solid #7eaf7a;
+            border-radius: 24px;
+            padding: 2.2rem 1.6rem;
+            min-height: 190px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 0 2px #2f542f, 0 12px 30px -12px rgba(0, 0, 0, 0.7);
+        }
+
+        .joke-card::before {
+            content: "🐌";
+            position: absolute;
+            top: -22px;
+            left: 24px;
+            font-size: 2.4rem;
+            transform: rotate(-12deg);
+            filter: drop-shadow(2px 4px 3px #0f2a0f);
+        }
+
+        .joke-card::after {
+            content: "🐌";
+            position: absolute;
+            bottom: -22px;
+            right: 24px;
+            font-size: 2.4rem;
+            transform: rotate(14deg) scaleX(-1);
+            filter: drop-shadow(2px 4px 3px #0f2a0f);
+        }
+
+        .joke-text {
+            font-size: clamp(1.05rem, 3.6vw, 1.4rem);
+            line-height: 1.65;
+            color: #eaf6d8;
+            font-weight: 500;
+            white-space: pre-wrap;
+        }
+
+        .joke-card.anim .joke-text {
+            animation: fadeUp 0.35s ease;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .counter {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: #8aaa7a;
+            letter-spacing: 1px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.7rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 1.6rem;
+        }
+
+        .btn {
+            padding: 0.85rem 1.5rem;
+            border-radius: 30px;
+            border: none;
+            background: #a3c4a3;
+            color: #1b3f1b;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: 0.15s;
+            box-shadow: 0 5px 0 #446d44;
+            min-height: 46px;
+        }
+
+        .btn:hover { background: #c3e6b3; transform: translateY(-2px); box-shadow: 0 7px 0 #2f542f; }
+        .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #2f542f; }
+
+        .btn.big { font-size: 1.15rem; padding: 1rem 2.2rem; }
+
+        .btn.ghost {
+            background: transparent;
+            color: #c7e0b0;
+            border: 2px solid #7eaf7a;
+            box-shadow: none;
+            font-weight: 700;
+        }
+
+        .btn.ghost:hover { background: #2f542f; color: #ffefc0; transform: translateY(-2px); box-shadow: none; }
+
+        .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: 0 5px 0 #446d44; }
+
+        .all-list {
+            display: none;
+            margin-top: 2rem;
+            text-align: left;
+            max-height: 60vh;
+            overflow-y: auto;
+            background: #1a331a;
+            border: 2px dashed #61855e;
+            border-radius: 18px;
+            padding: 1.2rem 1.3rem;
+        }
+
+        .all-list.show { display: block; }
+
+        .all-list .row {
+            display: flex;
+            gap: 0.7rem;
+            padding: 0.55rem 0;
+            border-bottom: 1px solid rgba(126, 175, 122, 0.2);
+            font-size: 0.92rem;
+            line-height: 1.5;
+            color: #dcecc6;
+        }
+
+        .all-list .row:last-child { border-bottom: none; }
+
+        .all-list .num {
+            color: #7eaf7a;
+            font-variant-numeric: tabular-nums;
+            min-width: 2.2rem;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .footer-snails { margin-top: 2.5rem; }
+
+        @media (max-width: 600px) {
+            .header-title { font-size: 1.6rem; }
+            .snail-icon-big { font-size: 2.1rem; }
+            .joke-card { padding: 1.6rem 1rem; min-height: 160px; }
+            .btn { flex: 1 1 auto; padding: 0.8rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="header-row">
+        <a class="home-link" href="/home">🐌 УЛИ</a>
+        <div class="header-title">
+            <span class="snail-icon-big">💬</span>
+            <span>УЛИТКО-ПРИКОЛЫ</span>
+            <span class="snail-icon-big">🐌</span>
+        </div>
+    </div>
+
+    <div class="joke-card" id="jokeCard">
+        <div class="joke-text" id="jokeText">Загружаю приколы…</div>
+    </div>
+    <div class="counter" id="counter"></div>
+
+    <div class="actions">
+        <button class="btn big" id="nextBtn" onclick="nextJoke()">ещё прикол 🎲</button>
+        <button class="btn ghost" id="prevBtn" onclick="prevJoke()" disabled>← назад</button>
+        <button class="btn ghost" onclick="copyJoke(this)">копировать</button>
+        <button class="btn ghost" onclick="toggleAll()" id="allBtn">показать все</button>
+    </div>
+
+    <div class="all-list" id="allList"></div>
+
+    <div class="footer-snails">
+        <span>🐌</span><span>🐌💚</span><span>🐌</span><span>🐚</span><span>🐌</span><span>🍀🐌</span>
+    </div>
+    <div class="footer-copyright">© Ули 2025–2026</div>
+</div>
+
+<script>
+    const FALLBACK = [
+        "Не спеши. Весь мир и так у тебя на спине.",
+        "Тише ползёшь — дальше будешь.",
+        "Улитка устроилась курьером. Через неделю её повысили до «пешехода с опытом».",
+        "Улитка установила VPN. Теперь ползёт анонимно."
+    ];
+
+    let phrases = [];
+    let current = -1;
+    let history = [];
+    let loaded = false;
+
+    const jokeText = document.getElementById('jokeText');
+    const jokeCard = document.getElementById('jokeCard');
+    const counterEl = document.getElementById('counter');
+    const prevBtn = document.getElementById('prevBtn');
+    const allListEl = document.getElementById('allList');
+    const allBtn = document.getElementById('allBtn');
+
+    async function loadPhrases() {
+        try {
+            const res = await fetch('phra.txt', { cache: 'no-cache' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const text = await res.text();
+            const parts = text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+            if (parts.length) {
+                phrases = parts;
+                return;
+            }
+            throw new Error('пустой файл');
+        } catch (e) {
+            console.error('Не загрузились приколы:', e);
+            phrases = FALLBACK;
+        }
+    }
+
+    function render(index, animate) {
+        current = index;
+        if (animate) {
+            jokeCard.classList.remove('anim');
+            void jokeCard.offsetWidth;
+            jokeCard.classList.add('anim');
+        }
+        jokeText.textContent = phrases[index];
+        counterEl.textContent = 'прикол ' + (index + 1) + ' из ' + phrases.length;
+        prevBtn.disabled = history.length === 0;
+    }
+
+    function randomIndex(exclude) {
+        if (phrases.length === 1) return 0;
+        let i;
+        do { i = Math.floor(Math.random() * phrases.length); } while (i === exclude);
+        return i;
+    }
+
+    function nextJoke() {
+        if (current !== -1) history.push(current);
+        render(randomIndex(current), true);
+    }
+
+    function prevJoke() {
+        if (!history.length) return;
+        render(history.pop(), true);
+    }
+
+    function copyJoke(btn) {
+        if (current === -1) return;
+        navigator.clipboard.writeText(phrases[current]).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = phrases[current];
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            ta.remove();
+        });
+        const old = btn.textContent;
+        btn.textContent = 'скопировано!';
+        setTimeout(() => { btn.textContent = old; }, 1500);
+    }
+
+    function toggleAll() {
+        const show = !allListEl.classList.contains('show');
+        if (show && !allListEl.dataset.built) {
+            allListEl.innerHTML = phrases.map((p, i) =>
+                '<div class="row"><span class="num">' + (i + 1) + '.</span><span>' +
+                p.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])) +
+                '</span></div>'
+            ).join('');
+            allListEl.dataset.built = '1';
+        }
+        allListEl.classList.toggle('show', show);
+        allBtn.textContent = show ? 'скрыть список' : 'показать все';
+    }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextJoke(); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); prevJoke(); }
+    });
+
+    (async function init() {
+        await loadPhrases();
+        // ежедневный «прикол дня»: индекс зависит от даты
+        const now = new Date();
+        const dayNumber = Math.floor(now.getTime() / 86400000);
+        const start = ((dayNumber % phrases.length) + phrases.length) % phrases.length;
+        render(start, false);
+        loaded = true;
+    })();
+</script>
+</body>
+</html>

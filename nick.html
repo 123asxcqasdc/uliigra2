@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#1b3b1b">
+    <link rel="icon" type="image/png" href="/icon.png">
+    <link rel="stylesheet" href="/shared.css">
+
+    <!-- превью в соцсетях -->
+    <meta property="og:title" content="Ули · генератор ников">
+    <meta property="og:description" content="Придумай себе улитко-ник — смешной, милый или эпичный 🏷️🐌">
+    <meta property="og:url" content="https://uliigra2.c6t.ru/nick">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Ули · генератор ников">
+    <meta name="twitter:description" content="Придумай себе улитко-ник — смешной, милый или эпичный 🏷️🐌">
+
+    <title>Ули · генератор ников</title>
+    <style>
+        .main-container {
+            max-width: 760px;
+            text-align: center;
+        }
+
+        .header-title {
+            font-size: 2.3rem;
+        }
+
+        .snail-icon-big {
+            font-size: 3rem;
+        }
+
+        /* ---- Переключатель стилей ---- */
+        .styles {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 1.2rem;
+        }
+
+        .style-btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 40px;
+            border: 2px solid #7eaf7a;
+            background: rgba(47, 84, 47, 0.5);
+            color: #c7e0b0;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 0.4px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .style-btn:hover { background: #2f542f; color: #ffefc0; }
+
+        .style-btn.active {
+            background: #a3c4a3;
+            color: #1b3f1b;
+            border-color: #d8f0b5;
+            box-shadow: 0 0 16px rgba(163, 196, 163, 0.45);
+        }
+
+        /* ---- Опции ---- */
+        .options {
+            display: flex;
+            gap: 1.2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 1.4rem;
+        }
+
+        .switch {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: #c7e0b0;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .switch input { width: 18px; height: 18px; accent-color: #a3c4a3; cursor: pointer; }
+
+        /* ---- Сетка ников ---- */
+        .nicks {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.9rem;
+            margin-top: 0.4rem;
+        }
+
+        .nick {
+            position: relative;
+            padding: 1.05rem 1rem;
+            background: #213f21;
+            border: 2px solid #7eaf7a;
+            border-radius: 18px;
+            color: #eaf6d8;
+            font-size: 1.15rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.15s;
+            word-break: break-word;
+            line-height: 1.35;
+            box-shadow: inset 0 0 0 2px #2f542f;
+        }
+
+        .nick:hover {
+            border-color: #d8f0b5;
+            background: #2a4d2a;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 22px -12px rgba(0, 0, 0, 0.8), inset 0 0 0 2px #345c34;
+        }
+
+        .nick .emoji { margin-right: 0.35rem; }
+
+        .nick .copied {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(163, 196, 163, 0.92);
+            color: #1b3f1b;
+            border-radius: 16px;
+            font-weight: 800;
+            font-size: 0.95rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s;
+        }
+
+        .nick.done .copied { opacity: 1; }
+
+        /* ---- Кнопки ---- */
+        .actions {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 1.6rem;
+        }
+
+        .btn {
+            padding: 0.95rem 1.9rem;
+            border-radius: 30px;
+            border: none;
+            background: #a3c4a3;
+            color: #1b3f1b;
+            font-family: inherit;
+            font-size: 1.1rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: 0.15s;
+            box-shadow: 0 5px 0 #446d44;
+            min-height: 48px;
+        }
+
+        .btn:hover { background: #c3e6b3; transform: translateY(-2px); box-shadow: 0 7px 0 #2f542f; }
+        .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #2f542f; }
+
+        .btn.ghost {
+            background: transparent;
+            color: #c7e0b0;
+            border: 2px solid #7eaf7a;
+            box-shadow: none;
+            font-weight: 700;
+        }
+
+        .btn.ghost:hover { background: #2f542f; color: #ffefc0; transform: translateY(-2px); box-shadow: none; }
+
+        .hint {
+            margin-top: 1.1rem;
+            font-size: 0.8rem;
+            color: #9bbc7b;
+            line-height: 1.6;
+        }
+
+        .footer-snails { margin-top: 2.5rem; }
+
+        @media (max-width: 560px) {
+            .header-title { font-size: 1.6rem; }
+            .snail-icon-big { font-size: 2.1rem; }
+            .nicks { grid-template-columns: 1fr; }
+            .btn { flex: 1 1 auto; padding: 0.85rem 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="header-row">
+        <a class="home-link" href="/home">🐌 УЛИ</a>
+        <div class="header-title">
+            <span class="snail-icon-big">🏷️</span>
+            <span>ГЕНЕРАТОР НИКОВ</span>
+            <span class="snail-icon-big">🐌</span>
+        </div>
+    </div>
+
+    <div class="styles">
+        <button class="style-btn active" data-style="cute" onclick="setStyle('cute')">🥰 милые</button>
+        <button class="style-btn" data-style="epic" onclick="setStyle('epic')">👑 эпичные</button>
+        <button class="style-btn" data-style="meme" onclick="setStyle('meme')">😎 мемные</button>
+    </div>
+
+    <div class="options">
+        <label class="switch"><input type="checkbox" id="withNumber" checked> добавлять числа</label>
+        <label class="switch"><input type="checkbox" id="withEmoji" checked> со смайликами</label>
+    </div>
+
+    <div class="nicks" id="nicks"></div>
+
+    <div class="actions">
+        <button class="btn" onclick="generate()">🔁 ещё ники</button>
+        <button class="btn ghost" onclick="copyBest(this)">скопировать лучший</button>
+    </div>
+
+    <div class="hint">Нажми на любой ник, чтобы скопировать. Ники генерируются случайно прямо в браузере.</div>
+
+    <div class="footer-snails">
+        <span>🐌</span><span>🐌💚</span><span>🐌</span><span>🐚</span><span>🐌</span><span>🍀🐌</span>
+    </div>
+    <div class="footer-copyright">© Ули 2025–2026</div>
+</div>
+
+<script>
+    /* ---------------- Словари ---------------- */
+
+    // прилагательные парами: мужской / женский род
+    const ADJ = [
+        ['Сонный', 'Сонная'], ['Мокрый', 'Мокрая'], ['Радужный', 'Радужная'],
+        ['Тихий', 'Тихая'], ['Уютный', 'Уютная'], ['Мягкий', 'Мягкая'],
+        ['Зелёный', 'Зелёная'], ['Лунный', 'Лунная'], ['Цветочный', 'Цветочная'],
+        ['Травяной', 'Травяная'], ['Дождевой', 'Дождевая'], ['Спокойный', 'Спокойная'],
+        ['Маленький', 'Маленькая'], ['Тёплый', 'Тёплая'], ['Добрый', 'Добрая'],
+        ['Хитрый', 'Хитрая'], ['Весёлый', 'Весёлая'], ['Ночной', 'Ночная'],
+        ['Задумчивый', 'Задумчивая'], ['Солнечный', 'Солнечная'], ['Слизистый', 'Слизистая'],
+        ['Панцирный', 'Панцирная'], ['Медленный', 'Медленная'], ['Бархатный', 'Бархатная']
+    ];
+
+    // существительные с родом: m / f
+    const REAL_F = ['Улитка', 'Улиточка', 'Ракушка', 'Ракушечка', 'Малышка'];
+    const REAL_M = ['Улитос', 'Слизень', 'Моллюск', 'Слизняк', 'Панцирь', 'Улитыч', 'Ракович'];
+
+    const EPIC_TITLES = [
+        'Король Улиток', 'Повелитель Ракушек', 'Император Панциря', 'Хранитель Слизи',
+        'Легенда Огорода', 'Мастер Моллюсков', 'Владыка Дождя', 'Принц Тихоходов',
+        'Улитос Великий', 'Страж Листа', 'Лорд Тихой Тропы', 'Гений Ползучести'
+    ];
+
+    const EMOJI = ['🐌', '🐚', '🍀', '🌿', '💚', '🌙', '✨', '🍃', '🐌'];
+
+    const MEME_PART = ['Улит', 'Слизень', 'Улитка', 'Раковина', 'Моллюск', 'Пузя'];
+    const MEME_TAIL = ['_228', '_2007', '_ХХL', 'Босс', 'Про', '_TV', '228', '_Официальный', 'Xx', '_YT', '_HD', '_Жив'];
+
+    /* ---------------- Логика ---------------- */
+
+    let style = 'cute';
+    let lastNicks = [];
+
+    const nicksEl = document.getElementById('nicks');
+    const withNumber = document.getElementById('withNumber');
+    const withEmoji = document.getElementById('withEmoji');
+
+    const rnd = arr => arr[Math.floor(Math.random() * arr.length)];
+    const num = () => Math.floor(Math.random() * 900) + 10;
+
+    function makeCute() {
+        const [m, f] = rnd(ADJ);
+        const useF = Math.random() < 0.5;
+        const noun = useF ? rnd(REAL_F) : rnd(REAL_M);
+        let name = (useF ? f : m) + ' ' + noun;
+        return name;
+    }
+
+    function makeEpic() {
+        if (Math.random() < 0.5) {
+            return rnd(EPIC_TITLES);
+        }
+        const [m, f] = rnd(ADJ);
+        const useF = Math.random() < 0.5;
+        const noun = useF ? rnd(REAL_F) : rnd(REAL_M);
+        return (useF ? f : m) + ' ' + noun + (useF ? ' Великая' : ' Великий');
+    }
+
+    function makeMeme() {
+        let base = rnd(MEME_PART);
+        if (Math.random() < 0.5) base += rnd(MEME_TAIL);
+        if (Math.random() < 0.4) base = 'Xx_' + base + '_xX';
+        return base;
+    }
+
+    function withNumberSuffix(name) {
+        if (!withNumber.checked) return name;
+        if (/\d/.test(name)) return name;
+        return name + ' ' + num();
+    }
+
+    function withEmojiSuffix(name) {
+        if (!withEmoji.checked) return name;
+        return rnd(EMOJI) + ' ' + name;
+    }
+
+    function makeOne() {
+        let name;
+        if (style === 'cute') name = makeCute();
+        else if (style === 'epic') name = makeEpic();
+        else name = makeMeme();
+
+        if (style !== 'meme') {
+            name = withNumberSuffix(name);
+            name = withEmojiSuffix(name);
+        } else {
+            if (withEmoji.checked) name = rnd(EMOJI) + ' ' + name;
+        }
+        return name;
+    }
+
+    function generate() {
+        const seen = new Set();
+        const list = [];
+        let guard = 0;
+        while (list.length < 8 && guard++ < 300) {
+            const n = makeOne();
+            if (!seen.has(n)) {
+                seen.add(n);
+                list.push(n);
+            }
+        }
+        lastNicks = list;
+        render(list);
+    }
+
+    function render(list) {
+        nicksEl.innerHTML = list.map(n =>
+            '<div class="nick" onclick="copyNick(this)">' +
+                '<span>' + escapeHtml(n) + '</span>' +
+                '<span class="copied">скопировано!</span>' +
+            '</div>'
+        ).join('');
+    }
+
+    function escapeHtml(s) {
+        return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    }
+
+    function copyNick(el) {
+        const text = el.querySelector('span').textContent;
+        writeClipboard(text);
+        el.classList.add('done');
+        setTimeout(() => el.classList.remove('done'), 900);
+    }
+
+    function copyBest(btn) {
+        if (!lastNicks.length) return;
+        const best = lastNicks[Math.floor(Math.random() * lastNicks.length)];
+        writeClipboard(best);
+        const old = btn.textContent;
+        btn.textContent = 'скопировано: ' + best;
+        setTimeout(() => { btn.textContent = old; }, 1600);
+    }
+
+    function writeClipboard(text) {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+        } else {
+            fallbackCopy(text);
+        }
+    }
+
+    function fallbackCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        ta.remove();
+    }
+
+    function setStyle(s) {
+        style = s;
+        document.querySelectorAll('.style-btn').forEach(b =>
+            b.classList.toggle('active', b.dataset.style === s));
+        generate();
+    }
+
+    withNumber.addEventListener('change', generate);
+    withEmoji.addEventListener('change', generate);
+
+    generate();
+</script>
+</body>
+</html>

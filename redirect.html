@@ -6,77 +6,26 @@
     <title>Ули · перенаправление</title>
     
     <link rel="icon" type="image/png" href="/icon.png">
+    <link rel="stylesheet" href="/shared.css">
+    <!-- превью в соцсетях -->
+    <meta property="og:title" content="Ули · Перенаправление">
+    <meta property="og:description" content="Переход по короткой ссылке Ули 🐌">
+    <meta property="og:url" content="https://uliigra2.c6t.ru/redirect">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Ули · Перенаправление">
+    <meta name="twitter:description" content="Переход по короткой ссылке Ули 🐌">
     
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
-            background-color: #1b3b1b;
-            background-image: radial-gradient(circle at 30% 40%, #2b5a2b 0%, #0e2f0e 90%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem 1.5rem;
-            position: relative;
-            color: #f0f7da;
-        }
-
-        body::before {
-            content: "🐌🐌🐌";
-            font-size: 8rem;
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            opacity: 0.08;
-            white-space: nowrap;
-            transform: rotate(-10deg);
-            pointer-events: none;
-            letter-spacing: 2rem;
-        }
-
-        body::after {
-            content: "🐌🐌🐌";
-            font-size: 12rem;
-            position: absolute;
-            bottom: -20px;
-            right: 0;
-            opacity: 0.05;
-            transform: rotate(15deg);
-            pointer-events: none;
-            white-space: nowrap;
-        }
-
         .main-container {
             max-width: 550px;
-            width: 100%;
-            background: rgba(30, 50, 30, 0.7);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            border: 3px solid #9bbc7b;
-            border-radius: 30px;
-            box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 2px #6f8c5d inset, 0 0 0 4px #3f6140 inset;
-            padding: 3rem 2rem;
             text-align: center;
         }
 
         .header-title {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.6rem 1.2rem;
-            flex-wrap: wrap;
             margin-bottom: 1.5rem;
             font-size: 2rem;
-            font-weight: 800;
-            text-shadow: 3px 3px 0 #2d4a2d, 5px 5px 0 #1b331b;
-            color: #e2f0c0;
+            letter-spacing: normal;
         }
 
         .snail-loader {
@@ -100,11 +49,6 @@
             border-top: 5px solid #c7f0b1;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
 
         .code-badge {
@@ -163,15 +107,8 @@
 
         .footer-snails {
             margin-top: 2rem;
-            display: flex;
-            justify-content: center;
-            gap: 0.8rem 2rem;
-            flex-wrap: wrap;
             font-size: 1.2rem;
-            color: #a2c78d;
-            border-top: 2px dashed #61855e;
             padding-top: 1.5rem;
-            opacity: 0.8;
         }
     </style>
 
@@ -201,6 +138,7 @@
     <div class="footer-snails">
         <span>🐌</span><span>🐌💚</span><span>🐌</span><span>🐚</span>
     </div>
+    <div class="footer-copyright">© Ули 2025–2026</div>
 </div>
 
 <script>
@@ -224,6 +162,17 @@
         if (questionMarkIndex !== -1) {
             return url.substring(questionMarkIndex + 1);
         }
+        return null;
+    }
+
+    function safeHttpUrl(raw) {
+        if (typeof raw !== 'string' || !raw.trim()) return null;
+        try {
+            const u = new URL(raw, window.location.origin);
+            if (u.protocol === 'http:' || u.protocol === 'https:') {
+                return u.href;
+            }
+        } catch (e) {}
         return null;
     }
 
@@ -258,18 +207,29 @@
             const linkData = snapshot.val();
 
             if (linkData && linkData.url) {
+                const target = safeHttpUrl(linkData.url);
+
                 await database.ref('links/' + shortCode).update({
                     clicks: (linkData.clicks || 0) + 1,
                     lastAccessed: firebase.database.ServerValue.TIMESTAMP
                 });
 
-                statusText.textContent = 'перенаправление...';
-                urlInfo.style.display = 'block';
-                urlInfo.innerHTML = '<strong>переход на:</strong><br>' + linkData.url;
+                if (target) {
+                    statusText.textContent = 'перенаправление...';
+                    urlInfo.style.display = 'block';
+                    urlInfo.textContent = 'переход на: ' + linkData.url;
 
-                setTimeout(() => {
-                    window.location.href = linkData.url;
-                }, 1500);
+                    setTimeout(() => {
+                        window.location.href = target;
+                    }, 1500);
+                } else {
+                    loader.style.display = 'none';
+                    snailLoader.style.display = 'none';
+                    statusText.textContent = 'ссылка заблокирована';
+                    errorBox.style.display = 'block';
+                    errorBox.innerHTML = '<strong>небезопасная ссылка</strong><br>разрешены только http:// и https:// ссылки';
+                    backButton.style.display = 'inline-block';
+                }
             } else {
                 loader.style.display = 'none';
                 snailLoader.style.display = 'none';

@@ -4,89 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ули · файлообменник 🐌</title>
+    <link rel="stylesheet" href="/shared.css">
+    <!-- превью в соцсетях -->
+    <meta property="og:title" content="Ули · файлообменник 🐌">
+    <meta property="og:description" content="Файлообменник от ули: загружай и делись файлами">
+    <meta property="og:url" content="https://uliigra2.c6t.ru/sst">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Ули · файлообменник 🐌">
+    <meta name="twitter:description" content="Файлообменник от ули: загружай и делись файлами">
     
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
-            background-color: #1b3b1b;
-            background-image: radial-gradient(circle at 30% 40%, #2b5a2b 0%, #0e2f0e 90%);
-            min-height: 100vh;
-            padding: 2rem 1.5rem;
-            color: #f0f7da;
-            position: relative;
+            justify-content: flex-start;
         }
 
         body::before {
-            content: "🐌🐌🐌";
-            font-size: 8rem;
             position: fixed;
-            top: 10px;
-            left: 10px;
             opacity: 0.06;
-            white-space: nowrap;
-            transform: rotate(-10deg);
-            pointer-events: none;
-            letter-spacing: 2rem;
             z-index: 0;
         }
 
         body::after {
-            content: "🐌🐌🐌";
-            font-size: 12rem;
             position: fixed;
-            bottom: -20px;
-            right: 0;
             opacity: 0.04;
-            transform: rotate(15deg);
-            pointer-events: none;
-            white-space: nowrap;
             z-index: 0;
         }
 
         .main-container {
             max-width: 700px;
-            width: 100%;
             margin: 0 auto;
             background: rgba(30, 50, 30, 0.75);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            border: 3px solid #9bbc7b;
-            border-radius: 30px;
-            box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 2px #6f8c5d inset, 0 0 0 4px #3f6140 inset;
             padding: 2.5rem 2rem;
             position: relative;
             z-index: 1;
         }
 
         .header-title {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.6rem 1.2rem;
-            flex-wrap: wrap;
             margin-bottom: 1.5rem;
             font-size: 2.8rem;
-            font-weight: 800;
-            text-shadow: 3px 3px 0 #2d4a2d, 5px 5px 0 #1b331b;
-            color: #e2f0c0;
-            letter-spacing: 2px;
         }
 
         .snail-icon-big {
             font-size: 3.5rem;
-            transform: rotate(15deg);
-            transition: transform 0.2s;
-            filter: drop-shadow(2px 4px 4px #0f2a0f);
-        }
-
-        .snail-icon-big:hover {
-            transform: rotate(25deg) scale(1.1);
         }
 
         .status-bar {
@@ -121,11 +81,6 @@
         .status-bar .spinner {
             display: inline-block;
             animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
 
         .upload-section {
@@ -402,26 +357,7 @@
 
         .footer-snails {
             margin-top: 2.5rem;
-            display: flex;
-            justify-content: center;
-            gap: 0.8rem 2rem;
-            flex-wrap: wrap;
-            font-size: 2rem;
-            color: #a2c78d;
-            border-top: 2px dashed #61855e;
             padding-top: 1.5rem;
-            opacity: 0.8;
-        }
-
-        .footer-snails span {
-            filter: drop-shadow(0 5px 5px #172e17);
-            transition: 0.2s;
-            cursor: default;
-        }
-
-        .footer-snails span:hover {
-            transform: scale(1.2) rotate(5deg);
-            color: #e2ffb3;
         }
 
         .toast {
@@ -479,6 +415,37 @@
             margin-top: 0.2rem;
         }
 
+        .fast-link-block {
+            margin-top: 0.8rem;
+            background: #1b331b;
+            border: 2px dashed #7eaf7a;
+            border-radius: 14px;
+            padding: 0.6rem 1rem;
+        }
+
+        .fast-link-label {
+            font-size: 0.8rem;
+            color: #a0bf90;
+        }
+
+        .fast-link {
+            display: inline-block;
+            margin-top: 0.3rem;
+            color: #c7f0b1;
+            font-family: monospace;
+            font-size: 0.9rem;
+            text-decoration: none;
+            border-bottom: 1px dashed #7eaf7a;
+            padding: 0.1rem 0.2rem;
+            word-break: break-all;
+            transition: 0.2s;
+        }
+
+        .fast-link:hover {
+            color: #e2ffb3;
+            border-bottom-color: #e2ffb3;
+        }
+
         .file-info {
             background: #1b331b;
             border-radius: 12px;
@@ -516,10 +483,13 @@
 <body>
 
 <div class="main-container">
-    <div class="header-title">
-        <span class="snail-icon-big">🐌</span>
-        <span>УЛИ · файлообменник</span>
-        <span class="snail-icon-big">🐌</span>
+    <div class="header-row">
+        <a class="home-link" href="/home">🐌 УЛИ</a>
+        <div class="header-title">
+            <span class="snail-icon-big">🐌</span>
+            <span>файлообменник</span>
+            <span class="snail-icon-big">🐌</span>
+        </div>
     </div>
 
     <div id="statusBar" class="status-bar">
@@ -558,6 +528,7 @@
     <div class="footer-snails">
         <span>🐌</span><span>🐌💚</span><span>🐌</span><span>🐚</span><span>🐌</span><span>🍀🐌</span>
     </div>
+    <div class="footer-copyright">© Ули 2025–2026</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -797,6 +768,10 @@ async function uploadFile(file, customName) {
             <div class="upload-success-text">✅ файл загружен! 🐌</div>
             <div class="code-display" onclick="copyCode('${code}')">🔑 ${code}</div>
             <div class="copy-hint">📋 нажмите на код, чтобы скопировать</div>
+            <div class="fast-link-block">
+                <div class="fast-link-label">⚡ быстрая ссылка для скачивания:</div>
+                <a class="fast-link" href="https://uli.c6t.ru/d?code=${code}" target="_blank">uli.c6t.ru/d?code=${code}</a>
+            </div>
         `;
         chunkProgress.textContent = `✅ ${totalChunks} кусков загружено`;
         fileInfo.innerHTML = `Файл: <span>${escapeHtml(fileName)}</span> · Размер: <span>${formatSize(file.size)}</span> · Готово! 🎉`;
@@ -940,6 +915,9 @@ async function openByCode(code) {
             <div class="file-name">${escapeHtml(name)}</div>
             <div class="file-meta">${formatSize(size)} · ${dateStr} · ${totalChunks} кусков</div>
             <a href="${downloadUrl}" download="${escapeHtml(name)}" class="download-link">⬇️ скачать файл</a>
+            <div style="margin-top:0.8rem;">
+                <a class="fast-link" href="https://uli.c6t.ru/d?code=${codeUpper}" target="_blank">⚡ быстрая загрузка: uli.c6t.ru/d?code=${codeUpper}</a>
+            </div>
         `;
 
         showToast(`🐌 файл «${name}» найден!`);
